@@ -1,6 +1,13 @@
 @extends('layouts.admin')
 
 @section('content')
+    <x-partials.module-wireflow-header label="المصروفات" step="9" />
+    <x-partials.module-kpis :items="[
+        ['label' => 'إجمالي المصروفات', 'value' => number_format((float) $expenses->sum('amount')) . ' ج.م'],
+        ['label' => 'عدد الحركات', 'value' => $expenses->total()],
+        ['label' => 'متوسط الحركة', 'value' => number_format((float) $expenses->avg('amount')) . ' ج.م'],
+    ]" />
+
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">سجل المصروفات</h5>

@@ -1,6 +1,12 @@
 @extends('layouts.admin')
 
 @section('content')
+    <x-partials.module-wireflow-header label="المتبقي" step="8" />
+    <x-partials.module-kpis :items="[
+        ['label' => 'إجمالي المتبقي', 'value' => number_format((float) $contracts->sum('remaining_amount')) . ' ج.م'],
+        ['label' => 'عدد العقود', 'value' => $contracts->total()],
+    ]" />
+
     <div class="card">
         <div class="card-header"><h5 class="mb-0">كشف المتبقي على العقود</h5></div>
         <div class="card-body">

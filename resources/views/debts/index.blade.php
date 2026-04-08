@@ -1,6 +1,13 @@
 @extends('layouts.admin')
 
 @section('content')
+    <x-partials.module-wireflow-header label="المديونية" step="10" />
+    <x-partials.module-kpis :items="[
+        ['label' => 'إجمالي الدين', 'value' => number_format((float) $debts->sum('total_amount')) . ' ج.م'],
+        ['label' => 'المسدَّد', 'value' => number_format((float) $debts->sum('paid_amount')) . ' ج.م'],
+        ['label' => 'المتبقي', 'value' => number_format((float) $debts->sum('remaining_amount')) . ' ج.م'],
+    ]" />
+
     <div class="card">
         <div class="card-header"><h5 class="mb-0">سجل المديونيات</h5></div>
         <div class="card-body">

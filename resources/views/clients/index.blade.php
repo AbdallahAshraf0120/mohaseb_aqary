@@ -1,6 +1,13 @@
 @extends('layouts.admin')
 
 @section('content')
+    <x-partials.module-wireflow-header label="العملاء" step="4" />
+    <x-partials.module-kpis :items="[
+        ['label' => 'عدد العملاء', 'value' => $clients->total()],
+        ['label' => 'عملاء لديهم مبيعات', 'value' => $clients->where('sales_count', '>', 0)->count()],
+        ['label' => 'إجمالي عمليات البيع', 'value' => $clients->sum('sales_count')],
+    ]" />
+
     <div class="card">
         <div class="card-header">
             <h5 class="mb-0">قائمة العملاء</h5>

@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
+    <x-partials.module-wireflow-header label="الصندوق" step="8" />
     <div class="row g-3 mb-3">
         <div class="col-md-3"><div class="small-box text-bg-light border"><div class="inner"><h5>{{ number_format($openingBalance, 2) }}</h5><p>رصيد افتتاحي</p></div></div></div>
         <div class="col-md-3"><div class="small-box text-bg-light border"><div class="inner"><h5>{{ number_format($revenuesTotal, 2) }}</h5><p>مقبوضات</p></div></div></div>

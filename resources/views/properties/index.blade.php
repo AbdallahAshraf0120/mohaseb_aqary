@@ -1,6 +1,14 @@
 @extends('layouts.admin')
 
 @section('content')
+    <x-partials.module-wireflow-header label="العقارات" step="3" />
+    <x-partials.module-kpis :items="[
+        ['label' => 'عدد العقارات', 'value' => $properties->total()],
+        ['label' => 'متوسط الأدوار', 'value' => number_format((float) $properties->avg('floors_count'), 1)],
+        ['label' => 'إجمالي الوحدات', 'value' => number_format((float) $properties->sum('total_apartments'))],
+        ['label' => 'أنواع عقارات', 'value' => $properties->pluck('property_type')->filter()->unique()->count()],
+    ]" />
+
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">قائمة العقارات</h5>

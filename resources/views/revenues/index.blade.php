@@ -1,6 +1,13 @@
 @extends('layouts.admin')
 
 @section('content')
+    <x-partials.module-wireflow-header label="التحصيل" step="7" />
+    <x-partials.module-kpis :items="[
+        ['label' => 'إجمالي التحصيل', 'value' => number_format((float) $revenues->sum('amount')) . ' ج.م'],
+        ['label' => 'عدد الإيصالات', 'value' => $revenues->total()],
+        ['label' => 'متوسط التحصيل', 'value' => number_format((float) $revenues->avg('amount')) . ' ج.م'],
+    ]" />
+
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">سجل التحصيل</h5>

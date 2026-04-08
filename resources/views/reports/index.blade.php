@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
+    <x-partials.module-wireflow-header label="التقارير" step="12" />
     <div class="row g-3">
         <div class="col-md-3"><div class="small-box text-bg-light border"><div class="inner"><h5>{{ number_format($revenues, 2) }}</h5><p>الإيرادات</p></div></div></div>
         <div class="col-md-3"><div class="small-box text-bg-light border"><div class="inner"><h5>{{ number_format($expenses, 2) }}</h5><p>المصروفات</p></div></div></div>

@@ -1,6 +1,13 @@
 @extends('layouts.admin')
 
 @section('content')
+    <x-partials.module-wireflow-header label="العقود" step="5" />
+    <x-partials.module-kpis :items="[
+        ['label' => 'العقود النشطة', 'value' => $contracts->total()],
+        ['label' => 'قيمة العقود', 'value' => number_format((float) $contracts->sum('total_price')) . ' ج.م'],
+        ['label' => 'المتبقي', 'value' => number_format((float) $contracts->sum('remaining_amount')) . ' ج.م'],
+    ]" />
+
     <div class="card">
         <div class="card-header">
             <h5 class="mb-0">قائمة العقود</h5>

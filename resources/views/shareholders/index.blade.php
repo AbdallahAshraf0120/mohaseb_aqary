@@ -1,6 +1,14 @@
 @extends('layouts.admin')
 
 @section('content')
+    <x-partials.module-wireflow-header label="المساهمين" step="2" />
+    <x-partials.module-kpis :items="[
+        ['label' => 'عدد المساهمين', 'value' => $shareholders->total()],
+        ['label' => 'رأس المال', 'value' => number_format((float) $shareholders->sum('total_investment')) . ' ج.م'],
+        ['label' => 'إجمالي النسب', 'value' => number_format((float) $shareholders->sum('share_percentage'), 2) . '%'],
+        ['label' => 'الأرباح', 'value' => number_format((float) $shareholders->sum('profit_amount')) . ' ج.م'],
+    ]" />
+
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">قائمة المساهمين</h5>

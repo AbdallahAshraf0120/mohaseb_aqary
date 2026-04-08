@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
+    <x-partials.module-wireflow-header label="الإعدادات" step="13" />
     <div class="card">
         <div class="card-header"><h5 class="mb-0">الإعدادات العامة</h5></div>
         <div class="card-body">
