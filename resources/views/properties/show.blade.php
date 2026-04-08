@@ -12,19 +12,66 @@
                     <strong>الاسم:</strong> {{ $property->name }}
                 </div>
                 <div class="col-md-6">
-                    <strong>الموقع:</strong> {{ $property->location }}
+                    <strong>نوع العقار:</strong> {{ $property->property_type ?? '-' }}
                 </div>
                 <div class="col-md-6">
-                    <strong>السعر:</strong> {{ number_format((float) $property->price, 2) }}
+                    <strong>الموقع:</strong> {{ $property->location ?? '-' }}
                 </div>
                 <div class="col-md-6">
-                    <strong>الحالة:</strong> {{ $property->status }}
+                    <strong>عدد الأدوار:</strong> {{ $property->floors_count ?? '-' }}
                 </div>
                 <div class="col-md-6">
-                    <strong>المالك:</strong> {{ $property->owner?->name ?? '-' }}
+                    <strong>عدد الشقق بكل دور:</strong> {{ $property->apartments_per_floor ?? '-' }}
+                </div>
+                <div class="col-md-6">
+                    <strong>إجمالي الشقق:</strong> {{ $property->total_apartments ?? '-' }}
                 </div>
                 <div class="col-md-6">
                     <strong>تاريخ الإنشاء:</strong> {{ $property->created_at?->format('Y-m-d H:i') }}
+                </div>
+
+                <div class="col-12">
+                    <hr>
+                    <h6>نسب المساهمين</h6>
+                    @php($allocations = $property->shareholder_allocations ?? [])
+                    @if (count($allocations))
+                        <ul class="mb-0">
+                            @foreach ($allocations as $allocation)
+                                <li>{{ $allocation['shareholder_name'] ?? ('مساهم #' . ($allocation['shareholder_id'] ?? '-')) }}:
+                                    {{ number_format((float) ($allocation['percentage'] ?? 0), 2) }}%</li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <p class="text-muted mb-0">لا توجد نسب مساهمين مسجلة.</p>
+                    @endif
+                </div>
+
+                <div class="col-12">
+                    <hr>
+                    <h6>نماذج ومساحات الشقق</h6>
+                    @php($models = $property->apartment_models ?? [])
+                    @if (count($models))
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped mb-0">
+                                <thead>
+                                <tr>
+                                    <th>اسم النموذج</th>
+                                    <th>المساحة (م2)</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach ($models as $model)
+                                    <tr>
+                                        <td>{{ $model['model_name'] ?? '-' }}</td>
+                                        <td>{{ number_format((float) ($model['area'] ?? 0), 2) }}</td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <p class="text-muted mb-0">لا توجد نماذج شقق مسجلة.</p>
+                    @endif
                 </div>
             </div>
         </div>

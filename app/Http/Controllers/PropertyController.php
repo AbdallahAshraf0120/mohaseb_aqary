@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePropertyRequest;
 use App\Http\Requests\UpdatePropertyRequest;
 use App\Models\Property;
-use App\Models\User;
+use App\Models\Shareholder;
 use App\Services\PropertyService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -33,7 +33,7 @@ class PropertyController extends Controller
         return view('properties.create', [
             'title' => 'إضافة عقار | Mohaseb Aqary',
             'pageTitle' => 'إضافة عقار',
-            'owners' => User::query()->select('id', 'name')->orderBy('name')->get(),
+            'shareholders' => Shareholder::query()->select('id', 'name')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
     }
@@ -61,7 +61,7 @@ class PropertyController extends Controller
             'title' => 'تعديل العقار | Mohaseb Aqary',
             'pageTitle' => 'تعديل العقار',
             'property' => $this->propertyService->findOrFail((int) $property->id),
-            'owners' => User::query()->select('id', 'name')->orderBy('name')->get(),
+            'shareholders' => Shareholder::query()->select('id', 'name')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
     }

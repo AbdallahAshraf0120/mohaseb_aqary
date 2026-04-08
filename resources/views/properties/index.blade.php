@@ -16,11 +16,12 @@
                     <thead>
                     <tr>
                         <th>#</th>
-                        <th>الاسم</th>
+                        <th>اسم العقار</th>
+                        <th>نوع العقار</th>
                         <th>الموقع</th>
-                        <th>السعر</th>
-                        <th>الحالة</th>
-                        <th>المالك</th>
+                        <th>عدد الأدوار</th>
+                        <th>شقق/دور</th>
+                        <th>إجمالي الشقق</th>
                         <th class="text-end">العمليات</th>
                     </tr>
                     </thead>
@@ -29,10 +30,11 @@
                         <tr>
                             <td>{{ $property->id }}</td>
                             <td>{{ $property->name }}</td>
-                            <td>{{ $property->location }}</td>
-                            <td>{{ number_format((float) $property->price, 2) }}</td>
-                            <td>{{ $property->status }}</td>
-                            <td>{{ $property->owner?->name ?? '-' }}</td>
+                            <td>{{ $property->property_type ?? '-' }}</td>
+                            <td>{{ $property->location ?? '-' }}</td>
+                            <td>{{ $property->floors_count ?? '-' }}</td>
+                            <td>{{ $property->apartments_per_floor ?? '-' }}</td>
+                            <td>{{ $property->total_apartments ?? '-' }}</td>
                             <td class="text-end">
                                 <a href="{{ route('properties.show', $property) }}" class="btn btn-outline-info btn-sm">عرض</a>
                                 <a href="{{ route('properties.edit', $property) }}" class="btn btn-outline-warning btn-sm">تعديل</a>

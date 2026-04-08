@@ -6,7 +6,24 @@ use Illuminate\Database\Eloquent\Model;
 
 class Property extends Model
 {
-    protected $fillable = ['name', 'location', 'price', 'status', 'owner_id'];
+    protected $fillable = [
+        'name',
+        'property_type',
+        'floors_count',
+        'apartments_per_floor',
+        'total_apartments',
+        'shareholder_allocations',
+        'apartment_models',
+        'location',
+        'price',
+        'status',
+        'owner_id',
+    ];
+
+    protected $casts = [
+        'shareholder_allocations' => 'array',
+        'apartment_models' => 'array',
+    ];
 
     public function owner()
     {
