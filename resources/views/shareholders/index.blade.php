@@ -40,7 +40,7 @@
                             <td>{{ number_format((float) $shareholder->total_investment, 2) }}</td>
                             <td>{{ number_format((float) $shareholder->profit_amount, 2) }}</td>
                             <td class="text-end">
-                                <a href="{{ route('shareholders.show', $shareholder) }}" class="btn btn-outline-info btn-sm">عرض</a>
+                                <a href="{{ route('shareholders.show', $shareholder) }}" class="btn btn-outline-info btn-sm">بروفايل</a>
                                 <a href="{{ route('shareholders.edit', $shareholder) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
                                 <form action="{{ route('shareholders.destroy', $shareholder) }}" method="post" class="d-inline">
                                     @csrf

@@ -43,10 +43,14 @@ class ShareholderController extends Controller
 
     public function show(Shareholder $shareholder): View
     {
+        $shareholder = $this->shareholderService->findOrFail((int) $shareholder->id);
+        $participations = $this->shareholderService->propertyParticipationsFor($shareholder);
+
         return view('shareholders.show', [
-            'title' => 'تفاصيل المساهم | Mohaseb Aqary',
-            'pageTitle' => 'تفاصيل المساهم',
-            'shareholder' => $this->shareholderService->findOrFail((int) $shareholder->id),
+            'title' => 'بروفايل المساهم | Mohaseb Aqary',
+            'pageTitle' => 'بروفايل المساهم',
+            'shareholder' => $shareholder,
+            'participations' => $participations,
             'modules' => $this->modules(),
         ]);
     }
@@ -65,7 +69,7 @@ class ShareholderController extends Controller
     {
         $this->shareholderService->update($shareholder, $request->validated());
 
-        return redirect()->route('shareholders.index')->with('success', 'تم تحديث المساهم بنجاح.');
+        return redirect()->route('shareholders.show', $shareholder)->with('success', 'تم تحديث المساهم بنجاح.');
     }
 
     public function destroy(Shareholder $shareholder): RedirectResponse
