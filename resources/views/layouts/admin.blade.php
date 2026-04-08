@@ -19,7 +19,7 @@
                         </a>
                     </li>
                     <li class="nav-item d-none d-md-block">
-                        <a href="{{ url('/demo') }}" class="nav-link">الرئيسية</a>
+                        <a href="{{ route('properties.index') }}" class="nav-link">الرئيسية</a>
                     </li>
                 </ul>
             </div>
@@ -34,21 +34,13 @@
             <div class="sidebar-wrapper">
                 <nav class="mt-2">
                     <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
-                        <li class="nav-item">
-                            <a href="{{ route('demo') }}" class="nav-link {{ request()->routeIs('home') || request()->routeIs('demo') ? 'active' : '' }}">
-                                <i class="nav-icon fa-solid fa-chalkboard-user"></i>
-                                <p>Demo العرض</p>
-                            </a>
-                        </li>
                         @foreach (($modules ?? []) as $moduleKey => $menuItem)
                             <li class="nav-item">
                                 @php
-                                    $menuHref = $menuItem['route'] === 'modules.show'
-                                        ? route('modules.show', $moduleKey)
-                                        : route($menuItem['route']);
+                                    $menuHref = route($menuItem['route']);
                                 @endphp
                                 <a href="{{ $menuHref }}"
-                                   class="nav-link {{ request()->is('modules/' . $moduleKey) || ($menuItem['route'] === 'properties.index' && request()->is('properties*')) || ($menuItem['route'] === 'shareholders.index' && request()->is('shareholders*')) || ($menuItem['route'] === 'sales.index' && request()->is('sales*')) || ($menuItem['route'] === 'clients.index' && request()->is('clients*')) || ($menuItem['route'] === 'contracts.index' && request()->is('contracts*')) || ($menuItem['route'] === 'revenues.index' && request()->is('revenues*')) || ($menuItem['route'] === 'cashbox.index' && request()->is('cashbox*')) || ($menuItem['route'] === 'expenses.index' && request()->is('expenses*')) || ($menuItem['route'] === 'debts.index' && request()->is('debts*')) || ($menuItem['route'] === 'settlements.index' && request()->is('settlements*')) || ($menuItem['route'] === 'reports.index' && request()->is('reports*')) || ($menuItem['route'] === 'settings.edit' && request()->is('settings*')) || ($menuItem['route'] === 'remaining.index' && request()->is('remaining*')) ? 'active' : '' }}">
+                                   class="nav-link {{ ($menuItem['route'] === 'properties.index' && request()->is('properties*')) || ($menuItem['route'] === 'shareholders.index' && request()->is('shareholders*')) || ($menuItem['route'] === 'sales.index' && request()->is('sales*')) || ($menuItem['route'] === 'clients.index' && request()->is('clients*')) || ($menuItem['route'] === 'contracts.index' && request()->is('contracts*')) || ($menuItem['route'] === 'revenues.index' && request()->is('revenues*')) || ($menuItem['route'] === 'cashbox.index' && request()->is('cashbox*')) || ($menuItem['route'] === 'expenses.index' && request()->is('expenses*')) || ($menuItem['route'] === 'debts.index' && request()->is('debts*')) || ($menuItem['route'] === 'settlements.index' && request()->is('settlements*')) || ($menuItem['route'] === 'reports.index' && request()->is('reports*')) || ($menuItem['route'] === 'settings.edit' && request()->is('settings*')) || ($menuItem['route'] === 'remaining.index' && request()->is('remaining*')) ? 'active' : '' }}">
                                     <i class="nav-icon fa-solid {{ $menuItem['icon'] }}"></i>
                                     <p>{{ $menuItem['label'] }}</p>
                                 </a>

@@ -116,7 +116,7 @@
                     <a href="{{ route('sales.create') }}" class="btn btn-outline-secondary text-start">جدولة اقساط</a>
                     <a href="{{ route('sales.create') }}" class="btn btn-outline-secondary text-start">توليد إيصال مقدم</a>
                     <hr>
-                    <a href="{{ route('modules.show', 'revenues') }}" class="btn btn-primary">الخطوة التالية في الديمو</a>
+                    <a href="{{ route('revenues.index') }}" class="btn btn-primary">الانتقال إلى التحصيل</a>
                 </div>
             </div>
         </div>
