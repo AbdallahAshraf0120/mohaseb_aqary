@@ -1,28 +1,35 @@
 <?php
 
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CashboxController;
 use App\Http\Controllers\ContractController;
+use App\Http\Controllers\DebtController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\RemainingController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\SettingController;
+use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\ShareholderController;
 use Illuminate\Support\Facades\Route;
 
 $modules = [
     'role-permission' => ['label' => 'Role & Permission', 'icon' => 'fa-user-shield', 'route' => 'modules.show'],
     'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'shareholders.index'],
-    'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'modules.show'],
+    'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'properties.index'],
     'clients' => ['label' => 'عملاء', 'icon' => 'fa-users', 'route' => 'clients.index'],
     'contracts' => ['label' => 'العقود', 'icon' => 'fa-file-signature', 'route' => 'contracts.index'],
     'sales' => ['label' => 'المبيعات', 'icon' => 'fa-cart-shopping', 'route' => 'sales.index'],
     'revenues' => ['label' => 'ايرادات', 'icon' => 'fa-money-bill-trend-up', 'route' => 'revenues.index'],
-    'cashbox' => ['label' => 'الصندوق', 'icon' => 'fa-vault', 'route' => 'modules.show'],
-    'expenses' => ['label' => 'المصروفات', 'icon' => 'fa-money-bill-wave', 'route' => 'modules.show'],
-    'debts' => ['label' => 'المديونيه', 'icon' => 'fa-hand-holding-dollar', 'route' => 'modules.show'],
-    'settlements' => ['label' => 'تصفيات', 'icon' => 'fa-filter-circle-dollar', 'route' => 'modules.show'],
-    'reports' => ['label' => 'التقارير', 'icon' => 'fa-chart-line', 'route' => 'modules.show'],
-    'settings' => ['label' => 'الاعدادات', 'icon' => 'fa-gear', 'route' => 'modules.show'],
-    'remaining' => ['label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'route' => 'modules.show'],
+    'cashbox' => ['label' => 'الصندوق', 'icon' => 'fa-vault', 'route' => 'cashbox.index'],
+    'expenses' => ['label' => 'المصروفات', 'icon' => 'fa-money-bill-wave', 'route' => 'expenses.index'],
+    'debts' => ['label' => 'المديونيه', 'icon' => 'fa-hand-holding-dollar', 'route' => 'debts.index'],
+    'settlements' => ['label' => 'تصفيات', 'icon' => 'fa-filter-circle-dollar', 'route' => 'settlements.index'],
+    'reports' => ['label' => 'التقارير', 'icon' => 'fa-chart-line', 'route' => 'reports.index'],
+    'settings' => ['label' => 'الاعدادات', 'icon' => 'fa-gear', 'route' => 'settings.edit'],
+    'remaining' => ['label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'route' => 'remaining.index'],
 ];
 
 Route::get('/', function () use ($modules) {
@@ -55,6 +62,15 @@ Route::resource('sales', SaleController::class);
 Route::resource('clients', ClientController::class)->only(['index', 'show']);
 Route::resource('contracts', ContractController::class)->only(['index', 'show']);
 Route::resource('revenues', RevenueController::class);
+Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'destroy']);
+Route::get('cashbox', [CashboxController::class, 'index'])->name('cashbox.index');
+Route::post('cashbox', [CashboxController::class, 'store'])->name('cashbox.store');
+Route::get('debts', [DebtController::class, 'index'])->name('debts.index');
+Route::get('remaining', [RemainingController::class, 'index'])->name('remaining.index');
+Route::get('settlements', [SettlementController::class, 'index'])->name('settlements.index');
+Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
+Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
 
 Route::get('/modules/{module}', function (string $module) use ($modules) {
     abort_unless(array_key_exists($module, $modules), 404);
