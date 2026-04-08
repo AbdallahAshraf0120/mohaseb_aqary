@@ -6,11 +6,17 @@ use App\Http\Requests\StoreRevenueRequest;
 use App\Http\Requests\UpdateRevenueRequest;
 use App\Models\Contract;
 use App\Models\Revenue;
+use App\Services\CashboxLedgerService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 
 class RevenueController extends Controller
 {
+    public function __construct(
+        private CashboxLedgerService $cashboxLedger,
+    ) {
+    }
+
     public function index(): View
     {
         return view('revenues.index', [
@@ -35,6 +41,7 @@ class RevenueController extends Controller
     {
         $validated = $request->validated();
         $revenue = Revenue::query()->create($validated);
+        $this->cashboxLedger->syncFromRevenue($revenue);
         $this->recalculateContract((int) $revenue->contract_id);
 
         return redirect()->route('revenues.index')->with('success', 'تم تسجيل التحصيل وتحديث العقد بنجاح.');
@@ -65,6 +72,8 @@ class RevenueController extends Controller
     {
         $oldContractId = (int) $revenue->contract_id;
         $revenue->update($request->validated());
+        $revenue->refresh();
+        $this->cashboxLedger->syncFromRevenue($revenue);
         $this->recalculateContract($oldContractId);
         $this->recalculateContract((int) $revenue->contract_id);
 
@@ -74,6 +83,8 @@ class RevenueController extends Controller
     public function destroy(Revenue $revenue): RedirectResponse
     {
         $contractId = (int) $revenue->contract_id;
+        $revenueId = (int) $revenue->id;
+        $this->cashboxLedger->removeRevenue($revenueId);
         $revenue->delete();
         $this->recalculateContract($contractId);
 

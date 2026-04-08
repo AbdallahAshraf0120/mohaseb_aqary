@@ -8,11 +8,17 @@ use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Property;
 use App\Models\Sale;
+use App\Services\CashboxLedgerService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 
 class SaleController extends Controller
 {
+    public function __construct(
+        private CashboxLedgerService $cashboxLedger,
+    ) {
+    }
+
     public function index(): View
     {
         return view('sales.index', [
@@ -54,6 +60,7 @@ class SaleController extends Controller
         ]);
 
         $this->syncContractForSale($sale);
+        $this->cashboxLedger->syncSaleDownPayment($sale->refresh());
 
         return redirect()->route('sales.index')->with('success', 'تم تسجيل البيعة بنجاح وإضافة العميل وإنشاء العقد.');
     }
@@ -107,12 +114,14 @@ class SaleController extends Controller
         ]);
 
         $this->syncContractForSale($sale->refresh());
+        $this->cashboxLedger->syncSaleDownPayment($sale);
 
         return redirect()->route('sales.index')->with('success', 'تم تحديث البيعة بنجاح.');
     }
 
     public function destroy(Sale $sale): RedirectResponse
     {
+        $this->cashboxLedger->removeSaleDownPayment((int) $sale->id);
         $sale->delete();
 
         return redirect()->route('sales.index')->with('success', 'تم حذف البيعة بنجاح.');

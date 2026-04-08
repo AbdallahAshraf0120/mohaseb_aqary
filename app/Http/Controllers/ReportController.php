@@ -3,16 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Contract;
-use App\Models\Expense;
-use App\Models\Revenue;
+use App\Models\TreasuryTransaction;
 use Illuminate\Contracts\View\View;
 
 class ReportController extends Controller
 {
     public function index(): View
     {
-        $revenues = (float) Revenue::query()->sum('amount');
-        $expenses = (float) Expense::query()->sum('amount');
+        $revenues = (float) TreasuryTransaction::query()->where('type', 'revenue')->sum('amount');
+        $expenses = (float) TreasuryTransaction::query()->where('type', 'expense')->sum('amount');
         $remaining = (float) Contract::query()->sum('remaining_amount');
 
         return view('reports.index', [

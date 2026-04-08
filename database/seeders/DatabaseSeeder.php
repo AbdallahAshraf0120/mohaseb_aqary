@@ -12,8 +12,8 @@ use App\Models\Revenue;
 use App\Models\Sale;
 use App\Models\Setting;
 use App\Models\Shareholder;
-use App\Models\TreasuryTransaction;
 use App\Models\User;
+use App\Services\CashboxLedgerService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -255,19 +255,6 @@ class DatabaseSeeder extends Seeder
             ],
         ]);
 
-        collect(range(1, 120))->each(function (int $i) use ($revenues): void {
-            $isRevenue = $i % 2 === 0;
-            TreasuryTransaction::query()->firstOrCreate(
-                ['description' => "حركة خزنة {$i}"],
-                [
-                    'type' => $isRevenue ? 'revenue' : 'expense',
-                    'amount' => $isRevenue
-                        ? (float) fake()->numberBetween(5000, 150000)
-                        : (float) fake()->numberBetween(3000, 110000),
-                    'reference_type' => $isRevenue && $revenues->isNotEmpty() ? Revenue::class : null,
-                    'reference_id' => $isRevenue && $revenues->isNotEmpty() ? $revenues->random()->id : null,
-                ]
-            );
-        });
+        app(CashboxLedgerService::class)->rebuildFromAccountingRecords();
     }
 }

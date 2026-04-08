@@ -3,9 +3,9 @@
 @section('content')
     <x-partials.module-wireflow-header label="التقارير" step="12" />
     <div class="row g-3">
-        <div class="col-md-3"><div class="small-box text-bg-light border"><div class="inner"><h5>{{ number_format($revenues, 2) }}</h5><p>الإيرادات</p></div></div></div>
-        <div class="col-md-3"><div class="small-box text-bg-light border"><div class="inner"><h5>{{ number_format($expenses, 2) }}</h5><p>المصروفات</p></div></div></div>
-        <div class="col-md-3"><div class="small-box text-bg-light border"><div class="inner"><h5>{{ number_format($net, 2) }}</h5><p>صافي النتيجة</p></div></div></div>
+        <div class="col-md-3"><div class="small-box text-bg-light border"><div class="inner"><h5>{{ number_format($revenues, 2) }}</h5><p>وارد الصندوق</p></div></div></div>
+        <div class="col-md-3"><div class="small-box text-bg-light border"><div class="inner"><h5>{{ number_format($expenses, 2) }}</h5><p>صادر الصندوق</p></div></div></div>
+        <div class="col-md-3"><div class="small-box text-bg-light border"><div class="inner"><h5>{{ number_format($net, 2) }}</h5><p>صافي الصندوق</p></div></div></div>
         <div class="col-md-3"><div class="small-box text-bg-light border"><div class="inner"><h5>{{ number_format($remaining, 2) }}</h5><p>المتبقي على العقود</p></div></div></div>
     </div>
     <div class="card mt-3">

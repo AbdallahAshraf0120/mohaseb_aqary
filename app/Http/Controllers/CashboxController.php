@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Expense;
-use App\Models\Revenue;
 use App\Models\TreasuryTransaction;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -13,17 +11,17 @@ class CashboxController extends Controller
 {
     public function index(): View
     {
-        $revenuesTotal = (float) Revenue::query()->sum('amount');
-        $expensesTotal = (float) Expense::query()->sum('amount');
         $opening = 0.0;
+        $treasuryIn = (float) TreasuryTransaction::query()->where('type', 'revenue')->sum('amount');
+        $treasuryOut = (float) TreasuryTransaction::query()->where('type', 'expense')->sum('amount');
 
         return view('cashbox.index', [
             'title' => 'الصندوق | Mohaseb Aqary',
             'pageTitle' => 'الصندوق',
             'openingBalance' => $opening,
-            'revenuesTotal' => $revenuesTotal,
-            'expensesTotal' => $expensesTotal,
-            'currentBalance' => $opening + $revenuesTotal - $expensesTotal,
+            'revenuesTotal' => $treasuryIn,
+            'expensesTotal' => $treasuryOut,
+            'currentBalance' => $opening + $treasuryIn - $treasuryOut,
             'transactions' => TreasuryTransaction::query()->latest()->paginate(15),
             'modules' => $this->modules(),
         ]);

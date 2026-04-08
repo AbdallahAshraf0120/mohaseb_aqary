@@ -3,12 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Services\CashboxLedgerService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class ExpenseController extends Controller
 {
+    public function __construct(
+        private CashboxLedgerService $cashboxLedger,
+    ) {
+    }
+
     public function index(): View
     {
         return view('expenses.index', [
@@ -36,13 +42,15 @@ class ExpenseController extends Controller
             'description' => ['nullable', 'string'],
         ]);
 
-        Expense::query()->create($data);
+        $expense = Expense::query()->create($data);
+        $this->cashboxLedger->syncFromExpense($expense);
 
         return redirect()->route('expenses.index')->with('success', 'تم إضافة المصروف بنجاح.');
     }
 
     public function destroy(Expense $expense): RedirectResponse
     {
+        $this->cashboxLedger->removeExpense((int) $expense->id);
         $expense->delete();
 
         return redirect()->route('expenses.index')->with('success', 'تم حذف المصروف بنجاح.');
