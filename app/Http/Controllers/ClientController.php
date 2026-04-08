@@ -12,7 +12,7 @@ class ClientController extends Controller
         return view('clients.index', [
             'title' => 'العملاء | Mohaseb Aqary',
             'pageTitle' => 'العملاء',
-            'clients' => Client::query()->latest()->paginate(15),
+            'clients' => Client::query()->withCount('sales')->latest()->paginate(15),
             'modules' => $this->modules(),
         ]);
     }
