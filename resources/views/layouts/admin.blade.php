@@ -19,7 +19,7 @@
                         </a>
                     </li>
                     <li class="nav-item d-none d-md-block">
-                        <a href="#" class="nav-link">الرئيسية</a>
+                        <a href="{{ url('/demo') }}" class="nav-link">الرئيسية</a>
                     </li>
                 </ul>
             </div>
@@ -35,11 +35,25 @@
                 <nav class="mt-2">
                     <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
                         <li class="nav-item">
-                            <a href="{{ url('/') }}" class="nav-link active">
-                                <i class="nav-icon fa-solid fa-gauge-high"></i>
-                                <p>Dashboard</p>
+                            <a href="{{ route('demo') }}" class="nav-link {{ request()->routeIs('home') || request()->routeIs('demo') ? 'active' : '' }}">
+                                <i class="nav-icon fa-solid fa-chalkboard-user"></i>
+                                <p>Demo العرض</p>
                             </a>
                         </li>
+                        @foreach (($modules ?? []) as $moduleKey => $menuItem)
+                            <li class="nav-item">
+                                @php
+                                    $menuHref = $menuItem['route'] === 'modules.show'
+                                        ? route('modules.show', $moduleKey)
+                                        : route($menuItem['route']);
+                                @endphp
+                                <a href="{{ $menuHref }}"
+                                   class="nav-link {{ request()->is('modules/' . $moduleKey) || ($menuItem['route'] === 'properties.index' && request()->is('properties*')) ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid {{ $menuItem['icon'] }}"></i>
+                                    <p>{{ $menuItem['label'] }}</p>
+                                </a>
+                            </li>
+                        @endforeach
                     </ul>
                 </nav>
             </div>
