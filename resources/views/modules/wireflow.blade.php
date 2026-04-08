@@ -4,7 +4,10 @@
     @php
         $kpis = $moduleData['kpis'] ?? [];
         $filters = $moduleData['filters'] ?? [];
+        $tableHeaders = $moduleData['tableHeaders'] ?? ['تفصيل 1', 'تفصيل 2', 'تفصيل 3', 'حالة/مرجع'];
         $rows = $moduleData['rows'] ?? [];
+        $highlights = $moduleData['highlights'] ?? [];
+        $formFields = $moduleData['formFields'] ?? [];
         $quickActions = $moduleData['quickActions'] ?? [];
         $nextStep = $moduleData['next'] ?? 'demo';
         $nextHref = $nextStep === 'demo' ? route('demo') : route('modules.show', $nextStep);
@@ -61,15 +64,28 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    @if ($moduleKey === 'shareholders' && !empty($highlights))
+                        <div class="alert alert-info border mb-3">
+                            <div class="row g-2">
+                                @foreach ($highlights as $item)
+                                    <div class="col-md-4">
+                                        <div class="small text-muted">{{ $item['label'] ?? '-' }}</div>
+                                        <div class="fw-semibold">{{ $item['value'] ?? '-' }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="table-responsive">
                         <table class="table table-striped align-middle">
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>تفصيل 1</th>
-                                    <th>تفصيل 2</th>
-                                    <th>تفصيل 3</th>
-                                    <th>حالة/مرجع</th>
+                                    <th>{{ $tableHeaders[0] ?? 'تفصيل 1' }}</th>
+                                    <th>{{ $tableHeaders[1] ?? 'تفصيل 2' }}</th>
+                                    <th>{{ $tableHeaders[2] ?? 'تفصيل 3' }}</th>
+                                    <th>{{ $tableHeaders[3] ?? 'حالة/مرجع' }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -99,6 +115,16 @@
                     <h5 class="mb-0">اجراءات سريعة</h5>
                 </div>
                 <div class="card-body d-flex flex-column gap-2">
+                    @if ($moduleKey === 'shareholders' && !empty($formFields))
+                        <div class="border rounded p-2 mb-2">
+                            <h6 class="mb-2">إضافة مساهم جديد (Demo)</h6>
+                            @foreach ($formFields as $field)
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="{{ $field }}" disabled>
+                            @endforeach
+                            <button type="button" class="btn btn-sm btn-success w-100" disabled>حفظ المساهم</button>
+                        </div>
+                    @endif
+
                     @foreach ($quickActions as $action)
                         <button type="button" class="btn btn-outline-secondary text-start">{{ $action }}</button>
                     @endforeach
