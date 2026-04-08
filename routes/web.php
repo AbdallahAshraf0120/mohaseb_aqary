@@ -1,11 +1,12 @@
 <?php
 
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\ShareholderController;
 use Illuminate\Support\Facades\Route;
 
 $modules = [
     'role-permission' => ['label' => 'Role & Permission', 'icon' => 'fa-user-shield', 'route' => 'modules.show'],
-    'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'modules.show'],
+    'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'shareholders.index'],
     'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'modules.show'],
     'clients' => ['label' => 'عملاء', 'icon' => 'fa-users', 'route' => 'modules.show'],
     'contracts' => ['label' => 'العقود', 'icon' => 'fa-file-signature', 'route' => 'modules.show'],
@@ -45,6 +46,7 @@ Route::get('/demo', function () use ($modules) {
 })->name('demo');
 
 Route::resource('properties', PropertyController::class);
+Route::resource('shareholders', ShareholderController::class);
 
 Route::get('/modules/{module}', function (string $module) use ($modules) {
     abort_unless(array_key_exists($module, $modules), 404);
