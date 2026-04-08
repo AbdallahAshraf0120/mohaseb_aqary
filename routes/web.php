@@ -3,6 +3,7 @@
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ShareholderController;
 use Illuminate\Support\Facades\Route;
@@ -14,7 +15,7 @@ $modules = [
     'clients' => ['label' => 'عملاء', 'icon' => 'fa-users', 'route' => 'clients.index'],
     'contracts' => ['label' => 'العقود', 'icon' => 'fa-file-signature', 'route' => 'contracts.index'],
     'sales' => ['label' => 'المبيعات', 'icon' => 'fa-cart-shopping', 'route' => 'sales.index'],
-    'revenues' => ['label' => 'ايرادات', 'icon' => 'fa-money-bill-trend-up', 'route' => 'modules.show'],
+    'revenues' => ['label' => 'ايرادات', 'icon' => 'fa-money-bill-trend-up', 'route' => 'revenues.index'],
     'cashbox' => ['label' => 'الصندوق', 'icon' => 'fa-vault', 'route' => 'modules.show'],
     'expenses' => ['label' => 'المصروفات', 'icon' => 'fa-money-bill-wave', 'route' => 'modules.show'],
     'debts' => ['label' => 'المديونيه', 'icon' => 'fa-hand-holding-dollar', 'route' => 'modules.show'],
@@ -53,6 +54,7 @@ Route::resource('shareholders', ShareholderController::class);
 Route::resource('sales', SaleController::class);
 Route::resource('clients', ClientController::class)->only(['index', 'show']);
 Route::resource('contracts', ContractController::class)->only(['index', 'show']);
+Route::resource('revenues', RevenueController::class);
 
 Route::get('/modules/{module}', function (string $module) use ($modules) {
     abort_unless(array_key_exists($module, $modules), 404);

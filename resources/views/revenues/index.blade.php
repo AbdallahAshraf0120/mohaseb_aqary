@@ -1,0 +1,56 @@
+@extends('layouts.admin')
+
+@section('content')
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">سجل التحصيل</h5>
+            <a href="{{ route('revenues.create') }}" class="btn btn-primary btn-sm">تحصيل دفعة</a>
+        </div>
+        <div class="card-body">
+            @if (session('success'))
+                <div class="alert alert-success">{{ session('success') }}</div>
+            @endif
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>رقم الإيصال</th>
+                        <th>العميل</th>
+                        <th>مرجع العقد</th>
+                        <th>القيمة</th>
+                        <th>التاريخ</th>
+                        <th class="text-end">العمليات</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @forelse ($revenues as $revenue)
+                        <tr>
+                            <td>{{ $loop->iteration }}</td>
+                            <td>RV-{{ str_pad((string) $revenue->id, 3, '0', STR_PAD_LEFT) }}</td>
+                            <td>{{ $revenue->client?->name ?? '-' }}</td>
+                            <td>{{ $revenue->contract_id ? 'CT-' . now()->format('Y') . '-' . str_pad((string) $revenue->contract_id, 3, '0', STR_PAD_LEFT) : '-' }}</td>
+                            <td>{{ number_format((float) $revenue->amount, 2) }}</td>
+                            <td>{{ $revenue->paid_at?->format('Y-m-d') ?? '-' }}</td>
+                            <td class="text-end">
+                                <a href="{{ route('revenues.show', $revenue) }}" class="btn btn-outline-info btn-sm">عرض</a>
+                                <a href="{{ route('revenues.edit', $revenue) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
+                                <form action="{{ route('revenues.destroy', $revenue) }}" method="post" class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('حذف حركة التحصيل؟')">حذف</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">لا توجد عمليات تحصيل حتى الآن.</td>
+                        </tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div>{{ $revenues->links() }}</div>
+        </div>
+    </div>
+@endsection
