@@ -2,40 +2,73 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Setting;
+use App\Models\Area;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
-class SettingController extends Controller
+class AreaController extends Controller
 {
-    public function edit(): View
+    public function index(): View
     {
-        $setting = Setting::query()->firstOrCreate([], [
-            'company_name' => 'Real Estate Demo',
-            'currency' => 'EGP',
-            'meta' => [],
-        ]);
-
-        return view('settings.edit', [
-            'title' => 'الإعدادات | Mohaseb Aqary',
-            'pageTitle' => 'الإعدادات',
-            'setting' => $setting,
+        return view('areas.index', [
+            'title' => 'المناطق | Mohaseb Aqary',
+            'pageTitle' => 'المناطق',
+            'areas' => Area::query()->withCount('properties')->orderBy('name')->paginate(15),
             'modules' => $this->modules(),
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function create(): View
+    {
+        return view('areas.create', [
+            'title' => 'إضافة منطقة | Mohaseb Aqary',
+            'pageTitle' => 'إضافة منطقة',
+            'modules' => $this->modules(),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'company_name' => ['required', 'string', 'max:255'],
-            'currency' => ['required', 'string', 'max:20'],
+            'name' => ['required', 'string', 'max:255', 'unique:areas,name'],
         ]);
 
-        $setting = Setting::query()->firstOrFail();
-        $setting->update($data);
+        Area::query()->create($data);
 
-        return redirect()->route('settings.edit')->with('success', 'تم تحديث الإعدادات بنجاح.');
+        return redirect()->route('areas.index')->with('success', 'تم إضافة المنطقة بنجاح.');
+    }
+
+    public function edit(Area $area): View
+    {
+        return view('areas.edit', [
+            'title' => 'تعديل المنطقة | Mohaseb Aqary',
+            'pageTitle' => 'تعديل المنطقة',
+            'area' => $area,
+            'modules' => $this->modules(),
+        ]);
+    }
+
+    public function update(Request $request, Area $area): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:areas,name,' . $area->id],
+        ]);
+
+        $area->update($data);
+
+        return redirect()->route('areas.index')->with('success', 'تم تحديث المنطقة بنجاح.');
+    }
+
+    public function destroy(Area $area): RedirectResponse
+    {
+        if ($area->properties()->exists()) {
+            return redirect()->route('areas.index')->with('success', 'لا يمكن حذف المنطقة لأنها مرتبطة بعقارات.');
+        }
+
+        $area->delete();
+
+        return redirect()->route('areas.index')->with('success', 'تم حذف المنطقة بنجاح.');
     }
 
     private function modules(): array

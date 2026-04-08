@@ -3,6 +3,7 @@
 use App\Http\Controllers\CashboxController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
+use App\Http\Controllers\AreaController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\PropertyController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\ShareholderController;
 use Illuminate\Support\Facades\Route;
 
 $modules = [
+    'areas' => ['label' => 'المناطق', 'icon' => 'fa-location-dot', 'route' => 'areas.index'],
     'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'shareholders.index'],
     'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'properties.index'],
     'clients' => ['label' => 'عملاء', 'icon' => 'fa-users', 'route' => 'clients.index'],
@@ -42,6 +44,7 @@ Route::get('/dashboard', function () use ($modules) {
 })->name('dashboard');
 
 Route::resource('properties', PropertyController::class);
+Route::resource('areas', AreaController::class)->except(['show']);
 Route::resource('shareholders', ShareholderController::class);
 Route::resource('sales', SaleController::class);
 Route::resource('clients', ClientController::class)->only(['index', 'show']);

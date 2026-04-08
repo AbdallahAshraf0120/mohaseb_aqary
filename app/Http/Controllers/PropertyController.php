@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePropertyRequest;
 use App\Http\Requests\UpdatePropertyRequest;
+use App\Models\Area;
 use App\Models\Property;
 use App\Models\Shareholder;
 use App\Services\PropertyService;
@@ -33,6 +34,7 @@ class PropertyController extends Controller
         return view('properties.create', [
             'title' => 'إضافة عقار | Mohaseb Aqary',
             'pageTitle' => 'إضافة عقار',
+            'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
             'shareholders' => Shareholder::query()->select('id', 'name')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
@@ -61,6 +63,7 @@ class PropertyController extends Controller
             'title' => 'تعديل العقار | Mohaseb Aqary',
             'pageTitle' => 'تعديل العقار',
             'property' => $this->propertyService->findOrFail((int) $property->id),
+            'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
             'shareholders' => Shareholder::query()->select('id', 'name')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
@@ -83,6 +86,7 @@ class PropertyController extends Controller
     private function modules(): array
     {
         return [
+            'areas' => ['label' => 'المناطق', 'icon' => 'fa-location-dot', 'route' => 'areas.index'],
             'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'properties.index'],
             'clients' => ['label' => 'عملاء', 'icon' => 'fa-users', 'route' => 'clients.index'],
             'contracts' => ['label' => 'العقود', 'icon' => 'fa-file-signature', 'route' => 'contracts.index'],

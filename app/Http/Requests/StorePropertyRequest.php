@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Area;
 use App\Models\Shareholder;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -16,6 +17,7 @@ class StorePropertyRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'area_id' => ['required', 'exists:areas,id'],
             'property_type' => ['required', 'string', 'max:255'],
             'floors_count' => ['required', 'integer', 'min:1'],
             'apartments_per_floor' => ['required', 'integer', 'min:1'],
@@ -26,7 +28,7 @@ class StorePropertyRequest extends FormRequest
             'apartment_models' => ['nullable', 'array'],
             'apartment_models.*.model_name' => ['required_with:apartment_models.*.area', 'nullable', 'string', 'max:255'],
             'apartment_models.*.area' => ['required_with:apartment_models.*.model_name', 'nullable', 'numeric', 'min:1'],
-            'location' => ['required', 'string', 'max:255'],
+            'location' => ['nullable', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
             'status' => ['required', 'in:available,reserved,sold,rented'],
             'owner_id' => ['nullable', 'exists:users,id'],
@@ -63,8 +65,8 @@ class StorePropertyRequest extends FormRequest
             'total_apartments' => $providedTotal > 0 ? $providedTotal : $calculatedTotal,
             'shareholder_allocations' => $percentages,
             'apartment_models' => $models,
-            // Keep legacy fields populated until old columns are removed.
-            'location' => $this->input('location'),
+            // Keep legacy location synced with selected area.
+            'location' => Area::query()->whereKey((int) $this->input('area_id'))->value('name') ?: $this->input('location'),
             'price' => $this->input('price', 0),
             'status' => $this->input('status', 'available'),
         ]);

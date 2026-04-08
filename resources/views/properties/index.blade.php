@@ -26,7 +26,7 @@
                         <th>#</th>
                         <th>اسم العقار</th>
                         <th>نوع العقار</th>
-                        <th>الموقع</th>
+                        <th>المنطقة</th>
                         <th>عدد الأدوار</th>
                         <th>شقق/دور</th>
                         <th>إجمالي الشقق</th>
@@ -39,7 +39,7 @@
                             <td>{{ $property->id }}</td>
                             <td>{{ $property->name }}</td>
                             <td>{{ $property->property_type ?? '-' }}</td>
-                            <td>{{ $property->location ?? '-' }}</td>
+                            <td>{{ $property->area?->name ?? ($property->location ?? '-') }}</td>
                             <td>{{ $property->floors_count ?? '-' }}</td>
                             <td>{{ $property->apartments_per_floor ?? '-' }}</td>
                             <td>{{ $property->total_apartments ?? '-' }}</td>

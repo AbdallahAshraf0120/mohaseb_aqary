@@ -21,8 +21,13 @@
         <input type="text" name="property_type" class="form-control" value="{{ old('property_type', $property->property_type ?? '') }}" required>
     </div>
     <div class="col-md-6">
-        <label class="form-label">الموقع</label>
-        <input type="text" name="location" class="form-control" value="{{ old('location', $property->location ?? '') }}" required>
+        <label class="form-label">المنطقة</label>
+        <select name="area_id" class="form-select" required>
+            <option value="">اختر المنطقة</option>
+            @foreach ($areas as $area)
+                <option value="{{ $area->id }}" @selected((string) old('area_id', $property->area_id ?? '') === (string) $area->id)>{{ $area->name }}</option>
+            @endforeach
+        </select>
     </div>
 
     <div class="col-md-3">

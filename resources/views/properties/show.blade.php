@@ -15,7 +15,7 @@
                     <strong>نوع العقار:</strong> {{ $property->property_type ?? '-' }}
                 </div>
                 <div class="col-md-6">
-                    <strong>الموقع:</strong> {{ $property->location ?? '-' }}
+                    <strong>المنطقة:</strong> {{ $property->area?->name ?? ($property->location ?? '-') }}
                 </div>
                 <div class="col-md-6">
                     <strong>عدد الأدوار:</strong> {{ $property->floors_count ?? '-' }}

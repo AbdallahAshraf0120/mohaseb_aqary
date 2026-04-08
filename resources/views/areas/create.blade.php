@@ -1,0 +1,16 @@
+@extends('layouts.admin')
+
+@section('content')
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">إضافة منطقة</h5>
+            <a href="{{ route('areas.index') }}" class="btn btn-outline-secondary btn-sm">رجوع</a>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ route('areas.store') }}">
+                @include('areas._form')
+                <button class="btn btn-primary mt-3">حفظ</button>
+            </form>
+        </div>
+    </div>
+@endsection

@@ -11,13 +11,14 @@ class PropertyRepository implements PropertyRepositoryInterface
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
         return Property::query()
+            ->with('area:id,name')
             ->latest()
             ->paginate($perPage);
     }
 
     public function findOrFail(int $id): Property
     {
-        return Property::query()->findOrFail($id);
+        return Property::query()->with('area:id,name')->findOrFail($id);
     }
 
     public function create(array $data): Property

@@ -8,6 +8,7 @@ class Property extends Model
 {
     protected $fillable = [
         'name',
+        'area_id',
         'property_type',
         'floors_count',
         'apartments_per_floor',
@@ -33,5 +34,10 @@ class Property extends Model
     public function sales()
     {
         return $this->hasMany(Sale::class);
+    }
+
+    public function area()
+    {
+        return $this->belongsTo(Area::class);
     }
 }
