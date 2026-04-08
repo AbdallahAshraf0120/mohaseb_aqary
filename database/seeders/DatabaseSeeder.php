@@ -27,6 +27,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $areasCount = 20;
+        $shareholdersCount = 25;
+        $propertiesCount = 80;
+        $clientsCount = 300;
+        $salesCount = 500;
+        $expensesCount = 200;
+
         $admin = User::query()->firstOrCreate([
             'email' => 'test@example.com',
         ], [
@@ -35,104 +42,122 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin',
         ]);
 
-        $areas = collect([
+        $areaNames = [
             'مدينة نصر',
             'التجمع الخامس',
             'الشيخ زايد',
             'العاصمة الإدارية',
-        ])->map(fn (string $name) => Area::query()->firstOrCreate(['name' => $name]));
+            'المعادي',
+            'الشروق',
+            'العبور',
+            'حدائق أكتوبر',
+            'أكتوبر',
+            'الرحاب',
+        ];
+        $areas = collect(range(1, $areasCount))->map(function (int $i) use ($areaNames) {
+            $base = $areaNames[($i - 1) % count($areaNames)];
+            return Area::query()->firstOrCreate(['name' => $base . ' - ' . $i]);
+        });
 
-        $shareholders = collect([
-            ['name' => 'أحمد علي', 'share_percentage' => 40, 'total_investment' => 2000000, 'profit_amount' => 120000],
-            ['name' => 'محمد علي', 'share_percentage' => 30, 'total_investment' => 1500000, 'profit_amount' => 90000],
-            ['name' => 'محمود علي', 'share_percentage' => 30, 'total_investment' => 1500000, 'profit_amount' => 80000],
-        ])->map(fn (array $data) => Shareholder::query()->firstOrCreate(['name' => $data['name']], $data));
+        $shareholders = collect(range(1, $shareholdersCount))->map(function (int $i) {
+            $share = fake()->numberBetween(3, 20);
+            return Shareholder::query()->firstOrCreate(
+                ['name' => "مساهم {$i}"],
+                [
+                    'share_percentage' => $share,
+                    'total_investment' => fake()->numberBetween(500000, 8000000),
+                    'profit_amount' => fake()->numberBetween(50000, 900000),
+                ]
+            );
+        });
 
-        $properties = collect([
-            [
-                'name' => 'برج النخبة 1',
-                'area_id' => $areas[0]->id,
-                'property_type' => 'سكني',
-                'floors_count' => 12,
-                'apartments_per_floor' => 4,
-                'total_apartments' => 48,
-                'shareholder_allocations' => $shareholders->map(fn ($s) => [
+        $properties = collect(range(1, $propertiesCount))->map(function (int $i) use ($areas, $shareholders, $admin) {
+            $floors = fake()->numberBetween(6, 20);
+            $apartmentsPerFloor = fake()->numberBetween(2, 6);
+            $modelsCount = fake()->numberBetween(2, 4);
+
+            $models = collect(range(1, $modelsCount))->map(function (int $modelIndex) {
+                return [
+                    'model_name' => chr(64 + $modelIndex),
+                    'area' => fake()->numberBetween(85, 220),
+                ];
+            })->values()->all();
+
+            $selectedShareholders = $shareholders->random(fake()->numberBetween(2, 4))->values();
+            $basePercentages = $selectedShareholders->map(fn () => fake()->numberBetween(10, 60));
+            $total = max(1, $basePercentages->sum());
+            $allocations = $selectedShareholders->map(function ($s, int $idx) use ($basePercentages, $total) {
+                return [
                     'shareholder_id' => $s->id,
                     'shareholder_name' => $s->name,
-                    'percentage' => (float) $s->share_percentage,
-                ])->values()->all(),
-                'apartment_models' => [
-                    ['model_name' => 'A', 'area' => 120],
-                    ['model_name' => 'B', 'area' => 140],
-                ],
-                'location' => $areas[0]->name,
-                'price' => 0,
-                'status' => 'available',
-                'owner_id' => $admin->id,
-            ],
-            [
-                'name' => 'برج النخبة 2',
-                'area_id' => $areas[1]->id,
-                'property_type' => 'مختلط',
-                'floors_count' => 10,
-                'apartments_per_floor' => 3,
-                'total_apartments' => 30,
-                'shareholder_allocations' => $shareholders->map(fn ($s) => [
-                    'shareholder_id' => $s->id,
-                    'shareholder_name' => $s->name,
-                    'percentage' => (float) $s->share_percentage,
-                ])->values()->all(),
-                'apartment_models' => [
-                    ['model_name' => 'A', 'area' => 110],
-                    ['model_name' => 'C', 'area' => 160],
-                ],
-                'location' => $areas[1]->name,
-                'price' => 0,
-                'status' => 'available',
-                'owner_id' => $admin->id,
-            ],
-        ])->map(fn (array $data) => Property::query()->firstOrCreate(['name' => $data['name']], $data));
+                    'percentage' => round(($basePercentages[$idx] / $total) * 100, 2),
+                ];
+            })->values()->all();
 
-        $clients = collect([
-            ['name' => 'محمد السيد', 'phone' => '01000000001', 'email' => 'client1@example.com', 'national_id' => '30101010101011'],
-            ['name' => 'منة الله علي', 'phone' => '01000000002', 'email' => 'client2@example.com', 'national_id' => '30202020202022'],
-            ['name' => 'عبدالله حسن', 'phone' => '01000000003', 'email' => 'client3@example.com', 'national_id' => '30303030303033'],
-        ])->map(fn (array $data) => Client::query()->firstOrCreate(['phone' => $data['phone']], $data));
+            $area = $areas->random();
 
-        $sales = collect([
-            [
-                'property_id' => $properties[0]->id,
-                'client_id' => $clients[0]->id,
-                'floor_number' => 3,
-                'apartment_model' => 'A',
-                'sale_price' => 1650000,
-                'payment_type' => 'installment',
-                'down_payment' => 800000,
-                'installment_months' => 24,
-                'installment_start_date' => Carbon::now()->subMonths(2)->toDateString(),
-                'installment_plan' => ['remaining_amount' => 850000, 'monthly_installment' => 35416.67],
-                'sale_date' => Carbon::now()->subMonths(3)->toDateString(),
-                'notes' => 'بيع تجريبي 1',
-            ],
-            [
-                'property_id' => $properties[1]->id,
-                'client_id' => $clients[1]->id,
-                'floor_number' => 5,
-                'apartment_model' => 'C',
-                'sale_price' => 2150000,
-                'payment_type' => 'installment',
-                'down_payment' => 1050000,
-                'installment_months' => 30,
-                'installment_start_date' => Carbon::now()->subMonths(1)->toDateString(),
-                'installment_plan' => ['remaining_amount' => 1100000, 'monthly_installment' => 36666.67],
-                'sale_date' => Carbon::now()->subMonths(2)->toDateString(),
-                'notes' => 'بيع تجريبي 2',
-            ],
-        ])->map(fn (array $data) => Sale::query()->firstOrCreate([
-            'property_id' => $data['property_id'],
-            'client_id' => $data['client_id'],
-            'sale_date' => $data['sale_date'],
-        ], $data));
+            return Property::query()->firstOrCreate(
+                ['name' => "مشروع {$i}"],
+                [
+                    'area_id' => $area->id,
+                    'property_type' => fake()->randomElement(['سكني', 'تجاري', 'إداري', 'مختلط']),
+                    'floors_count' => $floors,
+                    'apartments_per_floor' => $apartmentsPerFloor,
+                    'total_apartments' => $floors * $apartmentsPerFloor,
+                    'shareholder_allocations' => $allocations,
+                    'apartment_models' => $models,
+                    'location' => $area->name,
+                    'price' => 0,
+                    'status' => fake()->randomElement(['available', 'available', 'available', 'sold']),
+                    'owner_id' => $admin->id,
+                ]
+            );
+        });
+
+        $clients = collect(range(1, $clientsCount))->map(function (int $i) {
+            $phone = '010' . str_pad((string) $i, 8, '0', STR_PAD_LEFT);
+
+            return Client::query()->updateOrCreate(
+                ['phone' => $phone],
+                [
+                    'name' => "عميل {$i}",
+                    'email' => "client{$i}@example.com",
+                    'national_id' => str_pad((string) (30000000000000 + $i), 14, '0', STR_PAD_LEFT),
+                ]
+            );
+        });
+
+        $sales = collect(range(1, $salesCount))->map(function (int $i) use ($properties, $clients) {
+            $property = $properties->random();
+            $models = collect($property->apartment_models ?? []);
+            $model = $models->isNotEmpty() ? $models->random() : ['model_name' => 'A'];
+
+            $salePrice = fake()->numberBetween(700000, 5000000);
+            $paymentType = fake()->randomElement(['installment', 'installment', 'cash']);
+            $downPayment = $paymentType === 'cash'
+                ? $salePrice
+                : fake()->numberBetween((int) ($salePrice * 0.25), (int) ($salePrice * 0.7));
+            $months = $paymentType === 'cash' ? null : fake()->randomElement([12, 18, 24, 30, 36, 48]);
+            $remaining = max(0, $salePrice - $downPayment);
+            $monthly = ($months && $remaining > 0) ? round($remaining / $months, 2) : 0;
+            $saleDate = Carbon::now()->subDays(fake()->numberBetween(1, 720))->toDateString();
+
+            return Sale::query()->firstOrCreate(
+                ['property_id' => $property->id, 'client_id' => $clients->random()->id, 'sale_date' => $saleDate, 'floor_number' => fake()->numberBetween(1, max(1, (int) $property->floors_count))],
+                [
+                    'apartment_model' => (string) ($model['model_name'] ?? 'A'),
+                    'sale_price' => $salePrice,
+                    'payment_type' => $paymentType,
+                    'down_payment' => $downPayment,
+                    'installment_months' => $months,
+                    'installment_start_date' => $paymentType === 'cash' ? null : Carbon::parse($saleDate)->addMonth()->toDateString(),
+                    'installment_plan' => $paymentType === 'cash'
+                        ? null
+                        : ['remaining_amount' => $remaining, 'monthly_installment' => $monthly],
+                    'notes' => "بيع تلقائي رقم {$i}",
+                ]
+            );
+        });
 
         $contracts = $sales->map(function (Sale $sale) {
             $endDate = $sale->installment_months
@@ -147,40 +172,42 @@ class DatabaseSeeder extends Seeder
                     'start_date' => $sale->sale_date,
                     'end_date' => $endDate,
                     'total_price' => $sale->sale_price,
-                    'paid_amount' => $sale->down_payment,
+                    'paid_amount' => (float) $sale->down_payment,
                     'remaining_amount' => max(0, (float) $sale->sale_price - (float) $sale->down_payment),
                 ]
             );
         });
 
-        $revenues = collect([
-            [
-                'contract_id' => $contracts[0]->id,
-                'sale_id' => $sales[0]->id,
-                'client_id' => $clients[0]->id,
-                'amount' => 150000,
-                'category' => 'قسط بيع',
-                'source' => 'قسط أول',
-                'paid_at' => Carbon::now()->subMonths(1)->toDateString(),
-                'payment_method' => 'cash',
-                'notes' => 'تحصيل قسط شهري',
-            ],
-            [
-                'contract_id' => $contracts[1]->id,
-                'sale_id' => $sales[1]->id,
-                'client_id' => $clients[1]->id,
-                'amount' => 120000,
-                'category' => 'قسط بيع',
-                'source' => 'قسط أول',
-                'paid_at' => Carbon::now()->toDateString(),
-                'payment_method' => 'bank_transfer',
-                'notes' => 'تحصيل تحويل بنكي',
-            ],
-        ])->map(fn (array $data) => Revenue::query()->firstOrCreate([
-            'contract_id' => $data['contract_id'],
-            'amount' => $data['amount'],
-            'paid_at' => $data['paid_at'],
-        ], $data));
+        $revenues = collect();
+        $contracts->each(function (Contract $contract) use (&$revenues): void {
+            $paymentsCount = fake()->numberBetween(1, 4);
+            $remaining = (float) $contract->remaining_amount;
+
+            for ($i = 1; $i <= $paymentsCount && $remaining > 0; $i++) {
+                $amount = $i === $paymentsCount
+                    ? $remaining
+                    : min($remaining, (float) fake()->numberBetween(20000, 180000));
+                $remaining -= $amount;
+
+                $revenue = Revenue::query()->firstOrCreate(
+                    [
+                        'contract_id' => $contract->id,
+                        'paid_at' => Carbon::parse($contract->start_date)->addMonths($i)->toDateString(),
+                        'amount' => $amount,
+                    ],
+                    [
+                        'sale_id' => $contract->sale_id,
+                        'client_id' => $contract->client_id,
+                        'category' => 'قسط بيع',
+                        'source' => "قسط {$i}",
+                        'payment_method' => fake()->randomElement(['cash', 'bank_transfer', 'wallet']),
+                        'notes' => 'تحصيل تلقائي من السيدر',
+                    ]
+                );
+
+                $revenues->push($revenue);
+            }
+        });
 
         $contracts->each(function (Contract $contract): void {
             $paid = (float) Revenue::query()->where('contract_id', $contract->id)->sum('amount');
@@ -190,10 +217,15 @@ class DatabaseSeeder extends Seeder
             ]);
         });
 
-        collect([
-            ['amount' => 380000, 'category' => 'تشغيل موقع', 'description' => 'مصروفات تشغيل'],
-            ['amount' => 300000, 'category' => 'تسويق', 'description' => 'حملة تسويقية'],
-        ])->each(fn (array $data) => Expense::query()->firstOrCreate($data));
+        collect(range(1, $expensesCount))->each(function (int $i): void {
+            Expense::query()->firstOrCreate(
+                ['description' => "مصروف رقم {$i}"],
+                [
+                    'amount' => fake()->numberBetween(5000, 120000),
+                    'category' => fake()->randomElement(['تشغيل', 'تسويق', 'رواتب', 'صيانة', 'مرافق']),
+                ]
+            );
+        });
 
         $contracts->each(function (Contract $contract): void {
             Debt::query()->updateOrCreate(
@@ -210,19 +242,32 @@ class DatabaseSeeder extends Seeder
         Setting::query()->firstOrCreate([], [
             'company_name' => 'Mohaseb Aqary',
             'currency' => 'EGP',
-            'meta' => ['seeded' => true],
+            'meta' => [
+                'seeded' => true,
+                'counts' => [
+                    'areas' => $areasCount,
+                    'shareholders' => $shareholdersCount,
+                    'properties' => $propertiesCount,
+                    'clients' => $clientsCount,
+                    'sales' => $salesCount,
+                    'expenses' => $expensesCount,
+                ],
+            ],
         ]);
 
-        TreasuryTransaction::query()->firstOrCreate([
-            'type' => 'revenue',
-            'amount' => (float) $revenues->sum('amount'),
-            'description' => 'قبض تلقائي من التحصيلات',
-        ]);
-
-        TreasuryTransaction::query()->firstOrCreate([
-            'type' => 'expense',
-            'amount' => (float) Expense::query()->sum('amount'),
-            'description' => 'صرف تلقائي من المصروفات',
-        ]);
+        collect(range(1, 120))->each(function (int $i) use ($revenues): void {
+            $isRevenue = $i % 2 === 0;
+            TreasuryTransaction::query()->firstOrCreate(
+                ['description' => "حركة خزنة {$i}"],
+                [
+                    'type' => $isRevenue ? 'revenue' : 'expense',
+                    'amount' => $isRevenue
+                        ? (float) fake()->numberBetween(5000, 150000)
+                        : (float) fake()->numberBetween(3000, 110000),
+                    'reference_type' => $isRevenue && $revenues->isNotEmpty() ? Revenue::class : null,
+                    'reference_id' => $isRevenue && $revenues->isNotEmpty() ? $revenues->random()->id : null,
+                ]
+            );
+        });
     }
 }
