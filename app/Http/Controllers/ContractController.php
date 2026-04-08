@@ -2,27 +2,27 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Client;
+use App\Models\Contract;
 use Illuminate\Contracts\View\View;
 
-class ClientController extends Controller
+class ContractController extends Controller
 {
     public function index(): View
     {
-        return view('clients.index', [
-            'title' => 'العملاء | Mohaseb Aqary',
-            'pageTitle' => 'العملاء',
-            'clients' => Client::query()->withCount('sales')->latest()->paginate(15),
+        return view('contracts.index', [
+            'title' => 'العقود | Mohaseb Aqary',
+            'pageTitle' => 'العقود',
+            'contracts' => Contract::query()->with(['client:id,name', 'property:id,name', 'sale:id'])->latest()->paginate(15),
             'modules' => $this->modules(),
         ]);
     }
 
-    public function show(Client $client): View
+    public function show(Contract $contract): View
     {
-        return view('clients.show', [
-            'title' => 'تفاصيل العميل | Mohaseb Aqary',
-            'pageTitle' => 'تفاصيل العميل',
-            'client' => $client->load(['sales.property:id,name']),
+        return view('contracts.show', [
+            'title' => 'تفاصيل العقد | Mohaseb Aqary',
+            'pageTitle' => 'تفاصيل العقد',
+            'contract' => $contract->load(['client', 'property', 'sale']),
             'modules' => $this->modules(),
         ]);
     }

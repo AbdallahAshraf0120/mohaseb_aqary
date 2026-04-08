@@ -48,7 +48,7 @@
                                         : route($menuItem['route']);
                                 @endphp
                                 <a href="{{ $menuHref }}"
-                                   class="nav-link {{ request()->is('modules/' . $moduleKey) || ($menuItem['route'] === 'properties.index' && request()->is('properties*')) || ($menuItem['route'] === 'shareholders.index' && request()->is('shareholders*')) || ($menuItem['route'] === 'sales.index' && request()->is('sales*')) || ($menuItem['route'] === 'clients.index' && request()->is('clients*')) ? 'active' : '' }}">
+                                   class="nav-link {{ request()->is('modules/' . $moduleKey) || ($menuItem['route'] === 'properties.index' && request()->is('properties*')) || ($menuItem['route'] === 'shareholders.index' && request()->is('shareholders*')) || ($menuItem['route'] === 'sales.index' && request()->is('sales*')) || ($menuItem['route'] === 'clients.index' && request()->is('clients*')) || ($menuItem['route'] === 'contracts.index' && request()->is('contracts*')) ? 'active' : '' }}">
                                     <i class="nav-icon fa-solid {{ $menuItem['icon'] }}"></i>
                                     <p>{{ $menuItem['label'] }}</p>
                                 </a>

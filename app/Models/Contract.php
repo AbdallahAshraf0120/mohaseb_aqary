@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Contract extends Model
 {
     protected $fillable = [
+        'sale_id',
         'client_id',
         'property_id',
         'start_date',
@@ -24,5 +25,10 @@ class Contract extends Model
     public function property()
     {
         return $this->belongsTo(Property::class);
+    }
+
+    public function sale()
+    {
+        return $this->belongsTo(Sale::class);
     }
 }

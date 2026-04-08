@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreSaleRequest;
 use App\Http\Requests\UpdateSaleRequest;
 use App\Models\Client;
+use App\Models\Contract;
 use App\Models\Property;
 use App\Models\Sale;
 use Illuminate\Contracts\View\View;
@@ -37,7 +38,7 @@ class SaleController extends Controller
         $validated = $request->validated();
         $client = $this->upsertClient($validated);
 
-        Sale::query()->create([
+        $sale = Sale::query()->create([
             'property_id' => $validated['property_id'],
             'client_id' => $client->id,
             'floor_number' => $validated['floor_number'],
@@ -52,7 +53,9 @@ class SaleController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
-        return redirect()->route('sales.index')->with('success', 'تم تسجيل البيعة بنجاح وإضافة العميل.');
+        $this->syncContractForSale($sale);
+
+        return redirect()->route('sales.index')->with('success', 'تم تسجيل البيعة بنجاح وإضافة العميل وإنشاء العقد.');
     }
 
     public function show(Sale $sale): View
@@ -103,6 +106,8 @@ class SaleController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
+        $this->syncContractForSale($sale->refresh());
+
         return redirect()->route('sales.index')->with('success', 'تم تحديث البيعة بنجاح.');
     }
 
@@ -148,6 +153,27 @@ class SaleController extends Controller
         ]);
     }
 
+    private function syncContractForSale(Sale $sale): void
+    {
+        $installmentMonths = (int) ($sale->installment_months ?? 0);
+        $defaultEndDate = $installmentMonths > 0
+            ? $sale->sale_date->copy()->addMonths($installmentMonths)
+            : $sale->sale_date->copy()->addYear();
+
+        Contract::query()->updateOrCreate(
+            ['sale_id' => $sale->id],
+            [
+                'client_id' => $sale->client_id,
+                'property_id' => $sale->property_id,
+                'start_date' => $sale->sale_date->format('Y-m-d'),
+                'end_date' => $defaultEndDate->format('Y-m-d'),
+                'total_price' => $sale->sale_price,
+                'paid_amount' => $sale->down_payment,
+                'remaining_amount' => max(0, (float) $sale->sale_price - (float) $sale->down_payment),
+            ]
+        );
+    }
+
     private function modules(): array
     {
         return [
@@ -155,7 +181,7 @@ class SaleController extends Controller
             'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'shareholders.index'],
             'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'properties.index'],
             'clients' => ['label' => 'عملاء', 'icon' => 'fa-users', 'route' => 'clients.index'],
-            'contracts' => ['label' => 'العقود', 'icon' => 'fa-file-signature', 'route' => 'modules.show'],
+            'contracts' => ['label' => 'العقود', 'icon' => 'fa-file-signature', 'route' => 'contracts.index'],
             'sales' => ['label' => 'المبيعات', 'icon' => 'fa-cart-shopping', 'route' => 'sales.index'],
             'revenues' => ['label' => 'ايرادات', 'icon' => 'fa-money-bill-trend-up', 'route' => 'modules.show'],
             'expenses' => ['label' => 'المصروفات', 'icon' => 'fa-money-bill-wave', 'route' => 'modules.show'],

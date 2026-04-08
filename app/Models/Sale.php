@@ -36,4 +36,9 @@ class Sale extends Model
     {
         return $this->belongsTo(Property::class);
     }
+
+    public function contract()
+    {
+        return $this->hasOne(Contract::class);
+    }
 }
