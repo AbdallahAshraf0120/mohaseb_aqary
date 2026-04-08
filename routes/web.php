@@ -14,6 +14,7 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\ShareholderController;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 
 $modules = [
@@ -34,6 +35,14 @@ $modules = [
 ];
 
 Route::get('/', fn () => redirect()->route('properties.index'))->name('home');
+
+Route::post('/logout', function (): RedirectResponse {
+    auth()->logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+
+    return redirect()->route('properties.index');
+})->name('logout');
 
 Route::get('/dashboard', function () use ($modules) {
     return view('dashboard', [

@@ -22,6 +22,16 @@
                         <a href="{{ route('properties.index') }}" class="nav-link">الرئيسية</a>
                     </li>
                 </ul>
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <form method="post" action="{{ route('logout') }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="nav-link btn btn-link text-body border-0 py-2 px-2">
+                                <i class="fa-solid fa-right-from-bracket ms-1"></i>تسجيل خروج
+                            </button>
+                        </form>
+                    </li>
+                </ul>
             </div>
         </nav>
 
