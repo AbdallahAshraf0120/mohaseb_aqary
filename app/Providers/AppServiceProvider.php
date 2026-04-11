@@ -61,7 +61,28 @@ class AppServiceProvider extends ServiceProvider
                 ->firstOrFail();
         });
 
-        View::composer('layouts.admin', function ($view): void {
+        $projectSidebarActions = [
+            ['route' => 'dashboard', 'label' => 'لوحة التحكم', 'icon' => 'fa-gauge-high', 'active' => ['dashboard']],
+            ['route' => 'properties.index', 'label' => 'العقارات', 'icon' => 'fa-building', 'active' => ['properties.index', 'properties.show', 'properties.edit']],
+            ['route' => 'properties.create', 'label' => 'إضافة عقار', 'icon' => 'fa-circle-plus', 'active' => ['properties.create']],
+            ['route' => 'areas.index', 'label' => 'المناطق', 'icon' => 'fa-location-dot', 'active' => ['areas.*']],
+            ['route' => 'shareholders.index', 'label' => 'المساهمين', 'icon' => 'fa-people-group', 'active' => ['shareholders.*']],
+            ['route' => 'clients.index', 'label' => 'العملاء', 'icon' => 'fa-users', 'active' => ['clients.*']],
+            ['route' => 'contracts.index', 'label' => 'العقود', 'icon' => 'fa-file-signature', 'active' => ['contracts.*']],
+            ['route' => 'sales.index', 'label' => 'المبيعات', 'icon' => 'fa-cart-shopping', 'active' => ['sales.index', 'sales.show', 'sales.edit']],
+            ['route' => 'sales.create', 'label' => 'تسجيل بيعة', 'icon' => 'fa-file-circle-plus', 'active' => ['sales.create']],
+            ['route' => 'revenues.index', 'label' => 'التحصيل', 'icon' => 'fa-money-bill-trend-up', 'active' => ['revenues.index', 'revenues.show', 'revenues.edit']],
+            ['route' => 'revenues.create', 'label' => 'تحصيل دفعة', 'icon' => 'fa-coins', 'active' => ['revenues.create']],
+            ['route' => 'cashbox.index', 'label' => 'الصندوق', 'icon' => 'fa-vault', 'active' => ['cashbox.*']],
+            ['route' => 'expenses.index', 'label' => 'المصروفات', 'icon' => 'fa-money-bill-wave', 'active' => ['expenses.index']],
+            ['route' => 'expenses.create', 'label' => 'إضافة مصروف', 'icon' => 'fa-circle-minus', 'active' => ['expenses.create']],
+            ['route' => 'debts.index', 'label' => 'المديونية', 'icon' => 'fa-scale-balanced', 'active' => ['debts.*']],
+            ['route' => 'remaining.index', 'label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'active' => ['remaining.*']],
+            ['route' => 'settlements.index', 'label' => 'التصفيات', 'icon' => 'fa-filter-circle-dollar', 'active' => ['settlements.*']],
+            ['route' => 'reports.index', 'label' => 'التقارير', 'icon' => 'fa-chart-line', 'active' => ['reports.*']],
+        ];
+
+        View::composer('layouts.admin', function ($view) use ($projectSidebarActions): void {
             if ($pid = session('current_project_id')) {
                 URL::defaults(['project' => $pid]);
             }
@@ -72,6 +93,7 @@ class AppServiceProvider extends ServiceProvider
                 'navCurrentProject',
                 $pidNav ? Project::query()->listed()->whereKey($pidNav)->first() : null
             );
+            $view->with('projectSidebarActions', $projectSidebarActions);
         });
     }
 }

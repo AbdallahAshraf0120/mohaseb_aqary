@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CashboxController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\AreaController;
@@ -65,13 +66,7 @@ Route::middleware(['auth', SyncProjectFromRoute::class])
     ->prefix('{project}')
     ->scopeBindings()
     ->group(function () use ($modules): void {
-        Route::get('/dashboard', function () use ($modules) {
-            return view('dashboard', [
-                'title' => 'Dashboard | Mohaseb Aqary',
-                'pageTitle' => 'Dashboard',
-                'modules' => $modules,
-            ]);
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::resource('properties', PropertyController::class);
         Route::resource('areas', AreaController::class)->except(['show']);
