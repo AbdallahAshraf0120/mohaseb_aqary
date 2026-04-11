@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CashboxController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
@@ -14,7 +15,6 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\ShareholderController;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 
 $modules = [
@@ -34,38 +34,39 @@ $modules = [
     'remaining' => ['label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'route' => 'remaining.index'],
 ];
 
-Route::get('/', fn () => redirect()->route('properties.index'))->name('home');
+Route::middleware('guest')->group(function (): void {
+    Route::get('login', [LoginController::class, 'create'])->name('login');
+    Route::post('login', [LoginController::class, 'store']);
+});
 
-Route::post('/logout', function (): RedirectResponse {
-    auth()->logout();
-    request()->session()->invalidate();
-    request()->session()->regenerateToken();
+Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
 
-    return redirect()->route('properties.index');
-})->name('logout');
+Route::middleware('auth')->group(function () use ($modules): void {
+    Route::get('/', fn () => redirect()->route('properties.index'))->name('home');
 
-Route::get('/dashboard', function () use ($modules) {
-    return view('dashboard', [
-        'title' => 'Dashboard | Mohaseb Aqary',
-        'pageTitle' => 'Dashboard',
-        'modules' => $modules,
-    ]);
-})->name('dashboard');
+    Route::get('/dashboard', function () use ($modules) {
+        return view('dashboard', [
+            'title' => 'Dashboard | Mohaseb Aqary',
+            'pageTitle' => 'Dashboard',
+            'modules' => $modules,
+        ]);
+    })->name('dashboard');
 
-Route::resource('properties', PropertyController::class);
-Route::resource('areas', AreaController::class)->except(['show']);
-Route::resource('shareholders', ShareholderController::class);
-Route::resource('sales', SaleController::class);
-Route::resource('clients', ClientController::class)->only(['index', 'show']);
-Route::resource('contracts', ContractController::class)->only(['index', 'show']);
-Route::resource('revenues', RevenueController::class);
-Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'destroy']);
+    Route::resource('properties', PropertyController::class);
+    Route::resource('areas', AreaController::class)->except(['show']);
+    Route::resource('shareholders', ShareholderController::class);
+    Route::resource('sales', SaleController::class);
+    Route::resource('clients', ClientController::class)->only(['index', 'show']);
+    Route::resource('contracts', ContractController::class)->only(['index', 'show']);
+    Route::resource('revenues', RevenueController::class);
+    Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'destroy']);
 
-Route::get('cashbox', [CashboxController::class, 'index'])->name('cashbox.index');
-Route::post('cashbox', [CashboxController::class, 'store'])->name('cashbox.store');
-Route::get('debts', [DebtController::class, 'index'])->name('debts.index');
-Route::get('remaining', [RemainingController::class, 'index'])->name('remaining.index');
-Route::get('settlements', [SettlementController::class, 'index'])->name('settlements.index');
-Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
-Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
-Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::get('cashbox', [CashboxController::class, 'index'])->name('cashbox.index');
+    Route::post('cashbox', [CashboxController::class, 'store'])->name('cashbox.store');
+    Route::get('debts', [DebtController::class, 'index'])->name('debts.index');
+    Route::get('remaining', [RemainingController::class, 'index'])->name('remaining.index');
+    Route::get('settlements', [SettlementController::class, 'index'])->name('settlements.index');
+    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
+    Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+});

@@ -23,10 +23,10 @@
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item">
-                        <form method="post" action="{{ route('logout') }}" class="d-inline">
+                    <li class="nav-item py-1">
+                        <form method="post" action="{{ route('logout') }}" class="mb-0">
                             @csrf
-                            <button type="submit" class="nav-link btn btn-link text-body border-0 py-2 px-2">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">
                                 <i class="fa-solid fa-right-from-bracket ms-1"></i>تسجيل خروج
                             </button>
                         </form>
