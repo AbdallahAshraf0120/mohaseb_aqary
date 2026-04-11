@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo('/login');
-        $middleware->redirectUsersTo('/properties');
+        $middleware->redirectUsersTo('/projects');
 
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,

@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Debt;
 use App\Models\Expense;
+use App\Models\Project;
 use App\Models\Property;
 use App\Models\Revenue;
 use App\Models\Sale;
@@ -14,33 +15,43 @@ use App\Models\Setting;
 use App\Models\Shareholder;
 use App\Models\User;
 use App\Services\CashboxLedgerService;
+use App\Support\CurrentProject;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Support\Collection;
 
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        $areasCount = 20;
-        $shareholdersCount = 25;
-        $propertiesCount = 80;
-        $clientsCount = 300;
-        $salesCount = 500;
-        $expensesCount = 200;
+        $admin = User::query()->firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => 'password',
+                'role' => 'admin',
+            ]
+        );
 
-        $admin = User::query()->firstOrCreate([
-            'email' => 'test@example.com',
-        ], [
-            'name' => 'Test User',
-            'password' => 'password',
-            'role' => 'admin',
-        ]);
+        $projectSpecs = [
+            ['code' => 'default', 'name' => 'المشروع الافتراضي'],
+            ['code' => 'palm-towers', 'name' => 'أبراج النخيل'],
+            ['code' => 'north-compound', 'name' => 'كمبوند الشمال'],
+            ['code' => 'capital-r2', 'name' => 'العاصمة الإدارية — المرحلة 2'],
+            ['code' => 'west-plaza', 'name' => 'ويست بلازا التجاري'],
+        ];
+
+        $counts = [
+            'areas' => 32,
+            'shareholders' => 42,
+            'properties' => 110,
+            'clients' => 480,
+            'sales' => 750,
+            'expenses' => 320,
+        ];
 
         $areaNames = [
             'مدينة نصر',
@@ -53,38 +64,71 @@ class DatabaseSeeder extends Seeder
             'حدائق أكتوبر',
             'أكتوبر',
             'الرحاب',
+            'المنيل',
+            'مصر الجديدة',
         ];
-        $areas = collect(range(1, $areasCount))->map(function (int $i) use ($areaNames) {
+
+        foreach ($projectSpecs as $spec) {
+            $project = Project::query()->firstOrCreate(
+                ['code' => $spec['code']],
+                ['name' => $spec['name'], 'is_active' => true, 'is_draft' => false]
+            );
+
+            app(CurrentProject::class)->force((int) $project->id);
+
+            try {
+                $this->seedHeavyDemoForProject($project, $admin, $counts, $areaNames);
+                app(CashboxLedgerService::class)->rebuildFromAccountingRecords();
+            } finally {
+                app(CurrentProject::class)->force(null);
+            }
+        }
+    }
+
+    /**
+     * @param  array{areas: int, shareholders: int, properties: int, clients: int, sales: int, expenses: int}  $counts
+     * @param  array<int, string>  $areaNames
+     */
+    private function seedHeavyDemoForProject(Project $project, User $admin, array $counts, array $areaNames): void
+    {
+        $pid = (int) $project->id;
+        $slug = $project->code ?? (string) $pid;
+
+        $areas = collect(range(1, $counts['areas']))->map(function (int $i) use ($areaNames, $pid, $slug) {
             $base = $areaNames[($i - 1) % count($areaNames)];
-            return Area::query()->firstOrCreate(['name' => $base . ' - ' . $i]);
+
+            return Area::query()->firstOrCreate(
+                ['project_id' => $pid, 'name' => $base . ' — ' . $slug . ' — ' . $i]
+            );
         });
 
-        $shareholders = collect(range(1, $shareholdersCount))->map(function (int $i) {
-            $share = fake()->numberBetween(3, 20);
+        $shareholders = collect(range(1, $counts['shareholders']))->map(function (int $i) use ($pid, $slug) {
+            $share = fake()->numberBetween(3, 22);
+
             return Shareholder::query()->firstOrCreate(
-                ['name' => "مساهم {$i}"],
+                ['project_id' => $pid, 'name' => "مساهم {$slug}-{$i}"],
                 [
                     'share_percentage' => $share,
-                    'total_investment' => fake()->numberBetween(500000, 8000000),
-                    'profit_amount' => fake()->numberBetween(50000, 900000),
+                    'total_investment' => fake()->numberBetween(400_000, 12_000_000),
+                    'profit_amount' => fake()->numberBetween(40_000, 1_200_000),
                 ]
             );
         });
 
-        $properties = collect(range(1, $propertiesCount))->map(function (int $i) use ($areas, $shareholders, $admin) {
-            $floors = fake()->numberBetween(6, 20);
-            $apartmentsPerFloor = fake()->numberBetween(2, 6);
-            $modelsCount = fake()->numberBetween(2, 4);
+        $properties = collect(range(1, $counts['properties']))->map(function (int $i) use ($areas, $shareholders, $admin, $pid, $project) {
+            $floors = fake()->numberBetween(6, 22);
+            $apartmentsPerFloor = fake()->numberBetween(2, 7);
+            $modelsCount = fake()->numberBetween(2, 5);
 
             $models = collect(range(1, $modelsCount))->map(function (int $modelIndex) {
                 return [
                     'model_name' => chr(64 + $modelIndex),
-                    'area' => fake()->numberBetween(85, 220),
+                    'area' => fake()->numberBetween(75, 240),
                 ];
             })->values()->all();
 
-            $selectedShareholders = $shareholders->random(fake()->numberBetween(2, 4))->values();
-            $basePercentages = $selectedShareholders->map(fn () => fake()->numberBetween(10, 60));
+            $selectedShareholders = $shareholders->random(fake()->numberBetween(2, 5))->values();
+            $basePercentages = $selectedShareholders->map(fn () => fake()->numberBetween(8, 55));
             $total = max(1, $basePercentages->sum());
             $allocations = $selectedShareholders->map(function ($s, int $idx) use ($basePercentages, $total) {
                 return [
@@ -97,7 +141,7 @@ class DatabaseSeeder extends Seeder
             $area = $areas->random();
 
             return Property::query()->firstOrCreate(
-                ['name' => "مشروع {$i}"],
+                ['project_id' => $pid, 'name' => "عقار {$i} — {$project->name}"],
                 [
                     'area_id' => $area->id,
                     'property_type' => fake()->randomElement(['سكني', 'تجاري', 'إداري', 'مختلط']),
@@ -114,36 +158,42 @@ class DatabaseSeeder extends Seeder
             );
         });
 
-        $clients = collect(range(1, $clientsCount))->map(function (int $i) {
-            $phone = '010' . str_pad((string) $i, 8, '0', STR_PAD_LEFT);
+        $clients = collect(range(1, $counts['clients']))->map(function (int $i) use ($pid) {
+            $phone = '010' . str_pad((string) (($pid * 1_000_000) + $i), 8, '0', STR_PAD_LEFT);
 
             return Client::query()->updateOrCreate(
-                ['phone' => $phone],
+                ['project_id' => $pid, 'phone' => $phone],
                 [
-                    'name' => "عميل {$i}",
-                    'email' => "client{$i}@example.com",
-                    'national_id' => str_pad((string) (30000000000000 + $i), 14, '0', STR_PAD_LEFT),
+                    'name' => fake()->name(),
+                    'email' => "c{$pid}_{$i}@demo.example.com",
+                    'national_id' => str_pad((string) (200_000_000_000_00 + ($pid * 1_000_000) + $i), 14, '0', STR_PAD_LEFT),
                 ]
             );
         });
 
-        $sales = collect(range(1, $salesCount))->map(function (int $i) use ($properties, $clients) {
+        $sales = collect(range(1, $counts['sales']))->map(function (int $i) use ($properties, $clients, $pid) {
             $property = $properties->random();
             $models = collect($property->apartment_models ?? []);
             $model = $models->isNotEmpty() ? $models->random() : ['model_name' => 'A'];
 
-            $salePrice = fake()->numberBetween(700000, 5000000);
-            $paymentType = fake()->randomElement(['installment', 'installment', 'cash']);
+            $salePrice = fake()->numberBetween(650_000, 6_500_000);
+            $paymentType = fake()->randomElement(['installment', 'installment', 'installment', 'cash']);
             $downPayment = $paymentType === 'cash'
                 ? $salePrice
-                : fake()->numberBetween((int) ($salePrice * 0.25), (int) ($salePrice * 0.7));
-            $months = $paymentType === 'cash' ? null : fake()->randomElement([12, 18, 24, 30, 36, 48]);
+                : fake()->numberBetween((int) ($salePrice * 0.2), (int) ($salePrice * 0.72));
+            $months = $paymentType === 'cash' ? null : fake()->randomElement([12, 18, 24, 30, 36, 42, 48, 60]);
             $remaining = max(0, $salePrice - $downPayment);
             $monthly = ($months && $remaining > 0) ? round($remaining / $months, 2) : 0;
-            $saleDate = Carbon::now()->subDays(fake()->numberBetween(1, 720))->toDateString();
+            $saleDate = Carbon::now()->subDays(fake()->numberBetween(1, 900))->toDateString();
 
             return Sale::query()->firstOrCreate(
-                ['property_id' => $property->id, 'client_id' => $clients->random()->id, 'sale_date' => $saleDate, 'floor_number' => fake()->numberBetween(1, max(1, (int) $property->floors_count))],
+                [
+                    'project_id' => $pid,
+                    'property_id' => $property->id,
+                    'client_id' => $clients->random()->id,
+                    'sale_date' => $saleDate,
+                    'floor_number' => fake()->numberBetween(1, max(1, (int) $property->floors_count)),
+                ],
                 [
                     'apartment_model' => (string) ($model['model_name'] ?? 'A'),
                     'sale_price' => $salePrice,
@@ -154,12 +204,13 @@ class DatabaseSeeder extends Seeder
                     'installment_plan' => $paymentType === 'cash'
                         ? null
                         : ['remaining_amount' => $remaining, 'monthly_installment' => $monthly],
-                    'notes' => "بيع تلقائي رقم {$i}",
+                    'notes' => "بيع تجريبي {$pid}/{$i}",
                 ]
             );
         });
 
-        $contracts = $sales->map(function (Sale $sale) {
+        /** @var Collection<int, Contract> $contracts */
+        $contracts = $sales->map(function (Sale $sale) use ($pid) {
             $endDate = $sale->installment_months
                 ? Carbon::parse($sale->sale_date)->addMonths((int) $sale->installment_months)->toDateString()
                 : Carbon::parse($sale->sale_date)->addYear()->toDateString();
@@ -167,6 +218,7 @@ class DatabaseSeeder extends Seeder
             return Contract::query()->updateOrCreate(
                 ['sale_id' => $sale->id],
                 [
+                    'project_id' => $pid,
                     'client_id' => $sale->client_id,
                     'property_id' => $sale->property_id,
                     'start_date' => $sale->sale_date,
@@ -178,19 +230,19 @@ class DatabaseSeeder extends Seeder
             );
         });
 
-        $revenues = collect();
-        $contracts->each(function (Contract $contract) use (&$revenues): void {
-            $paymentsCount = fake()->numberBetween(1, 4);
+        $contracts->each(function (Contract $contract) use ($pid): void {
+            $paymentsCount = fake()->numberBetween(1, 5);
             $remaining = (float) $contract->remaining_amount;
 
             for ($i = 1; $i <= $paymentsCount && $remaining > 0; $i++) {
                 $amount = $i === $paymentsCount
                     ? $remaining
-                    : min($remaining, (float) fake()->numberBetween(20000, 180000));
+                    : min($remaining, (float) fake()->numberBetween(15_000, 220_000));
                 $remaining -= $amount;
 
-                $revenue = Revenue::query()->firstOrCreate(
+                Revenue::query()->firstOrCreate(
                     [
+                        'project_id' => $pid,
                         'contract_id' => $contract->id,
                         'paid_at' => Carbon::parse($contract->start_date)->addMonths($i)->toDateString(),
                         'amount' => $amount,
@@ -200,12 +252,10 @@ class DatabaseSeeder extends Seeder
                         'client_id' => $contract->client_id,
                         'category' => 'قسط بيع',
                         'source' => "قسط {$i}",
-                        'payment_method' => fake()->randomElement(['cash', 'bank_transfer', 'wallet']),
-                        'notes' => 'تحصيل تلقائي من السيدر',
+                        'payment_method' => fake()->randomElement(['cash', 'bank_transfer', 'wallet', 'check']),
+                        'notes' => 'تحصيل تلقائي — سيدر',
                     ]
                 );
-
-                $revenues->push($revenue);
             }
         });
 
@@ -217,19 +267,19 @@ class DatabaseSeeder extends Seeder
             ]);
         });
 
-        collect(range(1, $expensesCount))->each(function (int $i): void {
+        collect(range(1, $counts['expenses']))->each(function (int $i) use ($pid, $slug): void {
             Expense::query()->firstOrCreate(
-                ['description' => "مصروف رقم {$i}"],
+                ['project_id' => $pid, 'description' => "مصروف {$slug} — {$i}"],
                 [
-                    'amount' => fake()->numberBetween(5000, 120000),
-                    'category' => fake()->randomElement(['تشغيل', 'تسويق', 'رواتب', 'صيانة', 'مرافق']),
+                    'amount' => fake()->numberBetween(3_000, 180_000),
+                    'category' => fake()->randomElement(['تشغيل', 'تسويق', 'رواتب', 'صيانة', 'مرافق', 'تصاريح', 'عمولات']),
                 ]
             );
         });
 
-        $contracts->each(function (Contract $contract): void {
+        $contracts->each(function (Contract $contract) use ($pid): void {
             Debt::query()->updateOrCreate(
-                ['client_id' => $contract->client_id],
+                ['project_id' => $pid, 'client_id' => $contract->client_id],
                 [
                     'total_amount' => $contract->total_price,
                     'paid_amount' => $contract->paid_amount,
@@ -239,22 +289,17 @@ class DatabaseSeeder extends Seeder
             );
         });
 
-        Setting::query()->firstOrCreate([], [
-            'company_name' => 'Mohaseb Aqary',
-            'currency' => 'EGP',
-            'meta' => [
-                'seeded' => true,
-                'counts' => [
-                    'areas' => $areasCount,
-                    'shareholders' => $shareholdersCount,
-                    'properties' => $propertiesCount,
-                    'clients' => $clientsCount,
-                    'sales' => $salesCount,
-                    'expenses' => $expensesCount,
+        Setting::query()->firstOrCreate(
+            ['project_id' => $pid],
+            [
+                'company_name' => $project->name,
+                'currency' => 'EGP',
+                'meta' => [
+                    'seeded' => true,
+                    'project_code' => $slug,
+                    'counts' => $counts,
                 ],
-            ],
-        ]);
-
-        app(CashboxLedgerService::class)->rebuildFromAccountingRecords();
+            ]
+        );
     }
 }

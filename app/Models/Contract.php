@@ -2,11 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Contract extends Model
 {
+    use BelongsToProject;
+
     protected $fillable = [
+        'project_id',
         'sale_id',
         'client_id',
         'property_id',
@@ -16,6 +21,11 @@ class Contract extends Model
         'paid_amount',
         'remaining_amount',
     ];
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
 
     public function client()
     {

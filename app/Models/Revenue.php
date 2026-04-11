@@ -2,11 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Revenue extends Model
 {
+    use BelongsToProject;
+
     protected $fillable = [
+        'project_id',
         'amount',
         'category',
         'client_id',
@@ -21,6 +26,11 @@ class Revenue extends Model
     protected $casts = [
         'paid_at' => 'date',
     ];
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
 
     public function client()
     {

@@ -2,11 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Sale extends Model
 {
+    use BelongsToProject;
+
     protected $fillable = [
+        'project_id',
         'client_id',
         'property_id',
         'floor_number',
@@ -26,6 +31,11 @@ class Sale extends Model
         'installment_start_date' => 'date',
         'installment_plan' => 'array',
     ];
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
 
     public function client()
     {

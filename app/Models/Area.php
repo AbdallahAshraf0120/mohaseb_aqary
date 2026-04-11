@@ -2,13 +2,23 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Area extends Model
 {
-    protected $fillable = ['name'];
+    use BelongsToProject;
 
-    public function properties()
+    protected $fillable = ['project_id', 'name'];
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function properties(): HasMany
     {
         return $this->hasMany(Property::class);
     }

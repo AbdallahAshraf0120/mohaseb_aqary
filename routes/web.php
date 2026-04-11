@@ -7,6 +7,7 @@ use App\Http\Controllers\ContractController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\RemainingController;
 use App\Http\Controllers\ReportController;
@@ -15,9 +16,12 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\ShareholderController;
+use App\Http\Middleware\SyncProjectFromRoute;
+use App\Models\Project;
 use Illuminate\Support\Facades\Route;
 
 $modules = [
+    'projects' => ['label' => 'المشاريع', 'icon' => 'fa-diagram-project', 'route' => 'projects.index'],
     'areas' => ['label' => 'المناطق', 'icon' => 'fa-location-dot', 'route' => 'areas.index'],
     'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'shareholders.index'],
     'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'properties.index'],
@@ -41,32 +45,49 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
 
-Route::middleware('auth')->group(function () use ($modules): void {
-    Route::get('/', fn () => redirect()->route('properties.index'))->name('home');
+Route::middleware('auth')->group(function (): void {
+    Route::get('/', function () {
+        $pid = session('current_project_id') ?? Project::query()->listed()->orderBy('id')->value('id');
+        if ($pid === null) {
+            return redirect()->route('projects.index');
+        }
 
-    Route::get('/dashboard', function () use ($modules) {
-        return view('dashboard', [
-            'title' => 'Dashboard | Mohaseb Aqary',
-            'pageTitle' => 'Dashboard',
-            'modules' => $modules,
-        ]);
-    })->name('dashboard');
+        return redirect()->route('properties.index', ['project' => $pid]);
+    })->name('home');
 
-    Route::resource('properties', PropertyController::class);
-    Route::resource('areas', AreaController::class)->except(['show']);
-    Route::resource('shareholders', ShareholderController::class);
-    Route::resource('sales', SaleController::class);
-    Route::resource('clients', ClientController::class)->only(['index', 'show']);
-    Route::resource('contracts', ContractController::class)->only(['index', 'show']);
-    Route::resource('revenues', RevenueController::class);
-    Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'destroy']);
-
-    Route::get('cashbox', [CashboxController::class, 'index'])->name('cashbox.index');
-    Route::post('cashbox', [CashboxController::class, 'store'])->name('cashbox.store');
-    Route::get('debts', [DebtController::class, 'index'])->name('debts.index');
-    Route::get('remaining', [RemainingController::class, 'index'])->name('remaining.index');
-    Route::get('settlements', [SettlementController::class, 'index'])->name('settlements.index');
-    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
-    Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
-    Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::get('projects', [ProjectController::class, 'index'])->name('projects.index');
+    Route::post('projects', [ProjectController::class, 'store'])->name('projects.store');
+    Route::post('projects/{managedProject}/draft', [ProjectController::class, 'toDraft'])->name('projects.draft');
+    Route::post('projects/{draftProject}/restore', [ProjectController::class, 'restore'])->name('projects.restore');
 });
+
+Route::middleware(['auth', SyncProjectFromRoute::class])
+    ->prefix('{project}')
+    ->scopeBindings()
+    ->group(function () use ($modules): void {
+        Route::get('/dashboard', function () use ($modules) {
+            return view('dashboard', [
+                'title' => 'Dashboard | Mohaseb Aqary',
+                'pageTitle' => 'Dashboard',
+                'modules' => $modules,
+            ]);
+        })->name('dashboard');
+
+        Route::resource('properties', PropertyController::class);
+        Route::resource('areas', AreaController::class)->except(['show']);
+        Route::resource('shareholders', ShareholderController::class);
+        Route::resource('sales', SaleController::class);
+        Route::resource('clients', ClientController::class)->only(['index', 'show']);
+        Route::resource('contracts', ContractController::class)->only(['index', 'show']);
+        Route::resource('revenues', RevenueController::class);
+        Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'destroy']);
+
+        Route::get('cashbox', [CashboxController::class, 'index'])->name('cashbox.index');
+        Route::post('cashbox', [CashboxController::class, 'store'])->name('cashbox.store');
+        Route::get('debts', [DebtController::class, 'index'])->name('debts.index');
+        Route::get('remaining', [RemainingController::class, 'index'])->name('remaining.index');
+        Route::get('settlements', [SettlementController::class, 'index'])->name('settlements.index');
+        Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
+        Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+    });

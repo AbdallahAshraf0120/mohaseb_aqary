@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Support\CurrentProject;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,11 +12,15 @@ class SettingController extends Controller
 {
     public function edit(): View
     {
-        $setting = Setting::query()->firstOrCreate([], [
-            'company_name' => 'Real Estate Demo',
-            'currency' => 'EGP',
-            'meta' => [],
-        ]);
+        $projectId = app(CurrentProject::class)->id();
+        $setting = Setting::query()->firstOrCreate(
+            ['project_id' => $projectId],
+            [
+                'company_name' => 'Real Estate Demo',
+                'currency' => 'EGP',
+                'meta' => [],
+            ]
+        );
 
         return view('settings.edit', [
             'title' => 'الإعدادات | Mohaseb Aqary',
@@ -41,6 +46,7 @@ class SettingController extends Controller
     private function modules(): array
     {
         return [
+            'projects' => ['label' => 'المشاريع', 'icon' => 'fa-diagram-project', 'route' => 'projects.index'],
             'areas' => ['label' => 'المناطق', 'icon' => 'fa-location-dot', 'route' => 'areas.index'],
             'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'shareholders.index'],
             'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'properties.index'],

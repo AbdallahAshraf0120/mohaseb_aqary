@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Area;
+use App\Support\CurrentProject;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AreaController extends Controller
 {
@@ -30,8 +32,14 @@ class AreaController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $projectId = app(CurrentProject::class)->id();
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:areas,name'],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('areas', 'name')->where(fn ($q) => $q->where('project_id', $projectId)),
+            ],
         ]);
 
         Area::query()->create($data);
@@ -51,8 +59,16 @@ class AreaController extends Controller
 
     public function update(Request $request, Area $area): RedirectResponse
     {
+        $projectId = app(CurrentProject::class)->id();
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:areas,name,' . $area->id],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('areas', 'name')
+                    ->ignore($area->id)
+                    ->where(fn ($q) => $q->where('project_id', $projectId)),
+            ],
         ]);
 
         $area->update($data);
@@ -74,6 +90,7 @@ class AreaController extends Controller
     private function modules(): array
     {
         return [
+            'projects' => ['label' => 'المشاريع', 'icon' => 'fa-diagram-project', 'route' => 'projects.index'],
             'areas' => ['label' => 'المناطق', 'icon' => 'fa-location-dot', 'route' => 'areas.index'],
             'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'shareholders.index'],
             'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'properties.index'],

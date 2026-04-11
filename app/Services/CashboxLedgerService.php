@@ -13,6 +13,7 @@ class CashboxLedgerService
     {
         TreasuryTransaction::query()->updateOrCreate(
             [
+                'project_id' => $revenue->project_id,
                 'reference_type' => Revenue::class,
                 'reference_id' => $revenue->id,
             ],
@@ -41,6 +42,7 @@ class CashboxLedgerService
 
         TreasuryTransaction::query()->updateOrCreate(
             [
+                'project_id' => $expense->project_id,
                 'reference_type' => Expense::class,
                 'reference_id' => $expense->id,
             ],
@@ -74,6 +76,7 @@ class CashboxLedgerService
 
         TreasuryTransaction::query()->updateOrCreate(
             [
+                'project_id' => $sale->project_id,
                 'reference_type' => Sale::class,
                 'reference_id' => $sale->id,
             ],
