@@ -18,10 +18,17 @@
                     <strong>المنطقة:</strong> {{ $property->area?->name ?? ($property->location ?? '-') }}
                 </div>
                 <div class="col-md-6">
-                    <strong>عدد الأدوار:</strong> {{ $property->floors_count ?? '-' }}
+                    <strong>الأدوار المتكررة:</strong> {{ $property->floors_count ?? '-' }}
                 </div>
                 <div class="col-md-6">
-                    <strong>عدد الشقق بكل دور:</strong> {{ $property->apartments_per_floor ?? '-' }}
+                    <strong>شقق/دور متكرر:</strong> {{ $property->apartments_per_floor ?? '-' }}
+                </div>
+                <div class="col-md-6">
+                    <strong>محلات الأرضي (0):</strong> {{ $property->ground_floor_shops_count ?? 0 }}
+                </div>
+                <div class="col-md-6">
+                    <strong>الميزان (1):</strong>
+                    {{ $property->has_mezzanine ? ('موجود - ' . ($property->mezzanine_apartments_count ?? 0) . ' شقق') : 'غير موجود' }}
                 </div>
                 <div class="col-md-6">
                     <strong>إجمالي الشقق:</strong> {{ $property->total_apartments ?? '-' }}
@@ -57,6 +64,9 @@
                                 <tr>
                                     <th>اسم النموذج</th>
                                     <th>المساحة (م2)</th>
+                                    <th>الغرف</th>
+                                    <th>الحمامات</th>
+                                    <th>الواجهة</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -64,6 +74,12 @@
                                     <tr>
                                         <td>{{ $model['model_name'] ?? '-' }}</td>
                                         <td>{{ number_format((float) ($model['area'] ?? 0), 2) }}</td>
+                                        <td>{{ (int) ($model['rooms_count'] ?? 0) }}</td>
+                                        <td>{{ (int) ($model['bathrooms_count'] ?? 0) }}</td>
+                                        <td>
+                                            @php($viewType = $model['view_type'] ?? 'normal')
+                                            {{ $viewType === 'corner' ? 'ناصية' : ($viewType === 'facade' ? 'واجهة' : 'عادية') }}
+                                        </td>
                                     </tr>
                                 @endforeach
                                 </tbody>

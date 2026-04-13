@@ -17,7 +17,7 @@ class StoreSaleRequest extends FormRequest
     {
         return [
             'property_id' => ['required', 'exists:properties,id'],
-            'floor_number' => ['required', 'integer', 'min:1'],
+            'floor_number' => ['required', 'integer', 'min:0'],
             'apartment_model' => ['required', 'string', 'max:255'],
             'sale_price' => ['required', 'numeric', 'min:1'],
             'payment_type' => ['required', 'in:cash,installment'],
@@ -42,7 +42,15 @@ class StoreSaleRequest extends FormRequest
             }
 
             $floor = (int) $this->input('floor_number');
-            if ($floor > (int) ($property->floors_count ?? 0)) {
+            $hasGroundCommercial = (int) ($property->ground_floor_shops_count ?? 0) > 0;
+            $hasMezzanine = (bool) ($property->has_mezzanine ?? false);
+            $maxFloor = max(1, (int) ($property->floors_count ?? 1)) + ($hasMezzanine ? 1 : 0);
+
+            if ($floor === 0 && ! $hasGroundCommercial) {
+                $validator->errors()->add('floor_number', 'هذا العقار لا يحتوي وحدات بالدور الأرضي.');
+            }
+
+            if ($floor > $maxFloor) {
                 $validator->errors()->add('floor_number', 'رقم الدور غير متاح في هذا العقار.');
             }
 

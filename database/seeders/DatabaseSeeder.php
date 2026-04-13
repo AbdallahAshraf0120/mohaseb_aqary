@@ -118,12 +118,18 @@ class DatabaseSeeder extends Seeder
         $properties = collect(range(1, $counts['properties']))->map(function (int $i) use ($areas, $shareholders, $admin, $pid, $project) {
             $floors = fake()->numberBetween(6, 22);
             $apartmentsPerFloor = fake()->numberBetween(2, 7);
+            $groundFloorShops = fake()->numberBetween(0, 8);
+            $hasMezzanine = fake()->boolean(60);
+            $mezzanineApartments = $hasMezzanine ? fake()->numberBetween(1, 6) : 0;
             $modelsCount = fake()->numberBetween(2, 5);
 
             $models = collect(range(1, $modelsCount))->map(function (int $modelIndex) {
                 return [
                     'model_name' => chr(64 + $modelIndex),
                     'area' => fake()->numberBetween(75, 240),
+                    'rooms_count' => fake()->numberBetween(1, 5),
+                    'bathrooms_count' => fake()->numberBetween(1, 3),
+                    'view_type' => fake()->randomElement(['normal', 'facade', 'corner']),
                 ];
             })->values()->all();
 
@@ -147,7 +153,10 @@ class DatabaseSeeder extends Seeder
                     'property_type' => fake()->randomElement(['سكني', 'تجاري', 'إداري', 'مختلط']),
                     'floors_count' => $floors,
                     'apartments_per_floor' => $apartmentsPerFloor,
-                    'total_apartments' => $floors * $apartmentsPerFloor,
+                    'ground_floor_shops_count' => $groundFloorShops,
+                    'has_mezzanine' => $hasMezzanine,
+                    'mezzanine_apartments_count' => $mezzanineApartments,
+                    'total_apartments' => ($floors * $apartmentsPerFloor) + $mezzanineApartments,
                     'shareholder_allocations' => $allocations,
                     'apartment_models' => $models,
                     'location' => $area->name,
@@ -192,7 +201,10 @@ class DatabaseSeeder extends Seeder
                     'property_id' => $property->id,
                     'client_id' => $clients->random()->id,
                     'sale_date' => $saleDate,
-                    'floor_number' => fake()->numberBetween(1, max(1, (int) $property->floors_count)),
+                    'floor_number' => fake()->numberBetween(
+                        (int) ($property->ground_floor_shops_count ?? 0) > 0 ? 0 : 1,
+                        max(1, (int) $property->floors_count) + ((bool) ($property->has_mezzanine ?? false) ? 1 : 0)
+                    ),
                 ],
                 [
                     'apartment_model' => (string) ($model['model_name'] ?? 'A'),

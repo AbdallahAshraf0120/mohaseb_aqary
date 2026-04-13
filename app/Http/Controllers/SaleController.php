@@ -34,7 +34,14 @@ class SaleController extends Controller
         return view('sales.create', [
             'title' => 'تسجيل بيع | Mohaseb Aqary',
             'pageTitle' => 'تسجيل بيع',
-            'properties' => Property::query()->select('id', 'name', 'floors_count', 'apartment_models')->orderBy('name')->get(),
+            'properties' => Property::query()->select(
+                'id',
+                'name',
+                'floors_count',
+                'ground_floor_shops_count',
+                'has_mezzanine',
+                'apartment_models'
+            )->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
     }
@@ -81,7 +88,14 @@ class SaleController extends Controller
             'title' => 'تعديل البيعة | Mohaseb Aqary',
             'pageTitle' => 'تعديل البيعة',
             'sale' => $sale->load('client'),
-            'properties' => Property::query()->select('id', 'name', 'floors_count', 'apartment_models')->orderBy('name')->get(),
+            'properties' => Property::query()->select(
+                'id',
+                'name',
+                'floors_count',
+                'ground_floor_shops_count',
+                'has_mezzanine',
+                'apartment_models'
+            )->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
     }

@@ -105,9 +105,15 @@
                             </td>
                             <td class="small">
                                 @if($p->floors_count || $p->total_apartments)
-                                    {{ $p->floors_count ?? '—' }} دور
+                                    {{ $p->floors_count ?? '—' }} دور متكرر
                                     @if($p->total_apartments)
-                                        · {{ $p->total_apartments }} وحدة
+                                        · {{ $p->total_apartments }} شقة
+                                    @endif
+                                    @if(($p->ground_floor_shops_count ?? 0) > 0)
+                                        · {{ $p->ground_floor_shops_count }} محل أرضي
+                                    @endif
+                                    @if($p->has_mezzanine)
+                                        · {{ $p->mezzanine_apartments_count ?? 0 }} شقق ميزان
                                     @endif
                                 @else
                                     —

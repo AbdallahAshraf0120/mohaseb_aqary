@@ -27,8 +27,9 @@
                         <th>اسم العقار</th>
                         <th>نوع العقار</th>
                         <th>المنطقة</th>
-                        <th>عدد الأدوار</th>
+                        <th>الأدوار المتكررة</th>
                         <th>شقق/دور</th>
+                        <th>أرضي/ميزان</th>
                         <th>إجمالي الشقق</th>
                         <th class="text-end">العمليات</th>
                     </tr>
@@ -42,6 +43,11 @@
                             <td>{{ $property->area?->name ?? ($property->location ?? '-') }}</td>
                             <td>{{ $property->floors_count ?? '-' }}</td>
                             <td>{{ $property->apartments_per_floor ?? '-' }}</td>
+                            <td class="small">
+                                {{ (int) ($property->ground_floor_shops_count ?? 0) }} محل
+                                ·
+                                {{ $property->has_mezzanine ? ((int) ($property->mezzanine_apartments_count ?? 0) . ' شقق ميزان') : 'بدون ميزان' }}
+                            </td>
                             <td>{{ $property->total_apartments ?? '-' }}</td>
                             <td class="text-end">
                                 <a href="{{ route('properties.show', $property) }}" class="btn btn-outline-info btn-sm">عرض</a>
@@ -56,7 +62,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center text-muted">لا توجد بيانات عقارات حتى الآن.</td>
+                            <td colspan="9" class="text-center text-muted">لا توجد بيانات عقارات حتى الآن.</td>
                         </tr>
                     @endforelse
                     </tbody>

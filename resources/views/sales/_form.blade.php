@@ -107,21 +107,40 @@
         const selectedModel = @json($selectedModel);
         const properties = @json($properties->mapWithKeys(fn ($p) => [(string) $p->id => [
             'floors_count' => (int) ($p->floors_count ?? 1),
+            'ground_floor_shops_count' => (int) ($p->ground_floor_shops_count ?? 0),
+            'has_mezzanine' => (bool) ($p->has_mezzanine ?? false),
             'models' => collect($p->apartment_models ?? [])->pluck('model_name')->filter()->values()->all(),
         ]]));
 
         function refreshPropertyMeta() {
             const id = propertySelect?.value;
-            const meta = properties[id] || { floors_count: 1, models: [] };
+            const meta = properties[id] || {
+                floors_count: 1,
+                ground_floor_shops_count: 0,
+                has_mezzanine: false,
+                models: []
+            };
 
             floorSelect.innerHTML = '';
-            for (let i = 1; i <= Math.max(1, meta.floors_count); i++) {
-                const option = document.createElement('option');
-                option.value = String(i);
-                option.textContent = String(i);
-                if (i === selectedFloor) option.selected = true;
-                floorSelect.appendChild(option);
+            const maxFloor = Math.max(1, meta.floors_count) + (meta.has_mezzanine ? 1 : 0);
+            const floorOptions = [];
+            if (meta.ground_floor_shops_count > 0) {
+                floorOptions.push({ value: 0, label: '0 (أرضي تجاري)' });
             }
+            if (meta.has_mezzanine) {
+                floorOptions.push({ value: 1, label: '1 (ميزان)' });
+            }
+            for (let i = meta.has_mezzanine ? 2 : 1; i <= maxFloor; i++) {
+                floorOptions.push({ value: i, label: String(i) });
+            }
+
+            floorOptions.forEach((item) => {
+                const option = document.createElement('option');
+                option.value = String(item.value);
+                option.textContent = item.label;
+                if (item.value === selectedFloor) option.selected = true;
+                floorSelect.appendChild(option);
+            });
 
             modelSelect.innerHTML = '';
             const models = meta.models.length ? meta.models : ['نموذج افتراضي'];

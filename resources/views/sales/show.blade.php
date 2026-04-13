@@ -7,9 +7,17 @@
             <a href="{{ route('sales.index') }}" class="btn btn-outline-secondary btn-sm">رجوع</a>
         </div>
         <div class="card-body">
+            @php
+                $floorLabel = (string) $sale->floor_number;
+                if ((int) $sale->floor_number === 0) {
+                    $floorLabel = '0 (أرضي تجاري)';
+                } elseif ((int) $sale->floor_number === 1 && ($sale->property?->has_mezzanine ?? false)) {
+                    $floorLabel = '1 (ميزان)';
+                }
+            @endphp
             <div class="row g-3">
                 <div class="col-md-4"><strong>العقار:</strong> {{ $sale->property?->name ?? '-' }}</div>
-                <div class="col-md-4"><strong>الدور:</strong> {{ $sale->floor_number }}</div>
+                <div class="col-md-4"><strong>الدور:</strong> {{ $floorLabel }}</div>
                 <div class="col-md-4"><strong>النموذج:</strong> {{ $sale->apartment_model }}</div>
                 <div class="col-md-4"><strong>سعر البيع:</strong> {{ number_format((float) $sale->sale_price, 2) }}</div>
                 <div class="col-md-4"><strong>نوع السداد:</strong> {{ $sale->payment_type === 'cash' ? 'كاش' : 'تقسيط' }}</div>
