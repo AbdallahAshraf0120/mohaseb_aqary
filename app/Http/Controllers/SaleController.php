@@ -54,7 +54,7 @@ class SaleController extends Controller
     public function store(StoreSaleRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        $client = $this->upsertClient($validated);
+        $client = $this->createClientForNewSale($validated);
 
         $sale = Sale::query()->create([
             'property_id' => $validated['property_id'],
@@ -111,14 +111,7 @@ class SaleController extends Controller
     public function update(UpdateSaleRequest $request, Project $project, Sale $sale): RedirectResponse
     {
         $validated = $request->validated();
-        $client = $sale->client ?: $this->upsertClient($validated);
-
-        $client->update([
-            'name' => $validated['client_name'],
-            'phone' => $validated['client_phone'],
-            'email' => $validated['client_email'] ?? null,
-            'national_id' => $validated['client_national_id'] ?? null,
-        ]);
+        $client = $this->resolveClientForSaleUpdate($sale, $validated);
 
         $sale->update([
             'property_id' => $validated['property_id'],
@@ -149,39 +142,37 @@ class SaleController extends Controller
         return redirect()->route('sales.index')->with('success', 'تم حذف البيعة بنجاح.');
     }
 
-    private function upsertClient(array $validated): Client
+    private function createClientForNewSale(array $validated): Client
     {
-        $client = null;
-
-        if (! empty($validated['client_national_id'])) {
-            $client = Client::query()->where('national_id', $validated['client_national_id'])->first();
-        }
-
-        if (! $client && ! empty($validated['client_phone'])) {
-            $client = Client::query()->where('phone', $validated['client_phone'])->first();
-        }
-
-        if (! $client && ! empty($validated['client_email'])) {
-            $client = Client::query()->where('email', $validated['client_email'])->first();
-        }
-
-        if ($client) {
-            $client->update([
-                'name' => $validated['client_name'],
-                'phone' => $validated['client_phone'],
-                'email' => $validated['client_email'] ?? null,
-                'national_id' => $validated['client_national_id'] ?? null,
-            ]);
-
-            return $client;
-        }
-
         return Client::query()->create([
             'name' => $validated['client_name'],
             'phone' => $validated['client_phone'],
             'email' => $validated['client_email'] ?? null,
             'national_id' => $validated['client_national_id'] ?? null,
         ]);
+    }
+
+    private function resolveClientForSaleUpdate(Sale $sale, array $validated): Client
+    {
+        $existing = $sale->client;
+        if ($existing && $this->clientMatchesValidated($existing, $validated)) {
+            return $existing;
+        }
+
+        return $this->createClientForNewSale($validated);
+    }
+
+    private function clientMatchesValidated(Client $client, array $validated): bool
+    {
+        return $client->name === $validated['client_name']
+            && $client->phone === $validated['client_phone']
+            && $this->normalizedNullableString($client->email) === $this->normalizedNullableString($validated['client_email'] ?? null)
+            && $this->normalizedNullableString($client->national_id) === $this->normalizedNullableString($validated['client_national_id'] ?? null);
+    }
+
+    private function normalizedNullableString(?string $value): string
+    {
+        return trim((string) ($value ?? ''));
     }
 
     private function syncContractForSale(Sale $sale): void
