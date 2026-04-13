@@ -23,9 +23,12 @@ class StorePropertyRequest extends FormRequest
             'floors_count' => ['required', 'integer', 'min:1'],
             'registered_floors' => ['nullable', 'array'],
             'registered_floors.*' => ['nullable', 'integer', 'min:1'],
+            'mushaa_floors' => ['nullable', 'array'],
+            'mushaa_floors.*' => ['nullable', 'integer', 'min:1'],
             'mezzanine_floors' => ['nullable', 'array'],
             'mezzanine_floors.*.floor_number' => ['nullable', 'integer', 'min:1'],
             'mezzanine_floors.*.apartments_count' => ['nullable', 'integer', 'min:1'],
+            'mushaa_partner_name' => ['nullable', 'string', 'max:255'],
             'apartments_per_floor' => ['required', 'integer', 'min:1'],
             'ground_floor_shops_count' => ['nullable', 'integer', 'min:0'],
             'has_mezzanine' => ['nullable', 'boolean'],
@@ -62,6 +65,13 @@ class StorePropertyRequest extends FormRequest
         if (count($registeredFloors) === 0) {
             $registeredFloors = range(1, $effectiveFloors);
         }
+        $legacyMushaaFromMezzanineInput = collect($this->input('mezzanine_floors', []))
+            ->filter(static fn ($item) => is_array($item)
+                && ! empty($item['floor_number'])
+                && filter_var($item['is_mushaa'] ?? false, FILTER_VALIDATE_BOOL))
+            ->map(static fn (array $item) => (int) $item['floor_number'])
+            ->filter(static fn (int $n) => $n >= 1 && $n <= $buildingTotalFloors)
+            ->unique();
         $mezzanineFloors = collect($this->input('mezzanine_floors', []))
             ->filter(static fn (array $item) => !empty($item['floor_number']) && !empty($item['apartments_count']))
             ->map(static function (array $item) use ($buildingTotalFloors): ?array {
@@ -79,6 +89,20 @@ class StorePropertyRequest extends FormRequest
             ->filter()
             ->unique(static fn (array $item) => $item['floor_number'])
             ->sortBy('floor_number')
+            ->values()
+            ->all();
+        $allowedFloorNumbersForMushaa = collect($registeredFloors)
+            ->merge(collect($mezzanineFloors)->pluck('floor_number'))
+            ->map(static fn ($n) => (int) $n)
+            ->unique()
+            ->flip();
+        $mushaaFloors = collect($this->input('mushaa_floors', []))
+            ->map(static fn ($value) => (int) $value)
+            ->filter(static fn (int $n) => $n >= 1 && $n <= $buildingTotalFloors)
+            ->merge($legacyMushaaFromMezzanineInput)
+            ->unique()
+            ->filter(static fn (int $n) => $allowedFloorNumbersForMushaa->has($n))
+            ->sort()
             ->values()
             ->all();
         $apartmentsPerFloor = max(1, (int) $this->input('apartments_per_floor', 1));
@@ -113,7 +137,13 @@ class StorePropertyRequest extends FormRequest
             ->values()
             ->all();
 
+        $mushaaPartner = $this->input('mushaa_partner_name');
+        $mushaaPartner = is_string($mushaaPartner) ? trim($mushaaPartner) : '';
+        $mushaaPartner = $mushaaPartner === '' ? null : mb_substr($mushaaPartner, 0, 255);
+
         $this->merge([
+            'mushaa_partner_name' => $mushaaPartner,
+            'mushaa_floors' => $mushaaFloors,
             'total_apartments' => $providedTotal > 0 ? $providedTotal : $calculatedTotal,
             'building_total_floors' => $buildingTotalFloors,
             'floors_count' => $effectiveFloors,

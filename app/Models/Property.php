@@ -19,6 +19,8 @@ class Property extends Model
         'floors_count',
         'registered_floors',
         'mezzanine_floors',
+        'mushaa_partner_name',
+        'mushaa_floors',
         'apartments_per_floor',
         'ground_floor_shops_count',
         'has_mezzanine',
@@ -38,6 +40,7 @@ class Property extends Model
         'mezzanine_floors' => 'array',
         'shareholder_allocations' => 'array',
         'apartment_models' => 'array',
+        'mushaa_floors' => 'array',
     ];
 
     public function project(): BelongsTo

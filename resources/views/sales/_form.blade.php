@@ -31,12 +31,30 @@
             ->sortBy('floor_number')
             ->values()
             ->all();
+        $mushaaFloors = collect($p->mushaa_floors ?? [])
+            ->map(static fn ($n) => (int) $n)
+            ->filter(static fn (int $n) => $n >= 1)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+        if ($mushaaFloors === []) {
+            $mushaaFloors = collect($p->mezzanine_floors ?? [])
+                ->filter(static fn ($row) => is_array($row) && filter_var($row['is_mushaa'] ?? false, FILTER_VALIDATE_BOOL))
+                ->map(static fn ($row) => (int) ($row['floor_number'] ?? 0))
+                ->filter(static fn (int $n) => $n >= 1)
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
+        }
 
         return [(string) $p->id => [
             'floors_count' => (int) ($p->floors_count ?? 1),
             'registered_floors' => $registeredFloors,
             'ground_floor_shops_count' => (int) ($p->ground_floor_shops_count ?? 0),
             'mezzanine_floors' => $mezzanineFloors,
+            'mushaa_floors' => $mushaaFloors,
             'models' => collect($p->apartment_models ?? [])->pluck('model_name')->filter()->values()->all(),
         ]];
     });
@@ -166,6 +184,7 @@
                 registered_floors: [],
                 ground_floor_shops_count: 0,
                 mezzanine_floors: [],
+                mushaa_floors: [],
                 models: []
             };
 
@@ -194,6 +213,20 @@
                     floorOptions.push({ value: floorNumber, label: `${floorNumber} (ميزان)` });
                 });
             }
+            const mushaaSet = new Set((meta.mushaa_floors || []).map((n) => Number(n)));
+            floorOptions.forEach((opt) => {
+                if (opt.value < 1 || !mushaaSet.has(opt.value)) {
+                    return;
+                }
+                if (opt.label.includes('مشاع')) {
+                    return;
+                }
+                if (opt.label.includes('ميزان')) {
+                    opt.label = opt.label.replace('(ميزان)', '(ميزان · مشاع)');
+                } else {
+                    opt.label = `${opt.label} (مشاع)`;
+                }
+            });
             floorOptions.sort((a, b) => Number(a.value) - Number(b.value));
 
             floorOptions.forEach((item) => {

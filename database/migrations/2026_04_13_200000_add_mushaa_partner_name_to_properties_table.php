@@ -1,0 +1,21 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::table('properties', function (Blueprint $table): void {
+            $table->string('mushaa_partner_name', 255)->nullable()->after('mezzanine_floors');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('properties', function (Blueprint $table): void {
+            $table->dropColumn('mushaa_partner_name');
+        });
+    }
+};

@@ -38,6 +38,32 @@
             'apartments_count' => (int) $property->mezzanine_apartments_count,
         ]];
     }
+    $mushaaFloors = collect(old('mushaa_floors', []))
+        ->map(fn ($value) => (int) $value)
+        ->filter(fn (int $value) => $value >= 1)
+        ->unique()
+        ->sort()
+        ->values()
+        ->all();
+    if ($mushaaFloors === [] && isset($property)) {
+        $mushaaFloors = collect($property->mushaa_floors ?? [])
+            ->map(fn ($value) => (int) $value)
+            ->filter(fn (int $value) => $value >= 1)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+    }
+    if ($mushaaFloors === [] && isset($property)) {
+        $mushaaFloors = collect($property->mezzanine_floors ?? [])
+            ->filter(fn ($row) => is_array($row) && !empty($row['is_mushaa']))
+            ->map(fn ($row) => (int) ($row['floor_number'] ?? 0))
+            ->filter(fn (int $value) => $value >= 1)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+    }
 @endphp
 
 <div class="row g-3">
@@ -100,6 +126,24 @@
 
     <div class="col-12">
         <div class="card border">
+            <div class="card-header py-2"><strong>أدوار مشاعة في العقار (50٪ مساهمين / 50٪ شريك)</strong></div>
+            <div class="card-body">
+                <p class="text-muted small mb-2">حدّد أي دور من أدوار البرج (1 … إجمالي الأدوار) يكون <strong>مشاعًا</strong>، سواء كان ضمن الأدوار المسجلة أو ضمن الميزان. يُقسَّم عائد وحدات ذلك الدور بين مجموعة المساهمين والشريك الآخر.</p>
+                <div class="d-flex flex-wrap gap-2 mb-3" id="mushaa-floors-box"></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="mushaa_partner_name">اسم الشريك الآخر</label>
+                        <input type="text" name="mushaa_partner_name" id="mushaa_partner_name" class="form-control"
+                               value="{{ old('mushaa_partner_name', isset($property) ? ($property->mushaa_partner_name ?? '') : '') }}"
+                               placeholder="مثال: شريك خارجي / شركة أخرى">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card border">
             <div class="card-header d-flex justify-content-between align-items-center py-2">
                 <strong>أدوار الميزان (أكثر من ميزان)</strong>
                 <button type="button" class="btn btn-outline-primary btn-sm" id="add-mezzanine-row">إضافة ميزان</button>
@@ -117,13 +161,13 @@
                         <tbody id="mezzanine-floors-body">
                         @forelse($mezzanineFloors as $i => $mezz)
                             <tr>
-                                <td><input type="number" min="1" class="form-control" name="mezzanine_floors[{{ $i }}][floor_number]" value="{{ $mezz['floor_number'] ?? '' }}" placeholder="مثال: 1"></td>
+                                <td><input type="number" min="1" class="form-control" name="mezzanine_floors[{{ $i }}][floor_number]" value="{{ $mezz['floor_number'] ?? '' }}" placeholder="مثال: 12"></td>
                                 <td><input type="number" min="1" class="form-control" name="mezzanine_floors[{{ $i }}][apartments_count]" value="{{ $mezz['apartments_count'] ?? '' }}" placeholder="مثال: 2"></td>
                                 <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm remove-mezzanine-row">حذف</button></td>
                             </tr>
                         @empty
                             <tr>
-                                <td><input type="number" min="1" class="form-control" name="mezzanine_floors[0][floor_number]" placeholder="مثال: 1"></td>
+                                <td><input type="number" min="1" class="form-control" name="mezzanine_floors[0][floor_number]" placeholder="مثال: 12"></td>
                                 <td><input type="number" min="1" class="form-control" name="mezzanine_floors[0][apartments_count]" placeholder="مثال: 2"></td>
                                 <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm remove-mezzanine-row">حذف</button></td>
                             </tr>
@@ -239,10 +283,67 @@
         const total = document.getElementById('total_apartments');
         const recalculateTotalBtn = document.getElementById('recalculate-total');
         const registeredFloorsBox = document.getElementById('registered-floors-box');
+        const mushaaFloorsBox = document.getElementById('mushaa-floors-box');
         const modelsBody = document.getElementById('apartment-models-body');
         const addModelBtn = document.getElementById('add-model-row');
         let totalIsManual = false;
         const initiallySelectedRegisteredFloors = new Set(@json($registeredFloors));
+        const initiallySelectedMushaaFloors = new Set(@json($mushaaFloors));
+
+        const allowedFloorsForMushaa = () => {
+            const allowed = new Set();
+            if (registeredFloorsBox) {
+                registeredFloorsBox.querySelectorAll('input[name="registered_floors[]"]:checked').forEach((input) => {
+                    const n = parseInt(input.value || '0', 10);
+                    if (n > 0) {
+                        allowed.add(n);
+                    }
+                });
+            }
+            if (mezzanineFloorsBody) {
+                mezzanineFloorsBody.querySelectorAll('tr').forEach((tr) => {
+                    const numInput = tr.querySelector('input[name*="[floor_number]"]');
+                    const n = parseInt(numInput?.value || '0', 10);
+                    if (n >= 1) {
+                        allowed.add(n);
+                    }
+                });
+            }
+            return allowed;
+        };
+
+        const syncMushaaFloors = () => {
+            if (!mushaaFloorsBox || !buildingTotalFloors) {
+                return;
+            }
+            const maxFloor = Math.max(1, parseInt(buildingTotalFloors.value || '1', 10));
+            const currentSelected = Array.from(mushaaFloorsBox.querySelectorAll('input[type="checkbox"][name="mushaa_floors[]"]:checked'))
+                .map((input) => parseInt(input.value || '0', 10))
+                .filter((value) => value > 0);
+            const selectedSet = currentSelected.length ? new Set(currentSelected) : new Set(initiallySelectedMushaaFloors);
+            const allowed = allowedFloorsForMushaa();
+
+            mushaaFloorsBox.innerHTML = '';
+            for (let i = 1; i <= maxFloor; i++) {
+                const wrapper = document.createElement('label');
+                wrapper.className = 'btn btn-outline-info btn-sm';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'form-check-input me-1';
+                checkbox.name = 'mushaa_floors[]';
+                checkbox.value = String(i);
+                const isAllowed = allowed.has(i);
+                checkbox.disabled = !isAllowed;
+                checkbox.checked = isAllowed && selectedSet.has(i);
+                if (!isAllowed) {
+                    checkbox.title = 'فعّل هذا الدور أولًا في «الأدوار المسجلة» أو أدخل رقمه في «الميزان»';
+                    wrapper.classList.add('opacity-50');
+                }
+                wrapper.appendChild(checkbox);
+                wrapper.appendChild(document.createTextNode(`دور ${i} مشاع`));
+                mushaaFloorsBox.appendChild(wrapper);
+            }
+        };
 
         const syncRegisteredFloors = () => {
             if (!registeredFloorsBox || !buildingTotalFloors || !floors) {
@@ -268,6 +369,7 @@
                 checkbox.addEventListener('change', () => {
                     const count = registeredFloorsBox.querySelectorAll('input[type="checkbox"]:checked').length;
                     floors.value = String(Math.max(1, count));
+                    syncMushaaFloors();
                     syncTotal();
                 });
 
@@ -278,6 +380,7 @@
 
             const selectedCount = registeredFloorsBox.querySelectorAll('input[type="checkbox"]:checked').length;
             floors.value = String(Math.max(1, selectedCount));
+            syncMushaaFloors();
         };
 
         const syncTotal = () => {
@@ -303,10 +406,14 @@
         floors?.addEventListener('input', syncTotal);
         buildingTotalFloors?.addEventListener('input', () => {
             syncRegisteredFloors();
+            syncMushaaFloors();
             syncTotal();
         });
         apartments?.addEventListener('input', syncTotal);
-        mezzanineFloorsBody?.addEventListener('input', syncTotal);
+        mezzanineFloorsBody?.addEventListener('input', () => {
+            syncMushaaFloors();
+            syncTotal();
+        });
         total?.addEventListener('input', () => {
             totalIsManual = true;
         });
@@ -323,17 +430,19 @@
             const index = mezzanineFloorsBody.querySelectorAll('tr').length;
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><input type="number" min="1" class="form-control" name="mezzanine_floors[${index}][floor_number]" placeholder="مثال: 1"></td>
+                <td><input type="number" min="1" class="form-control" name="mezzanine_floors[${index}][floor_number]" placeholder="مثال: 12"></td>
                 <td><input type="number" min="1" class="form-control" name="mezzanine_floors[${index}][apartments_count]" placeholder="مثال: 2"></td>
                 <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm remove-mezzanine-row">حذف</button></td>
             `;
             mezzanineFloorsBody.appendChild(tr);
+            syncMushaaFloors();
         });
 
         mezzanineFloorsBody?.addEventListener('click', (event) => {
             const target = event.target;
             if (target instanceof HTMLElement && target.classList.contains('remove-mezzanine-row')) {
                 target.closest('tr')?.remove();
+                syncMushaaFloors();
                 syncTotal();
             }
         });
@@ -366,6 +475,7 @@
         });
 
         syncRegisteredFloors();
+        syncMushaaFloors();
         syncTotal();
     })();
 </script>

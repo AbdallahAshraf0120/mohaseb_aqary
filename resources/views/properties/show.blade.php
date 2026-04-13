@@ -35,12 +35,28 @@
                         —
                     @endif
                 </div>
+                <div class="col-12">
+                    <strong>أدوار مشاعة:</strong>
+                    @php($mushaaFloors = collect($property->mushaa_floors ?? [])->map(fn ($n) => (int) $n)->filter(fn ($n) => $n >= 1)->unique()->sort()->values())
+                    @if($mushaaFloors->isNotEmpty())
+                        @foreach($mushaaFloors as $mf)
+                            <span class="badge text-bg-info me-1">دور {{ $mf }} (50٪ مساهمين / 50٪ شريك)</span>
+                        @endforeach
+                    @else
+                        —
+                    @endif
+                </div>
                 <div class="col-md-6">
                     <strong>محلات الأرضي (0):</strong> {{ $property->ground_floor_shops_count ?? 0 }}
                 </div>
                 <div class="col-md-6">
                     <strong>إجمالي شقق الميزان:</strong> {{ $property->mezzanine_apartments_count ?? 0 }}
                 </div>
+                @if(filled($property->mushaa_partner_name))
+                    <div class="col-md-6">
+                        <strong>الشريك الآخر (مشاع):</strong> {{ $property->mushaa_partner_name }}
+                    </div>
+                @endif
                 <div class="col-12">
                     <strong>أدوار الميزان:</strong>
                     @php($mezzanineFloors = collect($property->mezzanine_floors ?? [])->filter()->values())
