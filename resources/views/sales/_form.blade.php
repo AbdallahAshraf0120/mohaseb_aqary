@@ -13,8 +13,17 @@
         $salePriceValue > 0 ? round(($downPaymentValue / $salePriceValue) * 100, 2) : ($paymentType === 'cash' ? 100 : 0)
     );
     $propertiesMeta = $properties->mapWithKeys(function ($p) {
+        $registeredFloors = collect($p->registered_floors ?? [])
+            ->map(static fn ($value) => (int) $value)
+            ->filter(static fn (int $value) => $value >= 1)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
         return [(string) $p->id => [
             'floors_count' => (int) ($p->floors_count ?? 1),
+            'registered_floors' => $registeredFloors,
             'ground_floor_shops_count' => (int) ($p->ground_floor_shops_count ?? 0),
             'has_mezzanine' => (bool) ($p->has_mezzanine ?? false),
             'models' => collect($p->apartment_models ?? [])->pluck('model_name')->filter()->values()->all(),
@@ -143,13 +152,16 @@
             const id = propertySelect?.value;
             const meta = properties[id] || {
                 floors_count: 1,
+                registered_floors: [],
                 ground_floor_shops_count: 0,
                 has_mezzanine: false,
                 models: []
             };
 
             floorSelect.innerHTML = '';
-            const maxFloor = Math.max(1, meta.floors_count) + (meta.has_mezzanine ? 1 : 0);
+            const registeredFloors = Array.isArray(meta.registered_floors) && meta.registered_floors.length
+                ? meta.registered_floors
+                : Array.from({ length: Math.max(1, meta.floors_count) }, (_, idx) => idx + 1);
             const floorOptions = [];
             if (meta.ground_floor_shops_count > 0) {
                 floorOptions.push({ value: 0, label: '0 (أرضي تجاري)' });
@@ -157,9 +169,9 @@
             if (meta.has_mezzanine) {
                 floorOptions.push({ value: 1, label: '1 (ميزان)' });
             }
-            for (let i = meta.has_mezzanine ? 2 : 1; i <= maxFloor; i++) {
-                floorOptions.push({ value: i, label: String(i) });
-            }
+            registeredFloors.forEach((floorNumber) => {
+                floorOptions.push({ value: floorNumber, label: String(floorNumber) });
+            });
 
             floorOptions.forEach((item) => {
                 const option = document.createElement('option');

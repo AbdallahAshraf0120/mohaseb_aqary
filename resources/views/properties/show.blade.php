@@ -18,10 +18,22 @@
                     <strong>المنطقة:</strong> {{ $property->area?->name ?? ($property->location ?? '-') }}
                 </div>
                 <div class="col-md-6">
+                    <strong>إجمالي أدوار البرج:</strong> {{ $property->building_total_floors ?? $property->floors_count ?? '-' }}
+                </div>
+                <div class="col-md-6">
                     <strong>الأدوار المتكررة:</strong> {{ $property->floors_count ?? '-' }}
                 </div>
                 <div class="col-md-6">
                     <strong>شقق/دور متكرر:</strong> {{ $property->apartments_per_floor ?? '-' }}
+                </div>
+                <div class="col-12">
+                    <strong>الأدوار المسجلة:</strong>
+                    @php($registeredFloors = collect($property->registered_floors ?? [])->filter()->values())
+                    @if($registeredFloors->isNotEmpty())
+                        {{ $registeredFloors->implode(' ، ') }}
+                    @else
+                        —
+                    @endif
                 </div>
                 <div class="col-md-6">
                     <strong>محلات الأرضي (0):</strong> {{ $property->ground_floor_shops_count ?? 0 }}

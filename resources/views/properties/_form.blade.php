@@ -23,6 +23,14 @@
         'view_type' => 'normal',
     ]]);
     $hasMezzanine = (bool) old('has_mezzanine', isset($property) ? $property->has_mezzanine : false);
+    $buildingTotalFloors = (int) old('building_total_floors', $property->building_total_floors ?? $property->floors_count ?? 1);
+    $registeredFloors = collect(old('registered_floors', $property->registered_floors ?? []))
+        ->map(fn ($value) => (int) $value)
+        ->filter(fn (int $value) => $value >= 1)
+        ->unique()
+        ->sort()
+        ->values()
+        ->all();
 @endphp
 
 <div class="row g-3">
@@ -45,7 +53,12 @@
     </div>
 
     <div class="col-md-3">
-        <label class="form-label">عدد الأدوار المتكررة</label>
+        <label class="form-label">إجمالي أدوار البرج</label>
+        <input type="number" min="1" name="building_total_floors" id="building_total_floors" class="form-control"
+               value="{{ $buildingTotalFloors }}" required>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">عدد الأدوار المسجلة</label>
         <input type="number" min="1" name="floors_count" id="floors_count" class="form-control"
                value="{{ old('floors_count', $property->floors_count ?? 1) }}" required>
     </div>
@@ -78,6 +91,16 @@
         </label>
         <input type="number" min="1" name="total_apartments" id="total_apartments" class="form-control"
                value="{{ old('total_apartments', $property->total_apartments ?? 1) }}" required>
+    </div>
+
+    <div class="col-12">
+        <div class="card border">
+            <div class="card-header py-2"><strong>اختيار الأدوار المسجلة بالعقار</strong></div>
+            <div class="card-body">
+                <p class="text-muted small mb-2">حدد الأدوار التي تملكها/ستسجلها (مثال: من 12 دور تختار 6 أدوار فقط).</p>
+                <div class="d-flex flex-wrap gap-2" id="registered-floors-box"></div>
+            </div>
+        </div>
     </div>
 
     <div class="col-12">
@@ -177,21 +200,63 @@
 <script>
     (function () {
         const floors = document.getElementById('floors_count');
+        const buildingTotalFloors = document.getElementById('building_total_floors');
         const apartments = document.getElementById('apartments_per_floor');
         const hasMezzanine = document.getElementById('has_mezzanine');
         const mezzanineApartments = document.getElementById('mezzanine_apartments_count');
         const total = document.getElementById('total_apartments');
         const recalculateTotalBtn = document.getElementById('recalculate-total');
+        const registeredFloorsBox = document.getElementById('registered-floors-box');
         const modelsBody = document.getElementById('apartment-models-body');
         const addModelBtn = document.getElementById('add-model-row');
         let totalIsManual = false;
+        const initiallySelectedRegisteredFloors = new Set(@json($registeredFloors));
+
+        const syncRegisteredFloors = () => {
+            if (!registeredFloorsBox || !buildingTotalFloors || !floors) {
+                return;
+            }
+
+            const maxFloor = Math.max(1, parseInt(buildingTotalFloors.value || '1', 10));
+            const currentSelected = Array.from(registeredFloorsBox.querySelectorAll('input[type="checkbox"]:checked'))
+                .map((input) => parseInt(input.value || '0', 10))
+                .filter((value) => value > 0);
+            const selectedSet = currentSelected.length ? new Set(currentSelected) : new Set(initiallySelectedRegisteredFloors);
+
+            registeredFloorsBox.innerHTML = '';
+            for (let i = 1; i <= maxFloor; i++) {
+                const wrapper = document.createElement('label');
+                wrapper.className = 'btn btn-outline-secondary btn-sm';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'form-check-input me-1';
+                checkbox.name = 'registered_floors[]';
+                checkbox.value = String(i);
+                checkbox.checked = selectedSet.has(i);
+                checkbox.addEventListener('change', () => {
+                    const count = registeredFloorsBox.querySelectorAll('input[type="checkbox"]:checked').length;
+                    floors.value = String(Math.max(1, count));
+                    syncTotal();
+                });
+
+                wrapper.appendChild(checkbox);
+                wrapper.appendChild(document.createTextNode(`دور ${i}`));
+                registeredFloorsBox.appendChild(wrapper);
+            }
+
+            const selectedCount = registeredFloorsBox.querySelectorAll('input[type="checkbox"]:checked').length;
+            floors.value = String(Math.max(1, selectedCount));
+        };
 
         const syncTotal = () => {
             if (totalIsManual) {
                 return;
             }
 
-            const floorsValue = Math.max(1, parseInt(floors?.value || '1', 10));
+            const selectedFloorsCount = registeredFloorsBox
+                ? registeredFloorsBox.querySelectorAll('input[type="checkbox"]:checked').length
+                : 0;
+            const floorsValue = Math.max(1, selectedFloorsCount || parseInt(floors?.value || '1', 10));
             const apartmentsValue = Math.max(1, parseInt(apartments?.value || '1', 10));
             const hasMezzanineValue = (hasMezzanine?.value || '0') === '1';
             const mezzanineValue = Math.max(0, parseInt(mezzanineApartments?.value || '0', 10));
@@ -201,6 +266,10 @@
         };
 
         floors?.addEventListener('input', syncTotal);
+        buildingTotalFloors?.addEventListener('input', () => {
+            syncRegisteredFloors();
+            syncTotal();
+        });
         apartments?.addEventListener('input', syncTotal);
         hasMezzanine?.addEventListener('change', syncTotal);
         mezzanineApartments?.addEventListener('input', syncTotal);
@@ -239,6 +308,7 @@
             }
         });
 
+        syncRegisteredFloors();
         syncTotal();
     })();
 </script>

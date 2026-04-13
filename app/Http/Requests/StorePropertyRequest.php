@@ -19,7 +19,10 @@ class StorePropertyRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'area_id' => ['required', 'exists:areas,id'],
             'property_type' => ['required', 'string', 'max:255'],
+            'building_total_floors' => ['required', 'integer', 'min:1'],
             'floors_count' => ['required', 'integer', 'min:1'],
+            'registered_floors' => ['nullable', 'array'],
+            'registered_floors.*' => ['nullable', 'integer', 'min:1'],
             'apartments_per_floor' => ['required', 'integer', 'min:1'],
             'ground_floor_shops_count' => ['nullable', 'integer', 'min:0'],
             'has_mezzanine' => ['nullable', 'boolean'],
@@ -43,13 +46,25 @@ class StorePropertyRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $floors = max(1, (int) $this->input('floors_count', 1));
+        $buildingTotalFloors = max(1, (int) $this->input('building_total_floors', 1));
+        $floorsInput = max(1, (int) $this->input('floors_count', 1));
+        $registeredFloors = collect($this->input('registered_floors', []))
+            ->map(static fn ($value) => (int) $value)
+            ->filter(static fn (int $value) => $value >= 1 && $value <= $buildingTotalFloors)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+        $effectiveFloors = count($registeredFloors) > 0 ? count($registeredFloors) : min($floorsInput, $buildingTotalFloors);
+        if (count($registeredFloors) === 0) {
+            $registeredFloors = range(1, $effectiveFloors);
+        }
         $apartmentsPerFloor = max(1, (int) $this->input('apartments_per_floor', 1));
         $hasMezzanine = filter_var($this->input('has_mezzanine', false), FILTER_VALIDATE_BOOL);
         $mezzanineApartments = max(0, (int) $this->input('mezzanine_apartments_count', 0));
         $effectiveMezzanineApartments = $hasMezzanine ? $mezzanineApartments : 0;
         $providedTotal = (int) $this->input('total_apartments', 0);
-        $calculatedTotal = ($floors * $apartmentsPerFloor) + $effectiveMezzanineApartments;
+        $calculatedTotal = ($effectiveFloors * $apartmentsPerFloor) + $effectiveMezzanineApartments;
 
         $percentages = collect($this->input('shareholder_percentages', []))
             ->filter(static fn ($value) => $value !== null && $value !== '')
@@ -77,6 +92,9 @@ class StorePropertyRequest extends FormRequest
 
         $this->merge([
             'total_apartments' => $providedTotal > 0 ? $providedTotal : $calculatedTotal,
+            'building_total_floors' => $buildingTotalFloors,
+            'floors_count' => $effectiveFloors,
+            'registered_floors' => $registeredFloors,
             'ground_floor_shops_count' => max(0, (int) $this->input('ground_floor_shops_count', 0)),
             'has_mezzanine' => $hasMezzanine,
             'mezzanine_apartments_count' => $effectiveMezzanineApartments,

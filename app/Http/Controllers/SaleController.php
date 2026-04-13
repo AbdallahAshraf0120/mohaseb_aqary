@@ -40,6 +40,7 @@ class SaleController extends Controller
                 'id',
                 'name',
                 'floors_count',
+                'registered_floors',
                 'ground_floor_shops_count',
                 'has_mezzanine',
                 'apartment_models'
@@ -94,6 +95,7 @@ class SaleController extends Controller
                 'id',
                 'name',
                 'floors_count',
+                'registered_floors',
                 'ground_floor_shops_count',
                 'has_mezzanine',
                 'apartment_models'

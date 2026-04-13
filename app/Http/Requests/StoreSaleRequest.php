@@ -45,10 +45,18 @@ class StoreSaleRequest extends FormRequest
             $floor = (int) $this->input('floor_number');
             $hasGroundCommercial = (int) ($property->ground_floor_shops_count ?? 0) > 0;
             $hasMezzanine = (bool) ($property->has_mezzanine ?? false);
-            $maxFloor = max(1, (int) ($property->floors_count ?? 1)) + ($hasMezzanine ? 1 : 0);
+            $registeredFloors = collect($property->registered_floors ?? [])
+                ->map(static fn ($value) => (int) $value)
+                ->filter(static fn (int $value) => $value >= 1)
+                ->values();
+            $maxFloor = $registeredFloors->max() ?: (max(1, (int) ($property->floors_count ?? 1)) + ($hasMezzanine ? 1 : 0));
 
             if ($floor === 0 && ! $hasGroundCommercial) {
                 $validator->errors()->add('floor_number', 'هذا العقار لا يحتوي وحدات بالدور الأرضي.');
+            }
+
+            if ($floor > 0 && $registeredFloors->isNotEmpty() && ! $registeredFloors->contains($floor)) {
+                $validator->errors()->add('floor_number', 'هذا الدور غير مُسجل ضمن أدوار العقار.');
             }
 
             if ($floor > $maxFloor) {
