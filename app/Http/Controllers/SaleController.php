@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Project;
 use App\Models\Property;
+use App\Models\Revenue;
 use App\Models\Sale;
 use App\Services\CashboxLedgerService;
 use Illuminate\Contracts\View\View;
@@ -183,6 +184,12 @@ class SaleController extends Controller
         $defaultEndDate = $installmentMonths > 0
             ? $sale->sale_date->copy()->addMonths($installmentMonths)
             : $sale->sale_date->copy()->addYear();
+        $existingContract = Contract::query()->where('sale_id', $sale->id)->first();
+        $revenuesPaid = $existingContract
+            ? (float) Revenue::query()->where('contract_id', $existingContract->id)->sum('amount')
+            : 0.0;
+        $totalPaid = (float) $sale->down_payment + $revenuesPaid;
+        $remaining = max(0, (float) $sale->sale_price - $totalPaid);
 
         Contract::query()->updateOrCreate(
             ['sale_id' => $sale->id],
@@ -192,8 +199,8 @@ class SaleController extends Controller
                 'start_date' => $sale->sale_date->format('Y-m-d'),
                 'end_date' => $defaultEndDate->format('Y-m-d'),
                 'total_price' => $sale->sale_price,
-                'paid_amount' => $sale->down_payment,
-                'remaining_amount' => max(0, (float) $sale->sale_price - (float) $sale->down_payment),
+                'paid_amount' => $totalPaid,
+                'remaining_amount' => $remaining,
             ]
         );
     }

@@ -23,6 +23,7 @@ class StoreSaleRequest extends FormRequest
             'payment_type' => ['required', 'in:cash,installment'],
             'down_payment' => ['nullable', 'numeric', 'min:0'],
             'installment_months' => ['nullable', 'integer', 'min:1', 'required_if:payment_type,installment'],
+            'installment_schedule' => ['nullable', 'in:monthly,quarterly', 'required_if:payment_type,installment'],
             'installment_start_date' => ['nullable', 'date', 'required_if:payment_type,installment'],
             'sale_date' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
@@ -74,15 +75,26 @@ class StoreSaleRequest extends FormRequest
         $downPayment = $this->input('down_payment');
         $downPaymentValue = $downPayment === null || $downPayment === '' ? ($isCash ? $salePrice : 0) : (float) $downPayment;
         $installmentMonths = $isCash ? null : (int) $this->input('installment_months');
+        $schedule = $isCash ? null : $this->input('installment_schedule', 'monthly');
+        $intervalMonths = $schedule === 'quarterly' ? 3 : 1;
         $remaining = max(0, $salePrice - $downPaymentValue);
-        $monthly = $installmentMonths ? round($remaining / $installmentMonths, 2) : 0;
+        $installmentsCount = ($installmentMonths && ! $isCash)
+            ? max(1, (int) ceil($installmentMonths / $intervalMonths))
+            : 0;
+        $installmentAmount = $installmentsCount > 0 ? round($remaining / $installmentsCount, 2) : 0;
 
         $this->merge([
             'sale_date' => $this->input('sale_date', now()->toDateString()),
             'down_payment' => $downPaymentValue,
+            'installment_schedule' => $schedule,
             'installment_plan' => $isCash ? null : [
+                'schedule_type' => $schedule,
+                'interval_months' => $intervalMonths,
+                'installments_count' => $installmentsCount,
                 'remaining_amount' => $remaining,
-                'monthly_installment' => $monthly,
+                'installment_amount' => $installmentAmount,
+                // Keep backward compatibility for any old consumers.
+                'monthly_installment' => $installmentAmount,
             ],
         ]);
     }

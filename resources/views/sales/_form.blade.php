@@ -5,6 +5,21 @@
     $selectedFloor = (int) old('floor_number', $sale->floor_number ?? 1);
     $selectedModel = (string) old('apartment_model', $sale->apartment_model ?? '');
     $paymentType = old('payment_type', $sale->payment_type ?? 'cash');
+    $installmentSchedule = old('installment_schedule', $sale->installment_plan['schedule_type'] ?? 'monthly');
+    $salePriceValue = (float) old('sale_price', $sale->sale_price ?? 0);
+    $downPaymentValue = (float) old('down_payment', $sale->down_payment ?? 0);
+    $downPaymentPercentageValue = (float) old(
+        'down_payment_percentage',
+        $salePriceValue > 0 ? round(($downPaymentValue / $salePriceValue) * 100, 2) : ($paymentType === 'cash' ? 100 : 0)
+    );
+    $propertiesMeta = $properties->mapWithKeys(function ($p) {
+        return [(string) $p->id => [
+            'floors_count' => (int) ($p->floors_count ?? 1),
+            'ground_floor_shops_count' => (int) ($p->ground_floor_shops_count ?? 0),
+            'has_mezzanine' => (bool) ($p->has_mezzanine ?? false),
+            'models' => collect($p->apartment_models ?? [])->pluck('model_name')->filter()->values()->all(),
+        ]];
+    });
 @endphp
 
 <div class="row g-3">
@@ -26,28 +41,41 @@
         <select name="apartment_model" id="apartment_model" class="form-select" required></select>
     </div>
 
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label">سعر البيع</label>
-        <input type="number" step="0.01" min="1" name="sale_price" class="form-control"
+        <input type="number" step="0.01" min="1" name="sale_price" id="sale_price" class="form-control"
                value="{{ old('sale_price', $sale->sale_price ?? '') }}" required>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label">نوع السداد</label>
         <select name="payment_type" id="payment_type" class="form-select" required>
             <option value="cash" @selected($paymentType === 'cash')>كاش</option>
             <option value="installment" @selected($paymentType === 'installment')>تقسيط</option>
         </select>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
+        <label class="form-label">نسبة المقدم (%)</label>
+        <input type="number" step="0.01" min="0" max="100" id="down_payment_percentage" class="form-control"
+               value="{{ $downPaymentPercentageValue }}">
+    </div>
+    <div class="col-md-3">
         <label class="form-label">المقدم</label>
-        <input type="number" step="0.01" min="0" name="down_payment" class="form-control"
+        <input type="number" step="0.01" min="0" name="down_payment" id="down_payment" class="form-control"
                value="{{ old('down_payment', $sale->down_payment ?? '') }}">
+        <small class="text-muted">المقدم = سعر الوحدة × نسبة المقدم</small>
     </div>
 
     <div class="col-md-4 installment-field">
         <label class="form-label">مدة التقسيط (شهور)</label>
         <input type="number" min="1" name="installment_months" class="form-control"
                value="{{ old('installment_months', $sale->installment_months ?? '') }}">
+    </div>
+    <div class="col-md-4 installment-field">
+        <label class="form-label">نظام القسط</label>
+        <select name="installment_schedule" id="installment_schedule" class="form-select">
+            <option value="monthly" @selected($installmentSchedule === 'monthly')>شهري (كل شهر)</option>
+            <option value="quarterly" @selected($installmentSchedule === 'quarterly')>كل 3 شهور</option>
+        </select>
     </div>
     <div class="col-md-4 installment-field">
         <label class="form-label">بداية أول قسط</label>
@@ -101,16 +129,15 @@
         const floorSelect = document.getElementById('floor_number');
         const modelSelect = document.getElementById('apartment_model');
         const paymentType = document.getElementById('payment_type');
+        const installmentSchedule = document.getElementById('installment_schedule');
+        const salePriceInput = document.getElementById('sale_price');
+        const downPaymentInput = document.getElementById('down_payment');
+        const downPaymentPercentageInput = document.getElementById('down_payment_percentage');
         const installmentFields = document.querySelectorAll('.installment-field');
 
         const selectedFloor = {{ $selectedFloor }};
         const selectedModel = @json($selectedModel);
-        const properties = @json($properties->mapWithKeys(fn ($p) => [(string) $p->id => [
-            'floors_count' => (int) ($p->floors_count ?? 1),
-            'ground_floor_shops_count' => (int) ($p->ground_floor_shops_count ?? 0),
-            'has_mezzanine' => (bool) ($p->has_mezzanine ?? false),
-            'models' => collect($p->apartment_models ?? [])->pluck('model_name')->filter()->values()->all(),
-        ]]));
+        const properties = @json($propertiesMeta);
 
         function refreshPropertyMeta() {
             const id = propertySelect?.value;
@@ -158,12 +185,69 @@
             installmentFields.forEach((field) => {
                 field.style.display = isInstallment ? '' : 'none';
             });
+
+            if (!downPaymentInput || !downPaymentPercentageInput || !salePriceInput) {
+                return;
+            }
+
+            const price = Math.max(0, parseFloat(salePriceInput.value || '0'));
+            if (!isInstallment) {
+                downPaymentPercentageInput.value = '100';
+                downPaymentInput.value = String(price);
+                downPaymentInput.readOnly = true;
+                downPaymentPercentageInput.readOnly = true;
+                return;
+            }
+
+            downPaymentInput.readOnly = false;
+            downPaymentPercentageInput.readOnly = false;
+        }
+
+        function clampPercent(value) {
+            return Math.min(100, Math.max(0, value));
+        }
+
+        function recalcDownPaymentFromPercentage() {
+            if (!salePriceInput || !downPaymentInput || !downPaymentPercentageInput) {
+                return;
+            }
+
+            const price = Math.max(0, parseFloat(salePriceInput.value || '0'));
+            const percent = clampPercent(parseFloat(downPaymentPercentageInput.value || '0'));
+            downPaymentPercentageInput.value = String(percent);
+            downPaymentInput.value = String(Math.round((price * (percent / 100)) * 100) / 100);
+        }
+
+        function recalcPercentageFromDownPayment() {
+            if (!salePriceInput || !downPaymentInput || !downPaymentPercentageInput) {
+                return;
+            }
+
+            const price = Math.max(0, parseFloat(salePriceInput.value || '0'));
+            const down = Math.max(0, parseFloat(downPaymentInput.value || '0'));
+            if (price <= 0) {
+                downPaymentPercentageInput.value = '0';
+                return;
+            }
+
+            downPaymentPercentageInput.value = String(Math.round((down / price) * 10000) / 100);
         }
 
         propertySelect?.addEventListener('change', refreshPropertyMeta);
         paymentType?.addEventListener('change', refreshPaymentType);
+        installmentSchedule?.addEventListener('change', refreshPaymentType);
+        salePriceInput?.addEventListener('input', recalcDownPaymentFromPercentage);
+        downPaymentPercentageInput?.addEventListener('input', recalcDownPaymentFromPercentage);
+        downPaymentInput?.addEventListener('input', () => {
+            if (paymentType?.value === 'installment') {
+                recalcPercentageFromDownPayment();
+            }
+        });
 
         refreshPropertyMeta();
         refreshPaymentType();
+        if (paymentType?.value === 'installment') {
+            recalcPercentageFromDownPayment();
+        }
     })();
 </script>

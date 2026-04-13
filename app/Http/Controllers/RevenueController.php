@@ -94,12 +94,14 @@ class RevenueController extends Controller
 
     private function recalculateContract(int $contractId): void
     {
-        $contract = Contract::query()->find($contractId);
+        $contract = Contract::query()->with('sale:id,down_payment')->find($contractId);
         if (! $contract) {
             return;
         }
 
-        $paid = (float) Revenue::query()->where('contract_id', $contractId)->sum('amount');
+        $paidFromRevenues = (float) Revenue::query()->where('contract_id', $contractId)->sum('amount');
+        $downPayment = (float) ($contract->sale?->down_payment ?? 0);
+        $paid = $downPayment + $paidFromRevenues;
         $contract->update([
             'paid_amount' => $paid,
             'remaining_amount' => max(0, (float) $contract->total_price - $paid),

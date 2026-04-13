@@ -2,9 +2,15 @@
 
 @section('content')
     <x-partials.module-wireflow-header label="العقود" step="5" />
+    @php
+        $contractsNetValue = (float) $contracts->sum(function ($contract) {
+            $downPayment = (float) ($contract->sale?->down_payment ?? 0);
+            return max(0, (float) $contract->total_price - $downPayment);
+        });
+    @endphp
     <x-partials.module-kpis :items="[
         ['label' => 'العقود النشطة', 'value' => $contracts->total()],
-        ['label' => 'قيمة العقود', 'value' => number_format((float) $contracts->sum('total_price')) . ' ج.م'],
+        ['label' => 'قيمة العقود بعد المقدم', 'value' => number_format($contractsNetValue) . ' ج.م'],
         ['label' => 'المتبقي', 'value' => number_format((float) $contracts->sum('remaining_amount')) . ' ج.م'],
     ]" />
 
@@ -21,7 +27,7 @@
                         <th>رقم العقد</th>
                         <th>العميل</th>
                         <th>العقار</th>
-                        <th>قيمة العقد</th>
+                        <th>قيمة العقد (بعد المقدم)</th>
                         <th>المتبقي</th>
                         <th class="text-end">العمليات</th>
                     </tr>
@@ -33,7 +39,8 @@
                             <td>CT-{{ now()->format('Y') }}-{{ str_pad((string) $contract->id, 3, '0', STR_PAD_LEFT) }}</td>
                             <td>{{ $contract->client?->name ?? '-' }}</td>
                             <td>{{ $contract->property?->name ?? '-' }}</td>
-                            <td>{{ number_format((float) $contract->total_price, 2) }}</td>
+                            @php($netContractValue = max(0, (float) $contract->total_price - (float) ($contract->sale?->down_payment ?? 0)))
+                            <td>{{ number_format($netContractValue, 2) }}</td>
                             <td>{{ number_format((float) $contract->remaining_amount, 2) }}</td>
                             <td class="text-end">
                                 <a href="{{ route('contracts.show', $contract) }}" class="btn btn-outline-info btn-sm">عرض</a>

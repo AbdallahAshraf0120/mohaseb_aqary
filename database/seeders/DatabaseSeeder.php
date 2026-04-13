@@ -191,8 +191,11 @@ class DatabaseSeeder extends Seeder
                 ? $salePrice
                 : fake()->numberBetween((int) ($salePrice * 0.2), (int) ($salePrice * 0.72));
             $months = $paymentType === 'cash' ? null : fake()->randomElement([12, 18, 24, 30, 36, 42, 48, 60]);
+            $scheduleType = $paymentType === 'cash' ? null : fake()->randomElement(['monthly', 'quarterly']);
+            $intervalMonths = $scheduleType === 'quarterly' ? 3 : 1;
             $remaining = max(0, $salePrice - $downPayment);
-            $monthly = ($months && $remaining > 0) ? round($remaining / $months, 2) : 0;
+            $installmentsCount = ($months && $paymentType !== 'cash') ? max(1, (int) ceil($months / $intervalMonths)) : 0;
+            $installmentAmount = ($installmentsCount && $remaining > 0) ? round($remaining / $installmentsCount, 2) : 0;
             $saleDate = Carbon::now()->subDays(fake()->numberBetween(1, 900))->toDateString();
 
             return Sale::query()->firstOrCreate(
@@ -215,7 +218,14 @@ class DatabaseSeeder extends Seeder
                     'installment_start_date' => $paymentType === 'cash' ? null : Carbon::parse($saleDate)->addMonth()->toDateString(),
                     'installment_plan' => $paymentType === 'cash'
                         ? null
-                        : ['remaining_amount' => $remaining, 'monthly_installment' => $monthly],
+                        : [
+                            'schedule_type' => $scheduleType,
+                            'interval_months' => $intervalMonths,
+                            'installments_count' => $installmentsCount,
+                            'remaining_amount' => $remaining,
+                            'installment_amount' => $installmentAmount,
+                            'monthly_installment' => $installmentAmount,
+                        ],
                     'notes' => "بيع تجريبي {$pid}/{$i}",
                 ]
             );

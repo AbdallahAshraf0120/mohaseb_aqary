@@ -9,6 +9,8 @@
         <div class="card-body">
             @php
                 $floorLabel = (string) $sale->floor_number;
+                $scheduleType = $sale->installment_plan['schedule_type'] ?? 'monthly';
+                $scheduleLabel = $scheduleType === 'quarterly' ? 'كل 3 شهور' : 'شهري';
                 if ((int) $sale->floor_number === 0) {
                     $floorLabel = '0 (أرضي تجاري)';
                 } elseif ((int) $sale->floor_number === 1 && ($sale->property?->has_mezzanine ?? false)) {
@@ -23,6 +25,7 @@
                 <div class="col-md-4"><strong>نوع السداد:</strong> {{ $sale->payment_type === 'cash' ? 'كاش' : 'تقسيط' }}</div>
                 <div class="col-md-4"><strong>المقدم:</strong> {{ number_format((float) $sale->down_payment, 2) }}</div>
                 <div class="col-md-4"><strong>مدة التقسيط:</strong> {{ $sale->installment_months ?: '-' }}</div>
+                <div class="col-md-4"><strong>نظام القسط:</strong> {{ $sale->payment_type === 'installment' ? $scheduleLabel : '-' }}</div>
                 <div class="col-md-4"><strong>بداية القسط:</strong> {{ $sale->installment_start_date?->format('Y-m-d') ?? '-' }}</div>
                 <div class="col-md-4"><strong>تاريخ البيعة:</strong> {{ $sale->sale_date?->format('Y-m-d') }}</div>
                 <div class="col-md-6"><strong>العميل:</strong> {{ $sale->client?->name ?? '-' }}</div>

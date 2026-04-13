@@ -13,7 +13,7 @@ class ContractController extends Controller
         return view('contracts.index', [
             'title' => 'العقود | Mohaseb Aqary',
             'pageTitle' => 'العقود',
-            'contracts' => Contract::query()->with(['client:id,name', 'property:id,name', 'sale:id'])->latest()->paginate(15),
+            'contracts' => Contract::query()->with(['client:id,name', 'property:id,name', 'sale:id,down_payment'])->latest()->paginate(15),
             'modules' => $this->modules(),
         ]);
     }
