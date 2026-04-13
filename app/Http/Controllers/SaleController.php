@@ -43,6 +43,7 @@ class SaleController extends Controller
                 'registered_floors',
                 'ground_floor_shops_count',
                 'has_mezzanine',
+                'mezzanine_floors',
                 'apartment_models'
             )->orderBy('name')->get(),
             'modules' => $this->modules(),
@@ -98,6 +99,7 @@ class SaleController extends Controller
                 'registered_floors',
                 'ground_floor_shops_count',
                 'has_mezzanine',
+                'mezzanine_floors',
                 'apartment_models'
             )->orderBy('name')->get(),
             'modules' => $this->modules(),

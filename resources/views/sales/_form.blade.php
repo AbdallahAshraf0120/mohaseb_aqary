@@ -20,12 +20,23 @@
             ->sort()
             ->values()
             ->all();
+        $mezzanineFloors = collect($p->mezzanine_floors ?? [])
+            ->filter(static fn ($item) => is_array($item) && !empty($item['floor_number']))
+            ->map(static fn (array $item) => [
+                'floor_number' => (int) ($item['floor_number'] ?? 0),
+                'apartments_count' => (int) ($item['apartments_count'] ?? 0),
+            ])
+            ->filter(static fn (array $item) => $item['floor_number'] >= 1)
+            ->unique('floor_number')
+            ->sortBy('floor_number')
+            ->values()
+            ->all();
 
         return [(string) $p->id => [
             'floors_count' => (int) ($p->floors_count ?? 1),
             'registered_floors' => $registeredFloors,
             'ground_floor_shops_count' => (int) ($p->ground_floor_shops_count ?? 0),
-            'has_mezzanine' => (bool) ($p->has_mezzanine ?? false),
+            'mezzanine_floors' => $mezzanineFloors,
             'models' => collect($p->apartment_models ?? [])->pluck('model_name')->filter()->values()->all(),
         ]];
     });
@@ -154,7 +165,7 @@
                 floors_count: 1,
                 registered_floors: [],
                 ground_floor_shops_count: 0,
-                has_mezzanine: false,
+                mezzanine_floors: [],
                 models: []
             };
 
@@ -166,12 +177,24 @@
             if (meta.ground_floor_shops_count > 0) {
                 floorOptions.push({ value: 0, label: '0 (أرضي تجاري)' });
             }
-            if (meta.has_mezzanine) {
-                floorOptions.push({ value: 1, label: '1 (ميزان)' });
-            }
             registeredFloors.forEach((floorNumber) => {
                 floorOptions.push({ value: floorNumber, label: String(floorNumber) });
             });
+            if (Array.isArray(meta.mezzanine_floors)) {
+                meta.mezzanine_floors.forEach((item) => {
+                    const floorNumber = Number(item.floor_number || 0);
+                    if (floorNumber < 1) {
+                        return;
+                    }
+                    const existing = floorOptions.find((option) => option.value === floorNumber);
+                    if (existing) {
+                        existing.label = `${existing.label} (ميزان)`;
+                        return;
+                    }
+                    floorOptions.push({ value: floorNumber, label: `${floorNumber} (ميزان)` });
+                });
+            }
+            floorOptions.sort((a, b) => Number(a.value) - Number(b.value));
 
             floorOptions.forEach((item) => {
                 const option = document.createElement('option');

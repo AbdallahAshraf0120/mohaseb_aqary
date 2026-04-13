@@ -18,6 +18,7 @@ class Property extends Model
         'building_total_floors',
         'floors_count',
         'registered_floors',
+        'mezzanine_floors',
         'apartments_per_floor',
         'ground_floor_shops_count',
         'has_mezzanine',
@@ -34,6 +35,7 @@ class Property extends Model
     protected $casts = [
         'has_mezzanine' => 'boolean',
         'registered_floors' => 'array',
+        'mezzanine_floors' => 'array',
         'shareholder_allocations' => 'array',
         'apartment_models' => 'array',
     ];

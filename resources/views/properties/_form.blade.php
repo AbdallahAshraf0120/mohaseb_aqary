@@ -31,6 +31,13 @@
         ->sort()
         ->values()
         ->all();
+    $mezzanineFloors = old('mezzanine_floors', $property->mezzanine_floors ?? []);
+    if (empty($mezzanineFloors) && $hasMezzanine && (int) ($property->mezzanine_apartments_count ?? 0) > 0) {
+        $mezzanineFloors = [[
+            'floor_number' => 1,
+            'apartments_count' => (int) $property->mezzanine_apartments_count,
+        ]];
+    }
 @endphp
 
 <div class="row g-3">
@@ -73,18 +80,6 @@
                value="{{ old('ground_floor_shops_count', $property->ground_floor_shops_count ?? 0) }}">
     </div>
     <div class="col-md-3">
-        <label class="form-label">هل يوجد ميزان (دور 1)؟</label>
-        <select name="has_mezzanine" id="has_mezzanine" class="form-select">
-            <option value="0" @selected(!$hasMezzanine)>لا</option>
-            <option value="1" @selected($hasMezzanine)>نعم</option>
-        </select>
-    </div>
-    <div class="col-md-3">
-        <label class="form-label">شقق الميزان</label>
-        <input type="number" min="0" name="mezzanine_apartments_count" id="mezzanine_apartments_count" class="form-control"
-               value="{{ old('mezzanine_apartments_count', $property->mezzanine_apartments_count ?? 0) }}">
-    </div>
-    <div class="col-md-3">
         <label class="form-label d-flex justify-content-between align-items-center">
             <span>إجمالي الشقق بالعقار</span>
             <button type="button" class="btn btn-link btn-sm p-0" id="recalculate-total">إعادة الحساب</button>
@@ -99,6 +94,43 @@
             <div class="card-body">
                 <p class="text-muted small mb-2">حدد الأدوار التي تملكها/ستسجلها (مثال: من 12 دور تختار 6 أدوار فقط).</p>
                 <div class="d-flex flex-wrap gap-2" id="registered-floors-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card border">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+                <strong>أدوار الميزان (أكثر من ميزان)</strong>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="add-mezzanine-row">إضافة ميزان</button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>رقم الدور</th>
+                            <th>عدد الشقق بالميزان</th>
+                            <th class="text-end">حذف</th>
+                        </tr>
+                        </thead>
+                        <tbody id="mezzanine-floors-body">
+                        @forelse($mezzanineFloors as $i => $mezz)
+                            <tr>
+                                <td><input type="number" min="1" class="form-control" name="mezzanine_floors[{{ $i }}][floor_number]" value="{{ $mezz['floor_number'] ?? '' }}" placeholder="مثال: 1"></td>
+                                <td><input type="number" min="1" class="form-control" name="mezzanine_floors[{{ $i }}][apartments_count]" value="{{ $mezz['apartments_count'] ?? '' }}" placeholder="مثال: 2"></td>
+                                <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm remove-mezzanine-row">حذف</button></td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td><input type="number" min="1" class="form-control" name="mezzanine_floors[0][floor_number]" placeholder="مثال: 1"></td>
+                                <td><input type="number" min="1" class="form-control" name="mezzanine_floors[0][apartments_count]" placeholder="مثال: 2"></td>
+                                <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm remove-mezzanine-row">حذف</button></td>
+                            </tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -202,8 +234,8 @@
         const floors = document.getElementById('floors_count');
         const buildingTotalFloors = document.getElementById('building_total_floors');
         const apartments = document.getElementById('apartments_per_floor');
-        const hasMezzanine = document.getElementById('has_mezzanine');
-        const mezzanineApartments = document.getElementById('mezzanine_apartments_count');
+        const mezzanineFloorsBody = document.getElementById('mezzanine-floors-body');
+        const addMezzanineRowBtn = document.getElementById('add-mezzanine-row');
         const total = document.getElementById('total_apartments');
         const recalculateTotalBtn = document.getElementById('recalculate-total');
         const registeredFloorsBox = document.getElementById('registered-floors-box');
@@ -258,10 +290,13 @@
                 : 0;
             const floorsValue = Math.max(1, selectedFloorsCount || parseInt(floors?.value || '1', 10));
             const apartmentsValue = Math.max(1, parseInt(apartments?.value || '1', 10));
-            const hasMezzanineValue = (hasMezzanine?.value || '0') === '1';
-            const mezzanineValue = Math.max(0, parseInt(mezzanineApartments?.value || '0', 10));
+            const mezzanineValue = mezzanineFloorsBody
+                ? Array.from(mezzanineFloorsBody.querySelectorAll('input[name*="[apartments_count]"]'))
+                    .map((input) => Math.max(0, parseInt(input.value || '0', 10)))
+                    .reduce((acc, current) => acc + current, 0)
+                : 0;
             if (total) {
-                total.value = String((floorsValue * apartmentsValue) + (hasMezzanineValue ? mezzanineValue : 0));
+                total.value = String((floorsValue * apartmentsValue) + mezzanineValue);
             }
         };
 
@@ -271,14 +306,36 @@
             syncTotal();
         });
         apartments?.addEventListener('input', syncTotal);
-        hasMezzanine?.addEventListener('change', syncTotal);
-        mezzanineApartments?.addEventListener('input', syncTotal);
+        mezzanineFloorsBody?.addEventListener('input', syncTotal);
         total?.addEventListener('input', () => {
             totalIsManual = true;
         });
         recalculateTotalBtn?.addEventListener('click', () => {
             totalIsManual = false;
             syncTotal();
+        });
+
+        addMezzanineRowBtn?.addEventListener('click', () => {
+            if (!mezzanineFloorsBody) {
+                return;
+            }
+
+            const index = mezzanineFloorsBody.querySelectorAll('tr').length;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="number" min="1" class="form-control" name="mezzanine_floors[${index}][floor_number]" placeholder="مثال: 1"></td>
+                <td><input type="number" min="1" class="form-control" name="mezzanine_floors[${index}][apartments_count]" placeholder="مثال: 2"></td>
+                <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm remove-mezzanine-row">حذف</button></td>
+            `;
+            mezzanineFloorsBody.appendChild(tr);
+        });
+
+        mezzanineFloorsBody?.addEventListener('click', (event) => {
+            const target = event.target;
+            if (target instanceof HTMLElement && target.classList.contains('remove-mezzanine-row')) {
+                target.closest('tr')?.remove();
+                syncTotal();
+            }
         });
 
         addModelBtn?.addEventListener('click', () => {

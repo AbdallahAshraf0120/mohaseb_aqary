@@ -39,8 +39,22 @@
                     <strong>محلات الأرضي (0):</strong> {{ $property->ground_floor_shops_count ?? 0 }}
                 </div>
                 <div class="col-md-6">
-                    <strong>الميزان (1):</strong>
-                    {{ $property->has_mezzanine ? ('موجود - ' . ($property->mezzanine_apartments_count ?? 0) . ' شقق') : 'غير موجود' }}
+                    <strong>إجمالي شقق الميزان:</strong> {{ $property->mezzanine_apartments_count ?? 0 }}
+                </div>
+                <div class="col-12">
+                    <strong>أدوار الميزان:</strong>
+                    @php($mezzanineFloors = collect($property->mezzanine_floors ?? [])->filter()->values())
+                    @if($mezzanineFloors->isNotEmpty())
+                        @foreach($mezzanineFloors as $item)
+                            <span class="badge text-bg-secondary me-1">
+                                دور {{ (int) ($item['floor_number'] ?? 0) }} · {{ (int) ($item['apartments_count'] ?? 0) }} شقق
+                            </span>
+                        @endforeach
+                    @elseif($property->has_mezzanine)
+                        <span class="badge text-bg-secondary">ميزان واحد (بيانات قديمة)</span>
+                    @else
+                        —
+                    @endif
                 </div>
                 <div class="col-md-6">
                     <strong>إجمالي الشقق:</strong> {{ $property->total_apartments ?? '-' }}

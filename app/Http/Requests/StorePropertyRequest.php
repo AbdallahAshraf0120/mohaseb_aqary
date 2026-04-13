@@ -23,6 +23,9 @@ class StorePropertyRequest extends FormRequest
             'floors_count' => ['required', 'integer', 'min:1'],
             'registered_floors' => ['nullable', 'array'],
             'registered_floors.*' => ['nullable', 'integer', 'min:1'],
+            'mezzanine_floors' => ['nullable', 'array'],
+            'mezzanine_floors.*.floor_number' => ['nullable', 'integer', 'min:1'],
+            'mezzanine_floors.*.apartments_count' => ['nullable', 'integer', 'min:1'],
             'apartments_per_floor' => ['required', 'integer', 'min:1'],
             'ground_floor_shops_count' => ['nullable', 'integer', 'min:0'],
             'has_mezzanine' => ['nullable', 'boolean'],
@@ -59,10 +62,30 @@ class StorePropertyRequest extends FormRequest
         if (count($registeredFloors) === 0) {
             $registeredFloors = range(1, $effectiveFloors);
         }
+        $mezzanineFloors = collect($this->input('mezzanine_floors', []))
+            ->filter(static fn (array $item) => !empty($item['floor_number']) && !empty($item['apartments_count']))
+            ->map(static function (array $item) use ($buildingTotalFloors): ?array {
+                $floorNumber = (int) $item['floor_number'];
+                $apartmentsCount = (int) $item['apartments_count'];
+                if ($floorNumber < 1 || $floorNumber > $buildingTotalFloors || $apartmentsCount < 1) {
+                    return null;
+                }
+
+                return [
+                    'floor_number' => $floorNumber,
+                    'apartments_count' => $apartmentsCount,
+                ];
+            })
+            ->filter()
+            ->unique(static fn (array $item) => $item['floor_number'])
+            ->sortBy('floor_number')
+            ->values()
+            ->all();
         $apartmentsPerFloor = max(1, (int) $this->input('apartments_per_floor', 1));
-        $hasMezzanine = filter_var($this->input('has_mezzanine', false), FILTER_VALIDATE_BOOL);
-        $mezzanineApartments = max(0, (int) $this->input('mezzanine_apartments_count', 0));
-        $effectiveMezzanineApartments = $hasMezzanine ? $mezzanineApartments : 0;
+        $hasMezzanine = count($mezzanineFloors) > 0 || filter_var($this->input('has_mezzanine', false), FILTER_VALIDATE_BOOL);
+        $effectiveMezzanineApartments = count($mezzanineFloors) > 0
+            ? (int) collect($mezzanineFloors)->sum('apartments_count')
+            : max(0, (int) $this->input('mezzanine_apartments_count', 0));
         $providedTotal = (int) $this->input('total_apartments', 0);
         $calculatedTotal = ($effectiveFloors * $apartmentsPerFloor) + $effectiveMezzanineApartments;
 
@@ -95,6 +118,7 @@ class StorePropertyRequest extends FormRequest
             'building_total_floors' => $buildingTotalFloors,
             'floors_count' => $effectiveFloors,
             'registered_floors' => $registeredFloors,
+            'mezzanine_floors' => $mezzanineFloors,
             'ground_floor_shops_count' => max(0, (int) $this->input('ground_floor_shops_count', 0)),
             'has_mezzanine' => $hasMezzanine,
             'mezzanine_apartments_count' => $effectiveMezzanineApartments,

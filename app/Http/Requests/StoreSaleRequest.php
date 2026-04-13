@@ -44,18 +44,23 @@ class StoreSaleRequest extends FormRequest
 
             $floor = (int) $this->input('floor_number');
             $hasGroundCommercial = (int) ($property->ground_floor_shops_count ?? 0) > 0;
-            $hasMezzanine = (bool) ($property->has_mezzanine ?? false);
             $registeredFloors = collect($property->registered_floors ?? [])
                 ->map(static fn ($value) => (int) $value)
                 ->filter(static fn (int $value) => $value >= 1)
                 ->values();
-            $maxFloor = $registeredFloors->max() ?: (max(1, (int) ($property->floors_count ?? 1)) + ($hasMezzanine ? 1 : 0));
+            $mezzanineFloors = collect($property->mezzanine_floors ?? [])
+                ->filter(static fn ($item) => is_array($item) && !empty($item['floor_number']))
+                ->map(static fn (array $item) => (int) ($item['floor_number'] ?? 0))
+                ->filter(static fn (int $value) => $value >= 1)
+                ->values();
+            $allowedFloors = $registeredFloors->merge($mezzanineFloors)->unique()->values();
+            $maxFloor = $allowedFloors->max() ?: max(1, (int) ($property->floors_count ?? 1));
 
             if ($floor === 0 && ! $hasGroundCommercial) {
                 $validator->errors()->add('floor_number', 'هذا العقار لا يحتوي وحدات بالدور الأرضي.');
             }
 
-            if ($floor > 0 && $registeredFloors->isNotEmpty() && ! $registeredFloors->contains($floor)) {
+            if ($floor > 0 && $allowedFloors->isNotEmpty() && ! $allowedFloors->contains($floor)) {
                 $validator->errors()->add('floor_number', 'هذا الدور غير مُسجل ضمن أدوار العقار.');
             }
 
