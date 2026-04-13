@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Area;
+use App\Models\Project;
 use App\Support\CurrentProject;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -47,7 +48,7 @@ class AreaController extends Controller
         return redirect()->route('areas.index')->with('success', 'تم إضافة المنطقة بنجاح.');
     }
 
-    public function edit(Area $area): View
+    public function edit(Project $project, Area $area): View
     {
         return view('areas.edit', [
             'title' => 'تعديل المنطقة | Mohaseb Aqary',
@@ -57,7 +58,7 @@ class AreaController extends Controller
         ]);
     }
 
-    public function update(Request $request, Area $area): RedirectResponse
+    public function update(Request $request, Project $project, Area $area): RedirectResponse
     {
         $projectId = app(CurrentProject::class)->id();
         $data = $request->validate([
@@ -76,7 +77,7 @@ class AreaController extends Controller
         return redirect()->route('areas.index')->with('success', 'تم تحديث المنطقة بنجاح.');
     }
 
-    public function destroy(Area $area): RedirectResponse
+    public function destroy(Project $project, Area $area): RedirectResponse
     {
         if ($area->properties()->exists()) {
             return redirect()->route('areas.index')->with('success', 'لا يمكن حذف المنطقة لأنها مرتبطة بعقارات.');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Contract;
+use App\Models\Project;
 use Illuminate\Contracts\View\View;
 
 class ContractController extends Controller
@@ -17,7 +18,7 @@ class ContractController extends Controller
         ]);
     }
 
-    public function show(Contract $contract): View
+    public function show(Project $project, Contract $contract): View
     {
         return view('contracts.show', [
             'title' => 'تفاصيل العقد | Mohaseb Aqary',

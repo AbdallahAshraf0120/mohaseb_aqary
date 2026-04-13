@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\Project;
 use Illuminate\Contracts\View\View;
 
 class ClientController extends Controller
@@ -17,7 +18,7 @@ class ClientController extends Controller
         ]);
     }
 
-    public function show(Client $client): View
+    public function show(Project $project, Client $client): View
     {
         return view('clients.show', [
             'title' => 'تفاصيل العميل | Mohaseb Aqary',

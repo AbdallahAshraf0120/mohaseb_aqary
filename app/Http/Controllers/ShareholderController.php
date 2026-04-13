@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreShareholderRequest;
 use App\Http\Requests\UpdateShareholderRequest;
+use App\Models\Project;
 use App\Models\Shareholder;
 use App\Services\ShareholderService;
 use Illuminate\Contracts\View\View;
@@ -41,7 +42,7 @@ class ShareholderController extends Controller
         return redirect()->route('shareholders.index')->with('success', 'تم إضافة المساهم بنجاح.');
     }
 
-    public function show(Shareholder $shareholder): View
+    public function show(Project $project, Shareholder $shareholder): View
     {
         $shareholder = $this->shareholderService->findOrFail((int) $shareholder->id);
         $participations = $this->shareholderService->propertyParticipationsFor($shareholder);
@@ -55,7 +56,7 @@ class ShareholderController extends Controller
         ]);
     }
 
-    public function edit(Shareholder $shareholder): View
+    public function edit(Project $project, Shareholder $shareholder): View
     {
         return view('shareholders.edit', [
             'title' => 'تعديل المساهم | Mohaseb Aqary',
@@ -65,14 +66,14 @@ class ShareholderController extends Controller
         ]);
     }
 
-    public function update(UpdateShareholderRequest $request, Shareholder $shareholder): RedirectResponse
+    public function update(UpdateShareholderRequest $request, Project $project, Shareholder $shareholder): RedirectResponse
     {
         $this->shareholderService->update($shareholder, $request->validated());
 
         return redirect()->route('shareholders.show', $shareholder)->with('success', 'تم تحديث المساهم بنجاح.');
     }
 
-    public function destroy(Shareholder $shareholder): RedirectResponse
+    public function destroy(Project $project, Shareholder $shareholder): RedirectResponse
     {
         $this->shareholderService->delete($shareholder);
 

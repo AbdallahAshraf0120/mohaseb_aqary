@@ -8,6 +8,13 @@
             ->mapWithKeys(fn ($item) => [(string) ($item['shareholder_id'] ?? '') => $item['percentage'] ?? '']);
     }
 
+    if ($shareholderAllocations->isEmpty()) {
+        $shareholderAllocations = collect($shareholders ?? [])
+            ->mapWithKeys(fn ($shareholder) => [
+                (string) $shareholder->id => (float) ($shareholder->share_percentage ?? 0),
+            ]);
+    }
+
     $apartmentModels = old('apartment_models', $property->apartment_models ?? [[
         'model_name' => '',
         'area' => '',
@@ -65,7 +72,10 @@
                value="{{ old('mezzanine_apartments_count', $property->mezzanine_apartments_count ?? 0) }}">
     </div>
     <div class="col-md-3">
-        <label class="form-label">إجمالي الشقق بالعقار</label>
+        <label class="form-label d-flex justify-content-between align-items-center">
+            <span>إجمالي الشقق بالعقار</span>
+            <button type="button" class="btn btn-link btn-sm p-0" id="recalculate-total">إعادة الحساب</button>
+        </label>
         <input type="number" min="1" name="total_apartments" id="total_apartments" class="form-control"
                value="{{ old('total_apartments', $property->total_apartments ?? 1) }}" required>
     </div>
@@ -171,10 +181,16 @@
         const hasMezzanine = document.getElementById('has_mezzanine');
         const mezzanineApartments = document.getElementById('mezzanine_apartments_count');
         const total = document.getElementById('total_apartments');
+        const recalculateTotalBtn = document.getElementById('recalculate-total');
         const modelsBody = document.getElementById('apartment-models-body');
         const addModelBtn = document.getElementById('add-model-row');
+        let totalIsManual = false;
 
         const syncTotal = () => {
+            if (totalIsManual) {
+                return;
+            }
+
             const floorsValue = Math.max(1, parseInt(floors?.value || '1', 10));
             const apartmentsValue = Math.max(1, parseInt(apartments?.value || '1', 10));
             const hasMezzanineValue = (hasMezzanine?.value || '0') === '1';
@@ -188,6 +204,13 @@
         apartments?.addEventListener('input', syncTotal);
         hasMezzanine?.addEventListener('change', syncTotal);
         mezzanineApartments?.addEventListener('input', syncTotal);
+        total?.addEventListener('input', () => {
+            totalIsManual = true;
+        });
+        recalculateTotalBtn?.addEventListener('click', () => {
+            totalIsManual = false;
+            syncTotal();
+        });
 
         addModelBtn?.addEventListener('click', () => {
             const index = modelsBody.querySelectorAll('tr').length;

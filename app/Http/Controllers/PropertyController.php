@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePropertyRequest;
 use App\Http\Requests\UpdatePropertyRequest;
 use App\Models\Area;
+use App\Models\Project;
 use App\Models\Property;
 use App\Models\Shareholder;
 use App\Services\PropertyService;
@@ -35,7 +36,7 @@ class PropertyController extends Controller
             'title' => 'إضافة عقار | Mohaseb Aqary',
             'pageTitle' => 'إضافة عقار',
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
-            'shareholders' => Shareholder::query()->select('id', 'name')->orderBy('name')->get(),
+            'shareholders' => Shareholder::query()->select('id', 'name', 'share_percentage')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
     }
@@ -47,7 +48,7 @@ class PropertyController extends Controller
         return redirect()->route('properties.index')->with('success', 'تم إضافة العقار بنجاح.');
     }
 
-    public function show(Property $property): View
+    public function show(Project $project, Property $property): View
     {
         return view('properties.show', [
             'title' => 'تفاصيل العقار | Mohaseb Aqary',
@@ -57,26 +58,26 @@ class PropertyController extends Controller
         ]);
     }
 
-    public function edit(Property $property): View
+    public function edit(Project $project, Property $property): View
     {
         return view('properties.edit', [
             'title' => 'تعديل العقار | Mohaseb Aqary',
             'pageTitle' => 'تعديل العقار',
             'property' => $this->propertyService->findOrFail((int) $property->id),
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
-            'shareholders' => Shareholder::query()->select('id', 'name')->orderBy('name')->get(),
+            'shareholders' => Shareholder::query()->select('id', 'name', 'share_percentage')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
     }
 
-    public function update(UpdatePropertyRequest $request, Property $property): RedirectResponse
+    public function update(UpdatePropertyRequest $request, Project $project, Property $property): RedirectResponse
     {
         $this->propertyService->update($property, $request->validated());
 
         return redirect()->route('properties.index')->with('success', 'تم تحديث العقار بنجاح.');
     }
 
-    public function destroy(Property $property): RedirectResponse
+    public function destroy(Project $project, Property $property): RedirectResponse
     {
         $this->propertyService->delete($property);
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Models\Project;
 use App\Services\CashboxLedgerService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -48,7 +49,7 @@ class ExpenseController extends Controller
         return redirect()->route('expenses.index')->with('success', 'تم إضافة المصروف بنجاح.');
     }
 
-    public function destroy(Expense $expense): RedirectResponse
+    public function destroy(Project $project, Expense $expense): RedirectResponse
     {
         $this->cashboxLedger->removeExpense((int) $expense->id);
         $expense->delete();

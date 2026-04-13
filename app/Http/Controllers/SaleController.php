@@ -6,6 +6,7 @@ use App\Http\Requests\StoreSaleRequest;
 use App\Http\Requests\UpdateSaleRequest;
 use App\Models\Client;
 use App\Models\Contract;
+use App\Models\Project;
 use App\Models\Property;
 use App\Models\Sale;
 use App\Services\CashboxLedgerService;
@@ -72,7 +73,7 @@ class SaleController extends Controller
         return redirect()->route('sales.index')->with('success', 'تم تسجيل البيعة بنجاح وإضافة العميل وإنشاء العقد.');
     }
 
-    public function show(Sale $sale): View
+    public function show(Project $project, Sale $sale): View
     {
         return view('sales.show', [
             'title' => 'تفاصيل البيعة | Mohaseb Aqary',
@@ -82,7 +83,7 @@ class SaleController extends Controller
         ]);
     }
 
-    public function edit(Sale $sale): View
+    public function edit(Project $project, Sale $sale): View
     {
         return view('sales.edit', [
             'title' => 'تعديل البيعة | Mohaseb Aqary',
@@ -100,7 +101,7 @@ class SaleController extends Controller
         ]);
     }
 
-    public function update(UpdateSaleRequest $request, Sale $sale): RedirectResponse
+    public function update(UpdateSaleRequest $request, Project $project, Sale $sale): RedirectResponse
     {
         $validated = $request->validated();
         $client = $sale->client ?: $this->upsertClient($validated);
@@ -133,7 +134,7 @@ class SaleController extends Controller
         return redirect()->route('sales.index')->with('success', 'تم تحديث البيعة بنجاح.');
     }
 
-    public function destroy(Sale $sale): RedirectResponse
+    public function destroy(Project $project, Sale $sale): RedirectResponse
     {
         $this->cashboxLedger->removeSaleDownPayment((int) $sale->id);
         $sale->delete();

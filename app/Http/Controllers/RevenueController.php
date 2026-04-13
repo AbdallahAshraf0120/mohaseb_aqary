@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreRevenueRequest;
 use App\Http\Requests\UpdateRevenueRequest;
 use App\Models\Contract;
+use App\Models\Project;
 use App\Models\Revenue;
 use App\Services\CashboxLedgerService;
 use Illuminate\Contracts\View\View;
@@ -47,7 +48,7 @@ class RevenueController extends Controller
         return redirect()->route('revenues.index')->with('success', 'تم تسجيل التحصيل وتحديث العقد بنجاح.');
     }
 
-    public function show(Revenue $revenue): View
+    public function show(Project $project, Revenue $revenue): View
     {
         return view('revenues.show', [
             'title' => 'تفاصيل التحصيل | Mohaseb Aqary',
@@ -57,7 +58,7 @@ class RevenueController extends Controller
         ]);
     }
 
-    public function edit(Revenue $revenue): View
+    public function edit(Project $project, Revenue $revenue): View
     {
         return view('revenues.edit', [
             'title' => 'تعديل التحصيل | Mohaseb Aqary',
@@ -68,7 +69,7 @@ class RevenueController extends Controller
         ]);
     }
 
-    public function update(UpdateRevenueRequest $request, Revenue $revenue): RedirectResponse
+    public function update(UpdateRevenueRequest $request, Project $project, Revenue $revenue): RedirectResponse
     {
         $oldContractId = (int) $revenue->contract_id;
         $revenue->update($request->validated());
@@ -80,7 +81,7 @@ class RevenueController extends Controller
         return redirect()->route('revenues.index')->with('success', 'تم تحديث التحصيل بنجاح.');
     }
 
-    public function destroy(Revenue $revenue): RedirectResponse
+    public function destroy(Project $project, Revenue $revenue): RedirectResponse
     {
         $contractId = (int) $revenue->contract_id;
         $revenueId = (int) $revenue->id;
