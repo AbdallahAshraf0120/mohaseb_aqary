@@ -26,6 +26,7 @@
                         <th>#</th>
                         <th>اسم العقار</th>
                         <th>نوع العقار</th>
+                        <th>الأرض</th>
                         <th>المنطقة</th>
                         <th>الأدوار المتكررة</th>
                         <th>شقق/دور</th>
@@ -40,6 +41,7 @@
                             <td>{{ $property->id }}</td>
                             <td>{{ $property->name }}</td>
                             <td>{{ $property->property_type ?? '-' }}</td>
+                            <td>{{ $property->land?->name ?? ($property->land_name ?? '-') }}</td>
                             <td>{{ $property->area?->name ?? ($property->location ?? '-') }}</td>
                             <td>{{ $property->floors_count ?? '-' }}</td>
                             <td>{{ $property->apartments_per_floor ?? '-' }}</td>
@@ -62,7 +64,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center text-muted">لا توجد بيانات عقارات حتى الآن.</td>
+                            <td colspan="10" class="text-center text-muted">لا توجد بيانات عقارات حتى الآن.</td>
                         </tr>
                     @endforelse
                     </tbody>

@@ -64,6 +64,28 @@
             ->values()
             ->all();
     }
+    $landsData = collect($lands ?? [])
+        ->mapWithKeys(fn ($land) => [
+            (string) $land->id => [
+                'id' => (int) $land->id,
+                'name' => (string) $land->name,
+                'area_id' => $land->area_id ? (int) $land->area_id : null,
+                'land_cost' => (float) ($land->land_cost ?? 0),
+                'building_license_cost' => (float) ($land->building_license_cost ?? 0),
+                'piles_cost' => (float) ($land->piles_cost ?? 0),
+                'excavation_cost' => (float) ($land->excavation_cost ?? 0),
+                'gravel_cost' => (float) ($land->gravel_cost ?? 0),
+                'sand_cost' => (float) ($land->sand_cost ?? 0),
+                'cement_cost' => (float) ($land->cement_cost ?? 0),
+                'steel_cost' => (float) ($land->steel_cost ?? 0),
+                'carpentry_labor_cost' => (float) ($land->carpentry_labor_cost ?? 0),
+                'blacksmith_labor_cost' => (float) ($land->blacksmith_labor_cost ?? 0),
+                'mason_labor_cost' => (float) ($land->mason_labor_cost ?? 0),
+                'electrician_labor_cost' => (float) ($land->electrician_labor_cost ?? 0),
+                'tips_cost' => (float) ($land->tips_cost ?? 0),
+            ],
+        ])
+        ->all();
 @endphp
 
 <div class="row g-3">
@@ -76,6 +98,22 @@
         <input type="text" name="property_type" class="form-control" value="{{ old('property_type', $property->property_type ?? '') }}" required>
     </div>
     <div class="col-md-6">
+        <label class="form-label d-flex justify-content-between align-items-center">
+            <span>الأرض</span>
+            <a href="{{ route('lands.create') }}" class="small text-decoration-none">+ إضافة أرض جديدة</a>
+        </label>
+        <select name="land_id" id="land_id" class="form-select">
+            <option value="">اختر الأرض</option>
+            @foreach ($lands ?? [] as $land)
+                <option value="{{ $land->id }}" @selected((string) old('land_id', $property->land_id ?? '') === (string) $land->id)>{{ $land->name }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">اسم الأرض (اختياري)</label>
+        <input type="text" name="land_name" id="land_name" class="form-control" value="{{ old('land_name', $property->land_name ?? '') }}" placeholder="مثال: قطعة 17 - امتداد النخيل">
+    </div>
+    <div class="col-md-6">
         <label class="form-label">المنطقة</label>
         <select name="area_id" class="form-select" required>
             <option value="">اختر المنطقة</option>
@@ -83,6 +121,81 @@
                 <option value="{{ $area->id }}" @selected((string) old('area_id', $property->area_id ?? '') === (string) $area->id)>{{ $area->name }}</option>
             @endforeach
         </select>
+    </div>
+
+    <div class="col-12">
+        <div class="card border">
+            <div class="card-header py-2"><strong>بيانات الأرض ومصاريف البناء</strong></div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">تكلفة الأرض</label>
+                        <input type="number" step="0.01" min="0" name="land_cost" id="land_cost" class="form-control"
+                               value="{{ old('land_cost', $property->land_cost ?? 0) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">رخصة البناء</label>
+                        <input type="number" step="0.01" min="0" name="building_license_cost" id="building_license_cost" class="form-control"
+                               value="{{ old('building_license_cost', $property->building_license_cost ?? 0) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">خوازيق</label>
+                        <input type="number" step="0.01" min="0" name="piles_cost" id="piles_cost" class="form-control"
+                               value="{{ old('piles_cost', $property->piles_cost ?? 0) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">حفر</label>
+                        <input type="number" step="0.01" min="0" name="excavation_cost" id="excavation_cost" class="form-control"
+                               value="{{ old('excavation_cost', $property->excavation_cost ?? 0) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">ظلط</label>
+                        <input type="number" step="0.01" min="0" name="gravel_cost" id="gravel_cost" class="form-control"
+                               value="{{ old('gravel_cost', $property->gravel_cost ?? 0) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">رملة</label>
+                        <input type="number" step="0.01" min="0" name="sand_cost" id="sand_cost" class="form-control"
+                               value="{{ old('sand_cost', $property->sand_cost ?? 0) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">أسمنت</label>
+                        <input type="number" step="0.01" min="0" name="cement_cost" id="cement_cost" class="form-control"
+                               value="{{ old('cement_cost', $property->cement_cost ?? 0) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">حديد</label>
+                        <input type="number" step="0.01" min="0" name="steel_cost" id="steel_cost" class="form-control"
+                               value="{{ old('steel_cost', $property->steel_cost ?? 0) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">عمالة نجارة</label>
+                        <input type="number" step="0.01" min="0" name="carpentry_labor_cost" id="carpentry_labor_cost" class="form-control"
+                               value="{{ old('carpentry_labor_cost', $property->carpentry_labor_cost ?? 0) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">عمالة حدادة</label>
+                        <input type="number" step="0.01" min="0" name="blacksmith_labor_cost" id="blacksmith_labor_cost" class="form-control"
+                               value="{{ old('blacksmith_labor_cost', $property->blacksmith_labor_cost ?? 0) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">عمالة بناَّء</label>
+                        <input type="number" step="0.01" min="0" name="mason_labor_cost" id="mason_labor_cost" class="form-control"
+                               value="{{ old('mason_labor_cost', $property->mason_labor_cost ?? 0) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">عمالة كهربائي</label>
+                        <input type="number" step="0.01" min="0" name="electrician_labor_cost" id="electrician_labor_cost" class="form-control"
+                               value="{{ old('electrician_labor_cost', $property->electrician_labor_cost ?? 0) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">إكراميات</label>
+                        <input type="number" step="0.01" min="0" name="tips_cost" id="tips_cost" class="form-control"
+                               value="{{ old('tips_cost', $property->tips_cost ?? 0) }}">
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="col-md-3">
@@ -275,6 +388,10 @@
 
 <script>
     (function () {
+        const landsData = @json($landsData);
+        const landSelect = document.getElementById('land_id');
+        const landNameInput = document.getElementById('land_name');
+        const areaSelect = document.querySelector('select[name="area_id"]');
         const floors = document.getElementById('floors_count');
         const buildingTotalFloors = document.getElementById('building_total_floors');
         const apartments = document.getElementById('apartments_per_floor');
@@ -287,6 +404,48 @@
         const modelsBody = document.getElementById('apartment-models-body');
         const addModelBtn = document.getElementById('add-model-row');
         let totalIsManual = false;
+        const syncFromSelectedLand = () => {
+            if (!landSelect) {
+                return;
+            }
+
+            const selected = landsData[String(landSelect.value || '')];
+            if (!selected) {
+                return;
+            }
+
+            if (landNameInput && (!landNameInput.value || landNameInput.value === '0')) {
+                landNameInput.value = selected.name || '';
+            }
+
+            if (areaSelect && selected.area_id) {
+                areaSelect.value = String(selected.area_id);
+            }
+
+            const costKeys = [
+                'land_cost',
+                'building_license_cost',
+                'piles_cost',
+                'excavation_cost',
+                'gravel_cost',
+                'sand_cost',
+                'cement_cost',
+                'steel_cost',
+                'carpentry_labor_cost',
+                'blacksmith_labor_cost',
+                'mason_labor_cost',
+                'electrician_labor_cost',
+                'tips_cost',
+            ];
+            costKeys.forEach((key) => {
+                const input = document.getElementById(key);
+                if (!input) {
+                    return;
+                }
+                input.value = String(selected[key] ?? 0);
+            });
+        };
+
         const initiallySelectedRegisteredFloors = new Set(@json($registeredFloors));
         const initiallySelectedMushaaFloors = new Set(@json($mushaaFloors));
 
@@ -473,6 +632,8 @@
                 target.closest('tr')?.remove();
             }
         });
+
+        landSelect?.addEventListener('change', syncFromSelectedLand);
 
         syncRegisteredFloors();
         syncMushaaFloors();

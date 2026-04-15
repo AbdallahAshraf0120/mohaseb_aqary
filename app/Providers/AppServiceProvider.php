@@ -66,6 +66,8 @@ class AppServiceProvider extends ServiceProvider
             ['route' => 'properties.index', 'label' => 'العقارات', 'icon' => 'fa-building', 'active' => ['properties.index', 'properties.show', 'properties.edit']],
             ['route' => 'properties.create', 'label' => 'إضافة عقار', 'icon' => 'fa-circle-plus', 'active' => ['properties.create']],
             ['route' => 'areas.index', 'label' => 'المناطق', 'icon' => 'fa-location-dot', 'active' => ['areas.*']],
+            ['route' => 'lands.index', 'label' => 'الأراضي', 'icon' => 'fa-map-location-dot', 'active' => ['lands.index', 'lands.edit']],
+            ['route' => 'lands.create', 'label' => 'إضافة أرض', 'icon' => 'fa-map-pin', 'active' => ['lands.create']],
             ['route' => 'shareholders.index', 'label' => 'المساهمين', 'icon' => 'fa-people-group', 'active' => ['shareholders.*']],
             ['route' => 'clients.index', 'label' => 'العملاء', 'icon' => 'fa-users', 'active' => ['clients.*']],
             ['route' => 'contracts.index', 'label' => 'العقود', 'icon' => 'fa-file-signature', 'active' => ['contracts.*']],

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePropertyRequest;
 use App\Http\Requests\UpdatePropertyRequest;
 use App\Models\Area;
+use App\Models\Land;
 use App\Models\Project;
 use App\Models\Property;
 use App\Models\Shareholder;
@@ -36,6 +37,27 @@ class PropertyController extends Controller
             'title' => 'إضافة عقار | Mohaseb Aqary',
             'pageTitle' => 'إضافة عقار',
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
+            'lands' => Land::query()
+                ->select([
+                    'id',
+                    'name',
+                    'area_id',
+                    'land_cost',
+                    'building_license_cost',
+                    'piles_cost',
+                    'excavation_cost',
+                    'gravel_cost',
+                    'sand_cost',
+                    'cement_cost',
+                    'steel_cost',
+                    'carpentry_labor_cost',
+                    'blacksmith_labor_cost',
+                    'mason_labor_cost',
+                    'electrician_labor_cost',
+                    'tips_cost',
+                ])
+                ->orderBy('name')
+                ->get(),
             'shareholders' => Shareholder::query()->select('id', 'name', 'share_percentage')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
@@ -65,6 +87,27 @@ class PropertyController extends Controller
             'pageTitle' => 'تعديل العقار',
             'property' => $this->propertyService->findOrFail((int) $property->id),
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
+            'lands' => Land::query()
+                ->select([
+                    'id',
+                    'name',
+                    'area_id',
+                    'land_cost',
+                    'building_license_cost',
+                    'piles_cost',
+                    'excavation_cost',
+                    'gravel_cost',
+                    'sand_cost',
+                    'cement_cost',
+                    'steel_cost',
+                    'carpentry_labor_cost',
+                    'blacksmith_labor_cost',
+                    'mason_labor_cost',
+                    'electrician_labor_cost',
+                    'tips_cost',
+                ])
+                ->orderBy('name')
+                ->get(),
             'shareholders' => Shareholder::query()->select('id', 'name', 'share_percentage')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
@@ -89,6 +132,7 @@ class PropertyController extends Controller
         return [
             'projects' => ['label' => 'المشاريع', 'icon' => 'fa-diagram-project', 'route' => 'projects.index'],
             'areas' => ['label' => 'المناطق', 'icon' => 'fa-location-dot', 'route' => 'areas.index'],
+            'lands' => ['label' => 'الأراضي', 'icon' => 'fa-map-location-dot', 'route' => 'lands.index'],
             'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'properties.index'],
             'clients' => ['label' => 'عملاء', 'icon' => 'fa-users', 'route' => 'clients.index'],
             'contracts' => ['label' => 'العقود', 'icon' => 'fa-file-signature', 'route' => 'contracts.index'],

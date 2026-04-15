@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Area;
+use App\Models\Land;
 use App\Models\Shareholder;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -18,7 +19,9 @@ class StorePropertyRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'area_id' => ['required', 'exists:areas,id'],
+            'land_id' => ['nullable', 'exists:lands,id'],
             'property_type' => ['required', 'string', 'max:255'],
+            'land_name' => ['nullable', 'string', 'max:255'],
             'building_total_floors' => ['required', 'integer', 'min:1'],
             'floors_count' => ['required', 'integer', 'min:1'],
             'registered_floors' => ['nullable', 'array'],
@@ -47,6 +50,19 @@ class StorePropertyRequest extends FormRequest
             'price' => ['required', 'numeric', 'min:0'],
             'status' => ['required', 'in:available,reserved,sold,rented'],
             'owner_id' => ['nullable', 'exists:users,id'],
+            'land_cost' => ['nullable', 'numeric', 'min:0'],
+            'building_license_cost' => ['nullable', 'numeric', 'min:0'],
+            'piles_cost' => ['nullable', 'numeric', 'min:0'],
+            'excavation_cost' => ['nullable', 'numeric', 'min:0'],
+            'gravel_cost' => ['nullable', 'numeric', 'min:0'],
+            'sand_cost' => ['nullable', 'numeric', 'min:0'],
+            'cement_cost' => ['nullable', 'numeric', 'min:0'],
+            'steel_cost' => ['nullable', 'numeric', 'min:0'],
+            'carpentry_labor_cost' => ['nullable', 'numeric', 'min:0'],
+            'blacksmith_labor_cost' => ['nullable', 'numeric', 'min:0'],
+            'mason_labor_cost' => ['nullable', 'numeric', 'min:0'],
+            'electrician_labor_cost' => ['nullable', 'numeric', 'min:0'],
+            'tips_cost' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
@@ -140,8 +156,40 @@ class StorePropertyRequest extends FormRequest
         $mushaaPartner = $this->input('mushaa_partner_name');
         $mushaaPartner = is_string($mushaaPartner) ? trim($mushaaPartner) : '';
         $mushaaPartner = $mushaaPartner === '' ? null : mb_substr($mushaaPartner, 0, 255);
+        $landId = (int) $this->input('land_id', 0);
+        $land = $landId > 0
+            ? Land::query()->select([
+                'id',
+                'name',
+                'land_cost',
+                'building_license_cost',
+                'piles_cost',
+                'excavation_cost',
+                'gravel_cost',
+                'sand_cost',
+                'cement_cost',
+                'steel_cost',
+                'carpentry_labor_cost',
+                'blacksmith_labor_cost',
+                'mason_labor_cost',
+                'electrician_labor_cost',
+                'tips_cost',
+            ])->find($landId)
+            : null;
+        $landName = $this->input('land_name');
+        $landName = is_string($landName) ? trim($landName) : '';
+        $landName = $landName === '' ? ($land?->name ?? null) : mb_substr($landName, 0, 255);
+
+        $costValue = static function (mixed $inputValue, float $fallback): float {
+            return ($inputValue !== null && $inputValue !== '')
+                ? max(0, (float) $inputValue)
+                : max(0, $fallback);
+        };
 
         $this->merge([
+            'land_id' => $land?->id,
+            'area_id' => (int) $this->input('area_id') > 0 ? (int) $this->input('area_id') : ($land?->area_id ?? null),
+            'land_name' => $landName,
             'mushaa_partner_name' => $mushaaPartner,
             'mushaa_floors' => $mushaaFloors,
             'total_apartments' => $providedTotal > 0 ? $providedTotal : $calculatedTotal,
@@ -158,6 +206,19 @@ class StorePropertyRequest extends FormRequest
             'location' => Area::query()->whereKey((int) $this->input('area_id'))->value('name') ?: $this->input('location'),
             'price' => $this->input('price', 0),
             'status' => $this->input('status', 'available'),
+            'land_cost' => $costValue($this->input('land_cost'), (float) ($land?->land_cost ?? 0)),
+            'building_license_cost' => $costValue($this->input('building_license_cost'), (float) ($land?->building_license_cost ?? 0)),
+            'piles_cost' => $costValue($this->input('piles_cost'), (float) ($land?->piles_cost ?? 0)),
+            'excavation_cost' => $costValue($this->input('excavation_cost'), (float) ($land?->excavation_cost ?? 0)),
+            'gravel_cost' => $costValue($this->input('gravel_cost'), (float) ($land?->gravel_cost ?? 0)),
+            'sand_cost' => $costValue($this->input('sand_cost'), (float) ($land?->sand_cost ?? 0)),
+            'cement_cost' => $costValue($this->input('cement_cost'), (float) ($land?->cement_cost ?? 0)),
+            'steel_cost' => $costValue($this->input('steel_cost'), (float) ($land?->steel_cost ?? 0)),
+            'carpentry_labor_cost' => $costValue($this->input('carpentry_labor_cost'), (float) ($land?->carpentry_labor_cost ?? 0)),
+            'blacksmith_labor_cost' => $costValue($this->input('blacksmith_labor_cost'), (float) ($land?->blacksmith_labor_cost ?? 0)),
+            'mason_labor_cost' => $costValue($this->input('mason_labor_cost'), (float) ($land?->mason_labor_cost ?? 0)),
+            'electrician_labor_cost' => $costValue($this->input('electrician_labor_cost'), (float) ($land?->electrician_labor_cost ?? 0)),
+            'tips_cost' => $costValue($this->input('tips_cost'), (float) ($land?->tips_cost ?? 0)),
         ]);
     }
 }

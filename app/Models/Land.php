@@ -5,35 +5,16 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Property extends Model
+class Land extends Model
 {
     use BelongsToProject;
 
     protected $fillable = [
         'project_id',
-        'name',
         'area_id',
-        'land_id',
-        'property_type',
-        'land_name',
-        'building_total_floors',
-        'floors_count',
-        'registered_floors',
-        'mezzanine_floors',
-        'mushaa_partner_name',
-        'mushaa_floors',
-        'apartments_per_floor',
-        'ground_floor_shops_count',
-        'has_mezzanine',
-        'mezzanine_apartments_count',
-        'total_apartments',
-        'shareholder_allocations',
-        'apartment_models',
-        'location',
-        'price',
-        'status',
-        'owner_id',
+        'name',
         'land_cost',
         'building_license_cost',
         'piles_cost',
@@ -47,15 +28,10 @@ class Property extends Model
         'mason_labor_cost',
         'electrician_labor_cost',
         'tips_cost',
+        'notes',
     ];
 
     protected $casts = [
-        'has_mezzanine' => 'boolean',
-        'registered_floors' => 'array',
-        'mezzanine_floors' => 'array',
-        'shareholder_allocations' => 'array',
-        'apartment_models' => 'array',
-        'mushaa_floors' => 'array',
         'land_cost' => 'decimal:2',
         'building_license_cost' => 'decimal:2',
         'piles_cost' => 'decimal:2',
@@ -76,23 +52,13 @@ class Property extends Model
         return $this->belongsTo(Project::class);
     }
 
-    public function owner()
-    {
-        return $this->belongsTo(User::class, 'owner_id');
-    }
-
-    public function sales()
-    {
-        return $this->hasMany(Sale::class);
-    }
-
-    public function area()
+    public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
     }
 
-    public function land(): BelongsTo
+    public function properties(): HasMany
     {
-        return $this->belongsTo(Land::class);
+        return $this->hasMany(Property::class);
     }
 }

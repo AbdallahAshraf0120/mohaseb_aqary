@@ -15,6 +15,12 @@
                     <strong>نوع العقار:</strong> {{ $property->property_type ?? '-' }}
                 </div>
                 <div class="col-md-6">
+                    <strong>اسم الأرض:</strong> {{ $property->land_name ?? '-' }}
+                </div>
+                <div class="col-md-6">
+                    <strong>الأرض المرتبطة:</strong> {{ $property->land?->name ?? '-' }}
+                </div>
+                <div class="col-md-6">
                     <strong>المنطقة:</strong> {{ $property->area?->name ?? ($property->location ?? '-') }}
                 </div>
                 <div class="col-md-6">
@@ -77,6 +83,50 @@
                 </div>
                 <div class="col-md-6">
                     <strong>تاريخ الإنشاء:</strong> {{ $property->created_at?->format('Y-m-d H:i') }}
+                </div>
+                <div class="col-12">
+                    <hr>
+                    <h6>مصاريف الأرض والبناء</h6>
+                    @php
+                        $costRows = [
+                            'تكلفة الأرض' => (float) ($property->land_cost ?? 0),
+                            'رخصة البناء' => (float) ($property->building_license_cost ?? 0),
+                            'خوازيق' => (float) ($property->piles_cost ?? 0),
+                            'حفر' => (float) ($property->excavation_cost ?? 0),
+                            'ظلط' => (float) ($property->gravel_cost ?? 0),
+                            'رملة' => (float) ($property->sand_cost ?? 0),
+                            'أسمنت' => (float) ($property->cement_cost ?? 0),
+                            'حديد' => (float) ($property->steel_cost ?? 0),
+                            'عمالة نجارة' => (float) ($property->carpentry_labor_cost ?? 0),
+                            'عمالة حدادة' => (float) ($property->blacksmith_labor_cost ?? 0),
+                            'عمالة بناَّء' => (float) ($property->mason_labor_cost ?? 0),
+                            'عمالة كهربائي' => (float) ($property->electrician_labor_cost ?? 0),
+                            'إكراميات' => (float) ($property->tips_cost ?? 0),
+                        ];
+                        $totalCosts = array_sum($costRows);
+                    @endphp
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead>
+                            <tr>
+                                <th>البند</th>
+                                <th class="text-end">القيمة</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach($costRows as $label => $value)
+                                <tr>
+                                    <td>{{ $label }}</td>
+                                    <td class="text-end">{{ number_format($value, 2) }}</td>
+                                </tr>
+                            @endforeach
+                            <tr class="fw-bold">
+                                <td>الإجمالي</td>
+                                <td class="text-end">{{ number_format($totalCosts, 2) }}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="col-12">
