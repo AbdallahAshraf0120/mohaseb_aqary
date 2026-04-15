@@ -15,9 +15,7 @@ use Illuminate\Http\RedirectResponse;
 
 class PropertyController extends Controller
 {
-    public function __construct(private readonly PropertyService $propertyService)
-    {
-    }
+    public function __construct(private readonly PropertyService $propertyService) {}
 
     public function index(): View
     {

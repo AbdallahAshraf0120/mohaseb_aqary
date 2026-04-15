@@ -83,13 +83,26 @@
                                                 @php
                                                     $subActive = $isThisProject && collect((array) $action['active'])
                                                         ->contains(fn (string $p) => request()->routeIs($p));
+                                                    $canCreateFromMenu = !empty($action['create_route']);
+                                                    $subCreateActive = $isThisProject && $canCreateFromMenu
+                                                        && collect((array) ($action['create_active'] ?? []))
+                                                            ->contains(fn (string $p) => request()->routeIs($p));
                                                 @endphp
                                                 <li class="nav-item">
-                                                    <a href="{{ route($action['route'], $np) }}"
-                                                       class="nav-link {{ $subActive ? 'active' : '' }}">
-                                                        <i class="nav-icon fa-solid {{ $action['icon'] }}"></i>
-                                                        <p>{{ $action['label'] }}</p>
-                                                    </a>
+                                                    <div class="d-flex align-items-center gap-1">
+                                                        <a href="{{ route($action['route'], $np) }}"
+                                                           class="nav-link flex-grow-1 {{ $subActive ? 'active' : '' }}">
+                                                            <i class="nav-icon fa-solid {{ $action['icon'] }}"></i>
+                                                            <p>{{ $action['label'] }}</p>
+                                                        </a>
+                                                        @if ($canCreateFromMenu)
+                                                            <a href="{{ route($action['create_route'], $np) }}"
+                                                               class="nav-link px-2 {{ $subCreateActive ? 'active' : '' }}"
+                                                               title="إضافة">
+                                                                <i class="nav-icon fa-solid fa-circle-plus"></i>
+                                                            </a>
+                                                        @endif
+                                                    </div>
                                                 </li>
                                             @endforeach
                                         </ul>

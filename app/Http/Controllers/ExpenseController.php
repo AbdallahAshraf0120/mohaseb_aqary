@@ -13,8 +13,7 @@ class ExpenseController extends Controller
 {
     public function __construct(
         private CashboxLedgerService $cashboxLedger,
-    ) {
-    }
+    ) {}
 
     public function index(): View
     {

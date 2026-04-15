@@ -12,9 +12,7 @@ use Illuminate\Http\RedirectResponse;
 
 class ShareholderController extends Controller
 {
-    public function __construct(private readonly ShareholderService $shareholderService)
-    {
-    }
+    public function __construct(private readonly ShareholderService $shareholderService) {}
 
     public function index(): View
     {

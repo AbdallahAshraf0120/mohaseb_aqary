@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(CurrentProject::class, fn () => new CurrentProject);
+        $this->app->singleton(CurrentProject::class, fn() => new CurrentProject);
 
         $this->app->bind(PropertyRepositoryInterface::class, PropertyRepository::class);
         $this->app->bind(ShareholderRepositoryInterface::class, ShareholderRepository::class);
@@ -63,21 +63,51 @@ class AppServiceProvider extends ServiceProvider
 
         $projectSidebarActions = [
             ['route' => 'dashboard', 'label' => 'لوحة التحكم', 'icon' => 'fa-gauge-high', 'active' => ['dashboard']],
-            ['route' => 'properties.index', 'label' => 'العقارات', 'icon' => 'fa-building', 'active' => ['properties.index', 'properties.show', 'properties.edit']],
-            ['route' => 'properties.create', 'label' => 'إضافة عقار', 'icon' => 'fa-circle-plus', 'active' => ['properties.create']],
+            [
+                'route' => 'properties.index',
+                'label' => 'العقارات',
+                'icon' => 'fa-building',
+                'active' => ['properties.index', 'properties.show', 'properties.edit'],
+                'create_route' => 'properties.create',
+                'create_active' => ['properties.create'],
+            ],
             ['route' => 'areas.index', 'label' => 'المناطق', 'icon' => 'fa-location-dot', 'active' => ['areas.*']],
-            ['route' => 'lands.index', 'label' => 'الأراضي', 'icon' => 'fa-map-location-dot', 'active' => ['lands.index', 'lands.edit']],
-            ['route' => 'lands.create', 'label' => 'إضافة أرض', 'icon' => 'fa-map-pin', 'active' => ['lands.create']],
+            [
+                'route' => 'lands.index',
+                'label' => 'الأراضي',
+                'icon' => 'fa-map-location-dot',
+                'active' => ['lands.index', 'lands.edit'],
+                'create_route' => 'lands.create',
+                'create_active' => ['lands.create'],
+            ],
             ['route' => 'shareholders.index', 'label' => 'المساهمين', 'icon' => 'fa-people-group', 'active' => ['shareholders.*']],
             ['route' => 'clients.index', 'label' => 'العملاء', 'icon' => 'fa-users', 'active' => ['clients.*']],
             ['route' => 'contracts.index', 'label' => 'العقود', 'icon' => 'fa-file-signature', 'active' => ['contracts.*']],
-            ['route' => 'sales.index', 'label' => 'المبيعات', 'icon' => 'fa-cart-shopping', 'active' => ['sales.index', 'sales.show', 'sales.edit']],
-            ['route' => 'sales.create', 'label' => 'تسجيل بيعة', 'icon' => 'fa-file-circle-plus', 'active' => ['sales.create']],
-            ['route' => 'revenues.index', 'label' => 'التحصيل', 'icon' => 'fa-money-bill-trend-up', 'active' => ['revenues.index', 'revenues.show', 'revenues.edit']],
-            ['route' => 'revenues.create', 'label' => 'تحصيل دفعة', 'icon' => 'fa-coins', 'active' => ['revenues.create']],
+            [
+                'route' => 'sales.index',
+                'label' => 'المبيعات',
+                'icon' => 'fa-cart-shopping',
+                'active' => ['sales.index', 'sales.show', 'sales.edit'],
+                'create_route' => 'sales.create',
+                'create_active' => ['sales.create'],
+            ],
+            [
+                'route' => 'revenues.index',
+                'label' => 'التحصيل',
+                'icon' => 'fa-money-bill-trend-up',
+                'active' => ['revenues.index', 'revenues.show', 'revenues.edit'],
+                'create_route' => 'revenues.create',
+                'create_active' => ['revenues.create'],
+            ],
             ['route' => 'cashbox.index', 'label' => 'الصندوق', 'icon' => 'fa-vault', 'active' => ['cashbox.*']],
-            ['route' => 'expenses.index', 'label' => 'المصروفات', 'icon' => 'fa-money-bill-wave', 'active' => ['expenses.index']],
-            ['route' => 'expenses.create', 'label' => 'إضافة مصروف', 'icon' => 'fa-circle-minus', 'active' => ['expenses.create']],
+            [
+                'route' => 'expenses.index',
+                'label' => 'المصروفات',
+                'icon' => 'fa-money-bill-wave',
+                'active' => ['expenses.index'],
+                'create_route' => 'expenses.create',
+                'create_active' => ['expenses.create'],
+            ],
             ['route' => 'debts.index', 'label' => 'المديونية', 'icon' => 'fa-scale-balanced', 'active' => ['debts.*']],
             ['route' => 'remaining.index', 'label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'active' => ['remaining.*']],
             ['route' => 'settlements.index', 'label' => 'التصفيات', 'icon' => 'fa-filter-circle-dollar', 'active' => ['settlements.*']],

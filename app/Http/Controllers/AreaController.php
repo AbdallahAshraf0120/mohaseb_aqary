@@ -39,7 +39,7 @@ class AreaController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('areas', 'name')->where(fn ($q) => $q->where('project_id', $projectId)),
+                Rule::unique('areas', 'name')->where(fn($q) => $q->where('project_id', $projectId)),
             ],
         ]);
 
@@ -68,7 +68,7 @@ class AreaController extends Controller
                 'max:255',
                 Rule::unique('areas', 'name')
                     ->ignore($area->id)
-                    ->where(fn ($q) => $q->where('project_id', $projectId)),
+                    ->where(fn($q) => $q->where('project_id', $projectId)),
             ],
         ]);
 
