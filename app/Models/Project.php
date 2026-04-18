@@ -42,4 +42,9 @@ class Project extends Model
     {
         return $this->hasMany(Sale::class);
     }
+
+    public function shareholders(): HasMany
+    {
+        return $this->hasMany(Shareholder::class);
+    }
 }
