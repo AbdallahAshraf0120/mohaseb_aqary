@@ -18,6 +18,9 @@
                 <div class="col-md-4"><strong>تاريخ البداية:</strong> {{ $contract->start_date }}</div>
                 <div class="col-md-4"><strong>تاريخ النهاية:</strong> {{ $contract->end_date }}</div>
                 <div class="col-md-4"><strong>مرجع البيعة:</strong> {{ $contract->sale_id ? 'SL-' . str_pad((string) $contract->sale_id, 3, '0', STR_PAD_LEFT) : '-' }}</div>
+                @if ($contract->sale_id)
+                    <div class="col-md-4"><strong>البروكر:</strong> {{ $contract->sale?->broker_name ?: '-' }}</div>
+                @endif
                 <div class="col-md-4"><strong>إجمالي سعر الوحدة:</strong> {{ number_format((float) $contract->total_price, 2) }}</div>
                 <div class="col-md-4"><strong>المقدم:</strong> {{ number_format($downPayment, 2) }}</div>
                 <div class="col-md-4"><strong>قيمة العقد بعد المقدم:</strong> {{ number_format($netContractValue, 2) }}</div>

@@ -28,6 +28,7 @@
                 <div class="col-md-4"><strong>نظام القسط:</strong> {{ $sale->payment_type === 'installment' ? $scheduleLabel : '-' }}</div>
                 <div class="col-md-4"><strong>بداية القسط:</strong> {{ $sale->installment_start_date?->format('Y-m-d') ?? '-' }}</div>
                 <div class="col-md-4"><strong>تاريخ البيعة:</strong> {{ $sale->sale_date?->format('Y-m-d') }}</div>
+                <div class="col-md-8"><strong>البروكر:</strong> {{ $sale->broker_name ?: '-' }}</div>
                 <div class="col-md-6"><strong>العميل:</strong> {{ $sale->client?->name ?? '-' }}</div>
                 <div class="col-md-6"><strong>هاتف العميل:</strong> {{ $sale->client?->phone ?? '-' }}</div>
                 <div class="col-12"><strong>ملاحظات:</strong> {{ $sale->notes ?: '-' }}</div>

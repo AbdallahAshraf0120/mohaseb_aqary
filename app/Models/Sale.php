@@ -23,6 +23,7 @@ class Sale extends Model
         'installment_start_date',
         'installment_plan',
         'sale_date',
+        'broker_name',
         'notes',
     ];
 

@@ -168,6 +168,7 @@
                             <tr>
                                 <th>العميل</th>
                                 <th>العقار</th>
+                                <th>البروكر</th>
                                 <th class="text-end">المبلغ</th>
                                 <th class="text-end">التاريخ</th>
                             </tr>
@@ -177,11 +178,12 @@
                                 <tr>
                                     <td>{{ $sale->client?->name ?? '—' }}</td>
                                     <td class="text-truncate" style="max-width: 8rem">{{ $sale->property?->name ?? '—' }}</td>
+                                    <td class="text-truncate small" style="max-width: 6rem">{{ $sale->broker_name ?: '—' }}</td>
                                     <td class="text-end">{{ $fmt((float) $sale->sale_price) }}</td>
                                     <td class="text-end small">{{ $sale->sale_date?->format('Y-m-d') }}</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="text-center text-body-secondary py-4">لا توجد مبيعات بعد</td></tr>
+                                <tr><td colspan="5" class="text-center text-body-secondary py-4">لا توجد مبيعات بعد</td></tr>
                             @endforelse
                         </tbody>
                     </table>

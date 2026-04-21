@@ -74,6 +74,7 @@
                                 <th>#</th>
                                 <th>رقم البيعة</th>
                                 <th>العقار/العميل</th>
+                                <th>البروكر</th>
                                 <th>قيمة البيع</th>
                                 <th>المقدم</th>
                                 <th class="text-end">العمليات</th>
@@ -85,6 +86,7 @@
                                     <td>{{ $loop->iteration }}</td>
                                     <td>SL-{{ str_pad((string) $sale->id, 3, '0', STR_PAD_LEFT) }}</td>
                                     <td>{{ $sale->property?->name ?? '-' }} / {{ $sale->client?->name ?? '-' }}</td>
+                                    <td>{{ $sale->broker_name ?: '—' }}</td>
                                     <td>{{ number_format((float) $sale->sale_price, 2) }} ج.م</td>
                                     <td>{{ number_format((float) $sale->down_payment, 2) }} ج.م</td>
                                     <td class="text-end">
@@ -94,7 +96,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted">لا توجد مبيعات مسجلة حتى الآن.</td>
+                                    <td colspan="7" class="text-center text-muted">لا توجد مبيعات مسجلة حتى الآن.</td>
                                 </tr>
                             @endforelse
                             </tbody>

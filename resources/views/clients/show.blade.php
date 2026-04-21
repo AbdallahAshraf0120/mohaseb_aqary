@@ -24,6 +24,7 @@
                         <th>العقار</th>
                         <th>السعر</th>
                         <th>نوع السداد</th>
+                        <th>البروكر</th>
                         <th>تاريخ البيعة</th>
                     </tr>
                     </thead>
@@ -34,11 +35,12 @@
                             <td>{{ $sale->property?->name ?? '-' }}</td>
                             <td>{{ number_format((float) $sale->sale_price, 2) }}</td>
                             <td>{{ $sale->payment_type === 'cash' ? 'كاش' : 'تقسيط' }}</td>
+                            <td>{{ $sale->broker_name ?: '—' }}</td>
                             <td>{{ $sale->sale_date?->format('Y-m-d') }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center text-muted">لا توجد مبيعات لهذا العميل.</td>
+                            <td colspan="6" class="text-center text-muted">لا توجد مبيعات لهذا العميل.</td>
                         </tr>
                     @endforelse
                     </tbody>

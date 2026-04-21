@@ -227,6 +227,7 @@ class DatabaseSeeder extends Seeder
                             'monthly_installment' => $installmentAmount,
                         ],
                     'notes' => "بيع تجريبي {$pid}/{$i}",
+                    'broker_name' => fake()->name(),
                 ]
             );
         });

@@ -125,24 +125,30 @@
         <input type="date" name="sale_date" class="form-control"
                value="{{ old('sale_date', isset($sale->sale_date) ? $sale->sale_date->format('Y-m-d') : now()->format('Y-m-d')) }}" required>
     </div>
+    <div class="col-md-8">
+        <label class="form-label">اسم البروكر (من نفّذ البيع)</label>
+        <input type="text" name="broker_name" class="form-control" maxlength="255"
+               value="{{ old('broker_name', $sale->broker_name ?? '') }}" required
+               placeholder="اسم البروكر">
+    </div>
 
     <div class="col-12"><hr class="my-2"></div>
     <div class="col-12"><h6 class="mb-0">بيانات العميل</h6></div>
     <div class="col-md-3">
         <label class="form-label">اسم العميل</label>
-        <input type="text" name="client_name" class="form-control" value="{{ old('client_name', $sale->client->name ?? '') }}" required>
+        <input type="text" name="client_name" class="form-control" value="{{ old('client_name', $sale->client?->name ?? '') }}" required>
     </div>
     <div class="col-md-3">
         <label class="form-label">الهاتف</label>
-        <input type="text" name="client_phone" class="form-control" value="{{ old('client_phone', $sale->client->phone ?? '') }}" required>
+        <input type="text" name="client_phone" class="form-control" value="{{ old('client_phone', $sale->client?->phone ?? '') }}" required>
     </div>
     <div class="col-md-3">
         <label class="form-label">البريد الإلكتروني</label>
-        <input type="email" name="client_email" class="form-control" value="{{ old('client_email', $sale->client->email ?? '') }}">
+        <input type="email" name="client_email" class="form-control" value="{{ old('client_email', $sale->client?->email ?? '') }}">
     </div>
     <div class="col-md-3">
         <label class="form-label">الرقم القومي</label>
-        <input type="text" name="client_national_id" class="form-control" value="{{ old('client_national_id', $sale->client->national_id ?? '') }}">
+        <input type="text" name="client_national_id" class="form-control" value="{{ old('client_national_id', $sale->client?->national_id ?? '') }}">
     </div>
 
     <div class="col-12">

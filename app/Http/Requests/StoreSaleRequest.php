@@ -26,6 +26,7 @@ class StoreSaleRequest extends FormRequest
             'installment_schedule' => ['nullable', 'in:monthly,quarterly', 'required_if:payment_type,installment'],
             'installment_start_date' => ['nullable', 'date', 'required_if:payment_type,installment'],
             'sale_date' => ['required', 'date'],
+            'broker_name' => ['required', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
             'client_name' => ['required', 'string', 'max:255'],
             'client_phone' => ['required', 'string', 'max:30'],

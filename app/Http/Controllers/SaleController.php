@@ -36,6 +36,7 @@ class SaleController extends Controller
         return view('sales.create', [
             'title' => 'تسجيل بيع | Mohaseb Aqary',
             'pageTitle' => 'تسجيل بيع',
+            'sale' => new Sale,
             'properties' => Property::query()->select(
                 'id',
                 'name',
@@ -68,6 +69,7 @@ class SaleController extends Controller
             'installment_start_date' => $validated['payment_type'] === 'installment' ? $validated['installment_start_date'] : null,
             'installment_plan' => $validated['installment_plan'] ?? null,
             'sale_date' => $validated['sale_date'],
+            'broker_name' => $validated['broker_name'],
             'notes' => $validated['notes'] ?? null,
         ]);
 
@@ -125,6 +127,7 @@ class SaleController extends Controller
             'installment_start_date' => $validated['payment_type'] === 'installment' ? $validated['installment_start_date'] : null,
             'installment_plan' => $validated['installment_plan'] ?? null,
             'sale_date' => $validated['sale_date'],
+            'broker_name' => $validated['broker_name'],
             'notes' => $validated['notes'] ?? null,
         ]);
 
