@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Property;
+use App\Models\Sale;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -72,6 +73,26 @@ class StoreSaleRequest extends FormRequest
             $availableModels = collect($property->apartment_models ?? [])->pluck('model_name')->filter()->values();
             if ($availableModels->isNotEmpty() && ! $availableModels->contains($this->input('apartment_model'))) {
                 $validator->errors()->add('apartment_model', 'النموذج المختار غير موجود في هذا العقار.');
+            }
+
+            if ($validator->errors()->has('floor_number') || $validator->errors()->has('apartment_model')) {
+                return;
+            }
+
+            $modelName = (string) $this->input('apartment_model');
+            $ignoreSaleId = ($this->route('sale') instanceof Sale) ? (int) $this->route('sale')->getKey() : null;
+            $duplicateQuery = Sale::query()->withoutGlobalScope('project')
+                ->where('property_id', (int) $property->id)
+                ->where('floor_number', $floor)
+                ->where('apartment_model', $modelName);
+            if ($ignoreSaleId !== null) {
+                $duplicateQuery->whereKeyNot($ignoreSaleId);
+            }
+            if ($duplicateQuery->exists()) {
+                $validator->errors()->add(
+                    'apartment_model',
+                    'لا يمكن إتمام البيعة: هذه الوحدة (نفس العقار والدور والنموذج) مبيعة بالفعل.'
+                );
             }
 
             $salePrice = (float) $this->input('sale_price', 0);

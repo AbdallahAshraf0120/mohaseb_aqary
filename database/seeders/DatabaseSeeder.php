@@ -180,11 +180,29 @@ class DatabaseSeeder extends Seeder
             );
         });
 
-        $sales = collect(range(1, $counts['sales']))->map(function (int $i) use ($properties, $clients, $pid) {
-            $property = $properties->random();
-            $models = collect($property->apartment_models ?? []);
-            $model = $models->isNotEmpty() ? $models->random() : ['model_name' => 'A'];
+        $unitSlots = collect();
+        foreach ($properties as $property) {
+            $minFloor = (int) ($property->ground_floor_shops_count ?? 0) > 0 ? 0 : 1;
+            $maxFloor = max(1, (int) $property->floors_count) + ((bool) ($property->has_mezzanine ?? false) ? 1 : 0);
+            $modelNames = collect($property->apartment_models ?? [])->pluck('model_name')->filter()->values();
+            if ($modelNames->isEmpty()) {
+                $modelNames = collect(['A']);
+            }
+            for ($floor = $minFloor; $floor <= $maxFloor; $floor++) {
+                foreach ($modelNames as $modelName) {
+                    $unitSlots->push([
+                        'property' => $property,
+                        'floor_number' => $floor,
+                        'apartment_model' => (string) $modelName,
+                    ]);
+                }
+            }
+        }
 
+        $unitSlots = $unitSlots->shuffle()->take($counts['sales'])->values();
+
+        $sales = $unitSlots->map(function (array $slot, int $i) use ($clients, $pid) {
+            $property = $slot['property'];
             $salePrice = fake()->numberBetween(650_000, 6_500_000);
             $paymentType = fake()->randomElement(['installment', 'installment', 'installment', 'cash']);
             $downPayment = $paymentType === 'cash'
@@ -198,19 +216,15 @@ class DatabaseSeeder extends Seeder
             $installmentAmount = ($installmentsCount && $remaining > 0) ? round($remaining / $installmentsCount, 2) : 0;
             $saleDate = Carbon::now()->subDays(fake()->numberBetween(1, 900))->toDateString();
 
-            return Sale::query()->firstOrCreate(
+            return Sale::query()->updateOrCreate(
                 [
                     'project_id' => $pid,
                     'property_id' => $property->id,
-                    'client_id' => $clients->random()->id,
-                    'sale_date' => $saleDate,
-                    'floor_number' => fake()->numberBetween(
-                        (int) ($property->ground_floor_shops_count ?? 0) > 0 ? 0 : 1,
-                        max(1, (int) $property->floors_count) + ((bool) ($property->has_mezzanine ?? false) ? 1 : 0)
-                    ),
+                    'floor_number' => $slot['floor_number'],
+                    'apartment_model' => $slot['apartment_model'],
                 ],
                 [
-                    'apartment_model' => (string) ($model['model_name'] ?? 'A'),
+                    'client_id' => $clients->random()->id,
                     'sale_price' => $salePrice,
                     'payment_type' => $paymentType,
                     'down_payment' => $downPayment,
@@ -226,7 +240,8 @@ class DatabaseSeeder extends Seeder
                             'installment_amount' => $installmentAmount,
                             'monthly_installment' => $installmentAmount,
                         ],
-                    'notes' => "بيع تجريبي {$pid}/{$i}",
+                    'sale_date' => $saleDate,
+                    'notes' => "بيع تجريبي {$pid}/" . ($i + 1),
                     'broker_name' => fake()->name(),
                 ]
             );
