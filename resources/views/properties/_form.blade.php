@@ -15,12 +15,15 @@
             ]);
     }
 
+    $facingsList = $facings ?? collect();
+    $defaultFacingCode = $facingsList->first()->code ?? 'normal';
+
     $apartmentModels = old('apartment_models', $property->apartment_models ?? [[
         'model_name' => '',
         'area' => '',
         'rooms_count' => '',
         'bathrooms_count' => '',
-        'view_type' => 'normal',
+        'view_type' => $defaultFacingCode,
     ]]);
     $hasMezzanine = (bool) old('has_mezzanine', isset($property) ? $property->has_mezzanine : false);
     $buildingTotalFloors = (int) old('building_total_floors', $property->building_total_floors ?? $property->floors_count ?? 1);
@@ -231,7 +234,7 @@
         <div class="card border">
             <div class="card-header py-2"><strong>اختيار الأدوار المسجلة بالعقار</strong></div>
             <div class="card-body">
-                <p class="text-muted small mb-2">حدد الأدوار التي تملكها/ستسجلها (مثال: من 12 دور تختار 6 أدوار فقط).</p>
+                <p class="text-muted small mb-2">حدد الأدوار التي تملكها/ستسجلها (مثال: من 12 دور تختار 6 أدوار فقط). إذا كان لنفس الرقم ميزان في الجدول أدناه، يُعرض هنا <strong>دور … (سكني)</strong> لتمييزه عن <strong>دور … (ميزان)</strong>؛ وإلا يظهر رقم الدور فقط (مثل الدور الأول العادي).</p>
                 <div class="d-flex flex-wrap gap-2" id="registered-floors-box"></div>
             </div>
         </div>
@@ -262,6 +265,7 @@
                 <button type="button" class="btn btn-outline-primary btn-sm" id="add-mezzanine-row">إضافة ميزان</button>
             </div>
             <div class="card-body">
+                <p class="text-muted small mb-2">أدخل رقم الدور الذي يعلوه/يرتبط به الميزان (مثال: 1 لميزان فوق الدور الأول السكني). في البيع سيظهر للمستخدم خيار <strong>الدور … (سكني)</strong> و<strong>الدور … (ميزان)</strong> عندما ينطبق ذلك.</p>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0">
                         <thead>
@@ -313,9 +317,12 @@
 
     <div class="col-12">
         <div class="card border">
-            <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <div class="card-header d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
                 <strong>نماذج الشقق (المساحة = نموذج)</strong>
-                <button type="button" class="btn btn-outline-primary btn-sm" id="add-model-row">إضافة نموذج</button>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <a href="{{ route('facings.index') }}" class="btn btn-outline-secondary btn-sm">إدارة الوجهات</a>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-model-row">إضافة نموذج</button>
+                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -354,9 +361,12 @@
                                 </td>
                                 <td>
                                     <select class="form-select" name="apartment_models[{{ $i }}][view_type]">
-                                        <option value="normal" @selected(($model['view_type'] ?? 'normal') === 'normal')>عادية</option>
-                                        <option value="facade" @selected(($model['view_type'] ?? '') === 'facade')>واجهة</option>
-                                        <option value="corner" @selected(($model['view_type'] ?? '') === 'corner')>ناصية</option>
+                                        @php($rowView = $model['view_type'] ?? $defaultFacingCode)
+                                        @forelse ($facingsList as $facing)
+                                            <option value="{{ $facing->code }}" @selected($rowView === $facing->code)>{{ $facing->name }}</option>
+                                        @empty
+                                            <option value="normal" @selected($rowView === 'normal')>عادية</option>
+                                        @endforelse
                                     </select>
                                 </td>
                                 <td class="text-end">
@@ -389,6 +399,7 @@
 <script>
     (function () {
         const landsData = @json($landsData);
+        const facingsOptions = @json($facingsList->map(fn ($f) => ['code' => $f->code, 'name' => $f->name])->values());
         const landSelect = document.getElementById('land_id');
         const landNameInput = document.getElementById('land_name');
         const areaSelect = document.querySelector('select[name="area_id"]');
@@ -510,6 +521,16 @@
             }
 
             const maxFloor = Math.max(1, parseInt(buildingTotalFloors.value || '1', 10));
+            const mezzanineFloorsSet = new Set();
+            if (mezzanineFloorsBody) {
+                mezzanineFloorsBody.querySelectorAll('tr').forEach((tr) => {
+                    const numInput = tr.querySelector('input[name*="[floor_number]"]');
+                    const n = parseInt(numInput?.value || '0', 10);
+                    if (n >= 1) {
+                        mezzanineFloorsSet.add(n);
+                    }
+                });
+            }
             const currentSelected = Array.from(registeredFloorsBox.querySelectorAll('input[type="checkbox"]:checked'))
                 .map((input) => parseInt(input.value || '0', 10))
                 .filter((value) => value > 0);
@@ -533,7 +554,8 @@
                 });
 
                 wrapper.appendChild(checkbox);
-                wrapper.appendChild(document.createTextNode(`دور ${i}`));
+                const labelText = mezzanineFloorsSet.has(i) ? `دور ${i} (سكني)` : `دور ${i}`;
+                wrapper.appendChild(document.createTextNode(labelText));
                 registeredFloorsBox.appendChild(wrapper);
             }
 
@@ -570,6 +592,7 @@
         });
         apartments?.addEventListener('input', syncTotal);
         mezzanineFloorsBody?.addEventListener('input', () => {
+            syncRegisteredFloors();
             syncMushaaFloors();
             syncTotal();
         });
@@ -594,6 +617,7 @@
                 <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm remove-mezzanine-row">حذف</button></td>
             `;
             mezzanineFloorsBody.appendChild(tr);
+            syncRegisteredFloors();
             syncMushaaFloors();
         });
 
@@ -601,6 +625,7 @@
             const target = event.target;
             if (target instanceof HTMLElement && target.classList.contains('remove-mezzanine-row')) {
                 target.closest('tr')?.remove();
+                syncRegisteredFloors();
                 syncMushaaFloors();
                 syncTotal();
             }
@@ -609,20 +634,36 @@
         addModelBtn?.addEventListener('click', () => {
             const index = modelsBody.querySelectorAll('tr').length;
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><input type="text" class="form-control" name="apartment_models[${index}][model_name]" placeholder="مثال: نموذج A"></td>
-                <td><input type="number" step="0.01" min="1" class="form-control" name="apartment_models[${index}][area]" placeholder="مثال: 120"></td>
-                <td><input type="number" min="0" class="form-control" name="apartment_models[${index}][rooms_count]" placeholder="مثال: 3"></td>
-                <td><input type="number" min="0" class="form-control" name="apartment_models[${index}][bathrooms_count]" placeholder="مثال: 2"></td>
-                <td>
-                    <select class="form-select" name="apartment_models[${index}][view_type]">
-                        <option value="normal">عادية</option>
-                        <option value="facade">واجهة</option>
-                        <option value="corner">ناصية</option>
-                    </select>
-                </td>
-                <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm remove-model-row">حذف</button></td>
-            `;
+
+            const tdName = document.createElement('td');
+            tdName.innerHTML = `<input type="text" class="form-control" name="apartment_models[${index}][model_name]" placeholder="مثال: نموذج A">`;
+            const tdArea = document.createElement('td');
+            tdArea.innerHTML = `<input type="number" step="0.01" min="1" class="form-control" name="apartment_models[${index}][area]" placeholder="مثال: 120">`;
+            const tdRooms = document.createElement('td');
+            tdRooms.innerHTML = `<input type="number" min="0" class="form-control" name="apartment_models[${index}][rooms_count]" placeholder="مثال: 3">`;
+            const tdBaths = document.createElement('td');
+            tdBaths.innerHTML = `<input type="number" min="0" class="form-control" name="apartment_models[${index}][bathrooms_count]" placeholder="مثال: 2">`;
+
+            const tdView = document.createElement('td');
+            const viewSelect = document.createElement('select');
+            viewSelect.className = 'form-select';
+            viewSelect.name = `apartment_models[${index}][view_type]`;
+            const opts = Array.isArray(facingsOptions) && facingsOptions.length > 0
+                ? facingsOptions
+                : [{ code: 'normal', name: 'عادية' }];
+            opts.forEach((f) => {
+                const o = document.createElement('option');
+                o.value = f.code;
+                o.textContent = f.name;
+                viewSelect.appendChild(o);
+            });
+            tdView.appendChild(viewSelect);
+
+            const tdDel = document.createElement('td');
+            tdDel.className = 'text-end';
+            tdDel.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm remove-model-row">حذف</button>';
+
+            tr.append(tdName, tdArea, tdRooms, tdBaths, tdView, tdDel);
             modelsBody.appendChild(tr);
         });
 

@@ -72,6 +72,7 @@ class AppServiceProvider extends ServiceProvider
                 'create_active' => ['properties.create'],
             ],
             ['route' => 'areas.index', 'label' => 'المناطق', 'icon' => 'fa-location-dot', 'active' => ['areas.*']],
+            ['route' => 'facings.index', 'label' => 'الوجهات', 'icon' => 'fa-compass-drafting', 'active' => ['facings.*']],
             [
                 'route' => 'lands.index',
                 'label' => 'الأراضي',

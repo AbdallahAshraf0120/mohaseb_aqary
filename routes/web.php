@@ -9,6 +9,7 @@ use App\Http\Controllers\AreaController;
 use App\Http\Controllers\LandController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\FacingController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\RemainingController;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\Route;
 $modules = [
     'projects' => ['label' => 'المشاريع', 'icon' => 'fa-diagram-project', 'route' => 'projects.index'],
     'areas' => ['label' => 'المناطق', 'icon' => 'fa-location-dot', 'route' => 'areas.index'],
+    'facings' => ['label' => 'الوجهات', 'icon' => 'fa-compass-drafting', 'route' => 'facings.index'],
     'lands' => ['label' => 'الأراضي', 'icon' => 'fa-map-location-dot', 'route' => 'lands.index'],
     'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'shareholders.index'],
     'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'properties.index'],
@@ -72,6 +74,7 @@ Route::middleware(['auth', SyncProjectFromRoute::class])
 
         Route::resource('properties', PropertyController::class);
         Route::resource('areas', AreaController::class)->except(['show']);
+        Route::resource('facings', FacingController::class)->except(['show']);
         Route::resource('lands', LandController::class)->except(['show']);
         Route::resource('shareholders', ShareholderController::class);
         Route::resource('sales', SaleController::class);

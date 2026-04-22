@@ -74,6 +74,10 @@ class CashboxLedgerService
             return;
         }
 
+        $label = $sale->payment_type === 'cash'
+            ? 'كاش / بيعة #' . $sale->id
+            : 'مقدم / دفعة بيعة #' . $sale->id;
+
         TreasuryTransaction::query()->updateOrCreate(
             [
                 'project_id' => $sale->project_id,
@@ -83,7 +87,7 @@ class CashboxLedgerService
             [
                 'type' => 'revenue',
                 'amount' => $amount,
-                'description' => 'مقدم / دفعة بيعة #' . $sale->id,
+                'description' => $label,
             ]
         );
     }

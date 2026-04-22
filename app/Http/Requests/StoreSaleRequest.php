@@ -19,6 +19,7 @@ class StoreSaleRequest extends FormRequest
         return [
             'property_id' => ['required', 'exists:properties,id'],
             'floor_number' => ['required', 'integer', 'min:0'],
+            'is_mezzanine' => ['sometimes', 'boolean'],
             'apartment_model' => ['required', 'string', 'max:255'],
             'sale_price' => ['required', 'numeric', 'min:1'],
             'payment_type' => ['required', 'in:cash,installment'],
@@ -45,25 +46,46 @@ class StoreSaleRequest extends FormRequest
             }
 
             $floor = (int) $this->input('floor_number');
+            $isMezzanine = $this->boolean('is_mezzanine');
             $hasGroundCommercial = (int) ($property->ground_floor_shops_count ?? 0) > 0;
             $registeredFloors = collect($property->registered_floors ?? [])
                 ->map(static fn ($value) => (int) $value)
                 ->filter(static fn (int $value) => $value >= 1)
                 ->values();
-            $mezzanineFloors = collect($property->mezzanine_floors ?? [])
+            $mezzanineFloorNums = collect($property->mezzanine_floors ?? [])
                 ->filter(static fn ($item) => is_array($item) && !empty($item['floor_number']))
                 ->map(static fn (array $item) => (int) ($item['floor_number'] ?? 0))
                 ->filter(static fn (int $value) => $value >= 1)
+                ->unique()
                 ->values();
-            $allowedFloors = $registeredFloors->merge($mezzanineFloors)->unique()->values();
-            $maxFloor = $allowedFloors->max() ?: max(1, (int) ($property->floors_count ?? 1));
+            $residentialFloors = $registeredFloors->isNotEmpty()
+                ? $registeredFloors
+                : collect(range(1, max(1, (int) ($property->floors_count ?? 1))));
+            $maxFloor = max(
+                1,
+                (int) ($property->floors_count ?? 1),
+                (int) ($residentialFloors->max() ?? 0),
+                (int) ($mezzanineFloorNums->max() ?? 0),
+            );
 
             if ($floor === 0 && ! $hasGroundCommercial) {
                 $validator->errors()->add('floor_number', 'هذا العقار لا يحتوي وحدات بالدور الأرضي.');
             }
 
-            if ($floor > 0 && $allowedFloors->isNotEmpty() && ! $allowedFloors->contains($floor)) {
-                $validator->errors()->add('floor_number', 'هذا الدور غير مُسجل ضمن أدوار العقار.');
+            if ($floor === 0 && $isMezzanine) {
+                $validator->errors()->add('floor_number', 'الميزان لا ينطبق على الدور الأرضي التجاري.');
+            }
+
+            if ($floor > 0 && $isMezzanine) {
+                if ($mezzanineFloorNums->isEmpty() || ! $mezzanineFloorNums->contains($floor)) {
+                    $validator->errors()->add('floor_number', 'هذا الدور غير مُعرَّف كميزان في بيانات العقار.');
+                }
+            }
+
+            if ($floor > 0 && ! $isMezzanine) {
+                if ($residentialFloors->isNotEmpty() && ! $residentialFloors->contains($floor)) {
+                    $validator->errors()->add('floor_number', 'هذا الدور غير مُسجل ضمن أدوار العقار (السكنية).');
+                }
             }
 
             if ($floor > $maxFloor) {
@@ -84,6 +106,7 @@ class StoreSaleRequest extends FormRequest
             $duplicateQuery = Sale::query()->withoutGlobalScope('project')
                 ->where('property_id', (int) $property->id)
                 ->where('floor_number', $floor)
+                ->where('is_mezzanine', $isMezzanine)
                 ->where('apartment_model', $modelName);
             if ($ignoreSaleId !== null) {
                 $duplicateQuery->whereKeyNot($ignoreSaleId);
@@ -120,6 +143,7 @@ class StoreSaleRequest extends FormRequest
 
         $this->merge([
             'sale_date' => $this->input('sale_date', now()->toDateString()),
+            'is_mezzanine' => $this->boolean('is_mezzanine'),
             'down_payment' => $downPaymentValue,
             'installment_schedule' => $schedule,
             'installment_plan' => $isCash ? null : [

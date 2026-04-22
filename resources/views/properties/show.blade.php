@@ -69,7 +69,7 @@
                     @if($mezzanineFloors->isNotEmpty())
                         @foreach($mezzanineFloors as $item)
                             <span class="badge text-bg-secondary me-1">
-                                دور {{ (int) ($item['floor_number'] ?? 0) }} · {{ (int) ($item['apartments_count'] ?? 0) }} شقق
+                                الدور {{ (int) ($item['floor_number'] ?? 0) }} (ميزان) · {{ (int) ($item['apartments_count'] ?? 0) }} شقق
                             </span>
                         @endforeach
                     @elseif($property->has_mezzanine)
@@ -170,7 +170,12 @@
                                         <td>{{ (int) ($model['bathrooms_count'] ?? 0) }}</td>
                                         <td>
                                             @php($viewType = $model['view_type'] ?? 'normal')
-                                            {{ $viewType === 'corner' ? 'ناصية' : ($viewType === 'facade' ? 'واجهة' : 'عادية') }}
+                                            {{ ($facingNames ?? collect())[$viewType] ?? match ($viewType) {
+                                                'corner' => 'ناصية',
+                                                'facade' => 'واجهة',
+                                                'normal' => 'عادية',
+                                                default => $viewType,
+                                            } }}
                                         </td>
                                     </tr>
                                 @endforeach

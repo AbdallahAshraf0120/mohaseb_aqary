@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePropertyRequest;
 use App\Http\Requests\UpdatePropertyRequest;
 use App\Models\Area;
+use App\Models\Facing;
 use App\Models\Land;
 use App\Models\Project;
 use App\Models\Property;
@@ -34,6 +35,7 @@ class PropertyController extends Controller
         return view('properties.create', [
             'title' => 'إضافة عقار | Mohaseb Aqary',
             'pageTitle' => 'إضافة عقار',
+            'property' => new Property,
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
             'lands' => Land::query()
                 ->select([
@@ -57,6 +59,7 @@ class PropertyController extends Controller
                 ->orderBy('name')
                 ->get(),
             'shareholders' => Shareholder::query()->select('id', 'name', 'share_percentage')->orderBy('name')->get(),
+            'facings' => Facing::query()->orderBy('sort_order')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
     }
@@ -74,6 +77,7 @@ class PropertyController extends Controller
             'title' => 'تفاصيل العقار | Mohaseb Aqary',
             'pageTitle' => 'تفاصيل العقار',
             'property' => $this->propertyService->findOrFail((int) $property->id),
+            'facingNames' => Facing::query()->orderBy('sort_order')->pluck('name', 'code'),
             'modules' => $this->modules(),
         ]);
     }
@@ -107,6 +111,7 @@ class PropertyController extends Controller
                 ->orderBy('name')
                 ->get(),
             'shareholders' => Shareholder::query()->select('id', 'name', 'share_percentage')->orderBy('name')->get(),
+            'facings' => Facing::query()->orderBy('sort_order')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
     }
@@ -130,6 +135,7 @@ class PropertyController extends Controller
         return [
             'projects' => ['label' => 'المشاريع', 'icon' => 'fa-diagram-project', 'route' => 'projects.index'],
             'areas' => ['label' => 'المناطق', 'icon' => 'fa-location-dot', 'route' => 'areas.index'],
+            'facings' => ['label' => 'الوجهات', 'icon' => 'fa-compass-drafting', 'route' => 'facings.index'],
             'lands' => ['label' => 'الأراضي', 'icon' => 'fa-map-location-dot', 'route' => 'lands.index'],
             'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'properties.index'],
             'clients' => ['label' => 'عملاء', 'icon' => 'fa-users', 'route' => 'clients.index'],

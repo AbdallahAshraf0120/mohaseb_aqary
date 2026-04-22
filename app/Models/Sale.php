@@ -15,6 +15,7 @@ class Sale extends Model
         'client_id',
         'property_id',
         'floor_number',
+        'is_mezzanine',
         'apartment_model',
         'sale_price',
         'payment_type',
@@ -31,6 +32,7 @@ class Sale extends Model
         'sale_date' => 'date',
         'installment_start_date' => 'date',
         'installment_plan' => 'array',
+        'is_mezzanine' => 'boolean',
     ];
 
     public function project(): BelongsTo

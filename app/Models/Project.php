@@ -43,8 +43,23 @@ class Project extends Model
         return $this->hasMany(Sale::class);
     }
 
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(Contract::class);
+    }
+
+    public function clients(): HasMany
+    {
+        return $this->hasMany(Client::class);
+    }
+
     public function shareholders(): HasMany
     {
         return $this->hasMany(Shareholder::class);
+    }
+
+    public function facings(): HasMany
+    {
+        return $this->hasMany(Facing::class);
     }
 }

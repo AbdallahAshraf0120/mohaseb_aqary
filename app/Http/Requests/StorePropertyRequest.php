@@ -3,9 +3,12 @@
 namespace App\Http\Requests;
 
 use App\Models\Area;
+use App\Models\Facing;
 use App\Models\Land;
 use App\Models\Shareholder;
+use App\Support\CurrentProject;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StorePropertyRequest extends FormRequest
 {
@@ -16,6 +19,11 @@ class StorePropertyRequest extends FormRequest
 
     public function rules(): array
     {
+        $projectId = (int) app(CurrentProject::class)->id();
+        $viewFacingRule = $projectId > 0
+            ? ['nullable', Rule::exists('facings', 'code')->where(fn ($q) => $q->where('project_id', $projectId))]
+            : ['nullable', 'string', 'max:64'];
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'area_id' => ['required', 'exists:areas,id'],
@@ -45,7 +53,7 @@ class StorePropertyRequest extends FormRequest
             'apartment_models.*.area' => ['required_with:apartment_models.*.model_name', 'nullable', 'numeric', 'min:1'],
             'apartment_models.*.rooms_count' => ['nullable', 'integer', 'min:0'],
             'apartment_models.*.bathrooms_count' => ['nullable', 'integer', 'min:0'],
-            'apartment_models.*.view_type' => ['nullable', 'in:normal,facade,corner'],
+            'apartment_models.*.view_type' => $viewFacingRule,
             'location' => ['nullable', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
             'status' => ['required', 'in:available,reserved,sold,rented'],
@@ -139,17 +147,31 @@ class StorePropertyRequest extends FormRequest
             ->values()
             ->all();
 
+        $projectId = (int) app(CurrentProject::class)->id();
+        if ($projectId > 0 && Facing::query()->where('project_id', $projectId)->doesntExist()) {
+            Facing::seedDefaultsForProject($projectId);
+        }
+        $allowedFacingCodes = $projectId > 0
+            ? Facing::query()->where('project_id', $projectId)->orderBy('sort_order')->orderBy('id')->pluck('code')->all()
+            : [];
+        $defaultFacingCode = $allowedFacingCodes[0] ?? 'normal';
+
         $models = collect($this->input('apartment_models', []))
             ->filter(static fn (array $item) => !empty($item['model_name']) && !empty($item['area']))
-            ->map(static fn (array $item) => [
-                'model_name' => trim((string) $item['model_name']),
-                'area' => (float) $item['area'],
-                'rooms_count' => max(0, (int) ($item['rooms_count'] ?? 0)),
-                'bathrooms_count' => max(0, (int) ($item['bathrooms_count'] ?? 0)),
-                'view_type' => in_array(($item['view_type'] ?? 'normal'), ['normal', 'facade', 'corner'], true)
-                    ? $item['view_type']
-                    : 'normal',
-            ])
+            ->map(static function (array $item) use ($allowedFacingCodes, $defaultFacingCode): array {
+                $vt = (string) ($item['view_type'] ?? $defaultFacingCode);
+                if ($allowedFacingCodes !== [] && ! in_array($vt, $allowedFacingCodes, true)) {
+                    $vt = $defaultFacingCode;
+                }
+
+                return [
+                    'model_name' => trim((string) $item['model_name']),
+                    'area' => (float) $item['area'],
+                    'rooms_count' => max(0, (int) ($item['rooms_count'] ?? 0)),
+                    'bathrooms_count' => max(0, (int) ($item['bathrooms_count'] ?? 0)),
+                    'view_type' => $vt,
+                ];
+            })
             ->values()
             ->all();
 

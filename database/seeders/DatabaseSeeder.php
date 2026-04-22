@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Area;
 use App\Models\Client;
+use App\Models\Facing;
 use App\Models\Contract;
 use App\Models\Debt;
 use App\Models\Expense;
@@ -92,6 +93,7 @@ class DatabaseSeeder extends Seeder
     private function seedHeavyDemoForProject(Project $project, User $admin, array $counts, array $areaNames): void
     {
         $pid = (int) $project->id;
+        Facing::seedDefaultsForProject($pid);
         $slug = $project->code ?? (string) $pid;
 
         $areas = collect(range(1, $counts['areas']))->map(function (int $i) use ($areaNames, $pid, $slug) {
@@ -188,13 +190,30 @@ class DatabaseSeeder extends Seeder
             if ($modelNames->isEmpty()) {
                 $modelNames = collect(['A']);
             }
+            $mezzSet = collect($property->mezzanine_floors ?? [])
+                ->pluck('floor_number')
+                ->map(static fn ($v) => (int) $v)
+                ->filter(static fn (int $v) => $v >= 1)
+                ->unique();
+            if ($mezzSet->isEmpty() && ($property->has_mezzanine ?? false)) {
+                $mezzSet = collect([$maxFloor]);
+            }
             for ($floor = $minFloor; $floor <= $maxFloor; $floor++) {
                 foreach ($modelNames as $modelName) {
                     $unitSlots->push([
                         'property' => $property,
                         'floor_number' => $floor,
                         'apartment_model' => (string) $modelName,
+                        'is_mezzanine' => false,
                     ]);
+                    if ($mezzSet->contains($floor)) {
+                        $unitSlots->push([
+                            'property' => $property,
+                            'floor_number' => $floor,
+                            'apartment_model' => (string) $modelName,
+                            'is_mezzanine' => true,
+                        ]);
+                    }
                 }
             }
         }
@@ -222,6 +241,7 @@ class DatabaseSeeder extends Seeder
                     'property_id' => $property->id,
                     'floor_number' => $slot['floor_number'],
                     'apartment_model' => $slot['apartment_model'],
+                    'is_mezzanine' => $slot['is_mezzanine'],
                 ],
                 [
                     'client_id' => $clients->random()->id,

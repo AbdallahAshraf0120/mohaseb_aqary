@@ -8,13 +8,20 @@
         </div>
         <div class="card-body">
             @php
-                $floorLabel = (string) $sale->floor_number;
                 $scheduleType = $sale->installment_plan['schedule_type'] ?? 'monthly';
                 $scheduleLabel = $scheduleType === 'quarterly' ? 'كل 3 شهور' : 'شهري';
+                $mzNums = collect($sale->property?->mezzanine_floors ?? [])
+                    ->pluck('floor_number')
+                    ->map(static fn ($n) => (int) $n)
+                    ->filter(static fn (int $n) => $n >= 1);
                 if ((int) $sale->floor_number === 0) {
                     $floorLabel = '0 (أرضي تجاري)';
-                } elseif ((int) $sale->floor_number === 1 && ($sale->property?->has_mezzanine ?? false)) {
-                    $floorLabel = '1 (ميزان)';
+                } elseif ($sale->is_mezzanine) {
+                    $floorLabel = $sale->floor_number . ' (ميزان)';
+                } elseif ($mzNums->contains((int) $sale->floor_number)) {
+                    $floorLabel = $sale->floor_number . ' (سكني)';
+                } else {
+                    $floorLabel = (string) $sale->floor_number;
                 }
             @endphp
             <div class="row g-3">

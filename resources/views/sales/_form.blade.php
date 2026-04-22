@@ -3,6 +3,10 @@
 @php
     $selectedPropertyId = (string) old('property_id', $sale->property_id ?? '');
     $selectedFloor = (int) old('floor_number', $sale->floor_number ?? 1);
+    $selectedIsMezzanine = filter_var(
+        old('is_mezzanine', ($sale->is_mezzanine ?? false) ? '1' : '0'),
+        FILTER_VALIDATE_BOOL
+    );
     $selectedModel = (string) old('apartment_model', $sale->apartment_model ?? '');
     $paymentType = old('payment_type', $sale->payment_type ?? 'cash');
     $installmentSchedule = old('installment_schedule', $sale->installment_plan['schedule_type'] ?? 'monthly');
@@ -73,6 +77,7 @@
     <div class="col-md-3">
         <label class="form-label">الدور</label>
         <select name="floor_number" id="floor_number" class="form-select" required></select>
+        <input type="hidden" name="is_mezzanine" id="is_mezzanine_input" value="{{ $selectedIsMezzanine ? '1' : '0' }}">
     </div>
     <div class="col-md-3">
         <label class="form-label">النموذج</label>
@@ -180,8 +185,18 @@
         const installmentFields = document.querySelectorAll('.installment-field');
 
         const selectedFloor = {{ $selectedFloor }};
+        const selectedIsMezzanine = @json($selectedIsMezzanine);
         const selectedModel = @json($selectedModel);
         const properties = @json($propertiesMeta);
+
+        function syncMezzanineHiddenFromFloor() {
+            const hidden = document.getElementById('is_mezzanine_input');
+            const opt = floorSelect?.selectedOptions?.[0];
+            if (!hidden || !opt) {
+                return;
+            }
+            hidden.value = opt.dataset.isMezzanine === '1' ? '1' : '0';
+        }
 
         function refreshPropertyMeta() {
             const id = propertySelect?.value;
@@ -195,30 +210,47 @@
             };
 
             floorSelect.innerHTML = '';
-            const registeredFloors = Array.isArray(meta.registered_floors) && meta.registered_floors.length
-                ? meta.registered_floors
-                : Array.from({ length: Math.max(1, meta.floors_count) }, (_, idx) => idx + 1);
+            const mezzanineNums = new Set(
+                (Array.isArray(meta.mezzanine_floors) ? meta.mezzanine_floors : [])
+                    .map((row) => Number(row.floor_number || 0))
+                    .filter((n) => n >= 1)
+            );
+            const residentialList = Array.isArray(meta.registered_floors) && meta.registered_floors.length
+                ? meta.registered_floors.map((n) => Number(n))
+                : Array.from({ length: Math.max(1, meta.floors_count || 1) }, (_, idx) => idx + 1);
+
+            const pairKeys = new Set();
             const floorOptions = [];
+            const pushFloorOption = (value, isMezzanine) => {
+                const k = `${value}:${isMezzanine ? 1 : 0}`;
+                if (pairKeys.has(k)) {
+                    return;
+                }
+                pairKeys.add(k);
+                let label;
+                if (isMezzanine) {
+                    label = `الدور ${value} (ميزان)`;
+                } else if (mezzanineNums.has(value)) {
+                    label = `الدور ${value} (سكني)`;
+                } else {
+                    label = String(value);
+                }
+                floorOptions.push({ value, label, isMezzanine });
+            };
+
             if (meta.ground_floor_shops_count > 0) {
-                floorOptions.push({ value: 0, label: '0 (أرضي تجاري)' });
+                pushFloorOption(0, false);
             }
-            registeredFloors.forEach((floorNumber) => {
-                floorOptions.push({ value: floorNumber, label: String(floorNumber) });
+            residentialList.forEach((n) => pushFloorOption(Number(n), false));
+            mezzanineNums.forEach((n) => pushFloorOption(Number(n), true));
+
+            floorOptions.sort((a, b) => {
+                if (a.value !== b.value) {
+                    return Number(a.value) - Number(b.value);
+                }
+                return Number(a.isMezzanine) - Number(b.isMezzanine);
             });
-            if (Array.isArray(meta.mezzanine_floors)) {
-                meta.mezzanine_floors.forEach((item) => {
-                    const floorNumber = Number(item.floor_number || 0);
-                    if (floorNumber < 1) {
-                        return;
-                    }
-                    const existing = floorOptions.find((option) => option.value === floorNumber);
-                    if (existing) {
-                        existing.label = `${existing.label} (ميزان)`;
-                        return;
-                    }
-                    floorOptions.push({ value: floorNumber, label: `${floorNumber} (ميزان)` });
-                });
-            }
+
             const mushaaSet = new Set((meta.mushaa_floors || []).map((n) => Number(n)));
             floorOptions.forEach((opt) => {
                 if (opt.value < 1 || !mushaaSet.has(opt.value)) {
@@ -229,19 +261,30 @@
                 }
                 if (opt.label.includes('ميزان')) {
                     opt.label = opt.label.replace('(ميزان)', '(ميزان · مشاع)');
+                } else if (opt.label.includes('سكني')) {
+                    opt.label = opt.label.replace('(سكني)', '(سكني · مشاع)');
                 } else {
                     opt.label = `${opt.label} (مشاع)`;
                 }
             });
-            floorOptions.sort((a, b) => Number(a.value) - Number(b.value));
 
             floorOptions.forEach((item) => {
                 const option = document.createElement('option');
                 option.value = String(item.value);
                 option.textContent = item.label;
-                if (item.value === selectedFloor) option.selected = true;
+                option.dataset.isMezzanine = item.isMezzanine ? '1' : '0';
+                const floorNum = Number(item.value);
+                const selFloor = Number(selectedFloor);
+                if (floorNum === selFloor && Boolean(item.isMezzanine) === Boolean(selectedIsMezzanine)) {
+                    option.selected = true;
+                }
                 floorSelect.appendChild(option);
             });
+
+            if (floorSelect.selectedIndex < 0 && floorSelect.options.length) {
+                floorSelect.selectedIndex = 0;
+            }
+            syncMezzanineHiddenFromFloor();
 
             modelSelect.innerHTML = '';
             const models = meta.models.length ? meta.models : ['نموذج افتراضي'];
@@ -308,6 +351,7 @@
         }
 
         propertySelect?.addEventListener('change', refreshPropertyMeta);
+        floorSelect?.addEventListener('change', syncMezzanineHiddenFromFloor);
         paymentType?.addEventListener('change', refreshPaymentType);
         installmentSchedule?.addEventListener('change', refreshPaymentType);
         salePriceInput?.addEventListener('input', recalcDownPaymentFromPercentage);

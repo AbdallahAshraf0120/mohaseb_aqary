@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Facing;
 use App\Models\Project;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -46,6 +47,7 @@ class ProjectController extends Controller
         $data['is_draft'] = false;
 
         $project = Project::query()->create($data);
+        Facing::seedDefaultsForProject((int) $project->id);
         session(['current_project_id' => (int) $project->id]);
 
         return redirect()->route('properties.index', $project)->with('success', 'تم إنشاء المشروع. يمكنك الآن إدارة بياناته بشكل منفصل.');
@@ -66,6 +68,7 @@ class ProjectController extends Controller
     public function restore(Project $draftProject): RedirectResponse
     {
         $draftProject->update(['is_draft' => false]);
+        Facing::seedDefaultsForProject((int) $draftProject->id);
 
         return redirect()->route('projects.index')->with('success', 'تم إرجاع المشروع من المسودة وظهوره في القائمة.');
     }
