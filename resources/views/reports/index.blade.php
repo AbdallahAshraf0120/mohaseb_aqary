@@ -67,8 +67,10 @@
         <div class="col-lg-4">
             <div class="card app-surface h-100">
                 <div class="card-header">
-                    <h5 class="mb-0 fw-semibold">مبيعات الفترة</h5>
-                    <p class="small text-body-secondary mb-0 mt-1">{{ $periodStats['sales_count'] }} بيعة — إجمالي {{ $fmt($periodStats['sales_sum']) }} {{ $currencyLabel }}</p>
+                    <div>
+                        <h5 class="mb-0 fw-semibold">مبيعات الفترة</h5>
+                        <p class="small text-body-secondary mb-0 mt-1">{{ $periodStats['sales_count'] }} بيعة — إجمالي {{ $fmt($periodStats['sales_sum']) }} {{ $currencyLabel }}</p>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="small text-body-secondary mb-1">مجموع المقدمات</div>
@@ -128,7 +130,7 @@
     <div class="row g-3 mb-4">
         <div class="col-lg-4">
             <div class="card app-surface h-100">
-                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="card-header">
                     <h6 class="mb-0 fw-semibold">آخر التحصيلات في الفترة</h6>
                 </div>
                 <div class="card-body p-0">

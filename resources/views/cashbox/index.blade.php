@@ -8,6 +8,11 @@
 
     <x-partials.module-wireflow-header label="الصندوق" step="8" />
 
+    <x-listing.filters
+        :placeholder="'وصف الحركة…'"
+        :help="'تصفية حركات الصندوق حسب تاريخ التسجيل ووصف الحركة.'"
+    />
+
     <div class="card app-surface mb-4">
         <div class="card-body p-4">
             <div class="row g-4 align-items-center">
