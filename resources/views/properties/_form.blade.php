@@ -313,9 +313,8 @@
             <div class="card-header py-2 bg-body-secondary border-0"><strong>نسبة كل مساهم في العقار</strong></div>
             <div class="card-body">
                 <p class="small text-muted border rounded px-2 py-2 bg-body-secondary mb-3">
-                    النسب هنا تخص <strong>حصة المساهمين</strong> من العقار. للأدوار المشاعة <strong>مع شريك مذكور</strong>،
-                    يُوزَّع <strong>نصف</strong> عائد وحدات ذلك الدور بين المساهمين وفق هذه النسب (من أصل 100٪ لحصة المساهمين في ذلك النصف)،
-                    والنصف الآخر للشريك.
+                    النسب هنا تخص <strong>حصة المساهمين</strong> من العقار. إذا أدخلت نسبة لأي مساهم أكبر من صفر، يجب أن يكون <strong>مجموع النسب الموجبة = 100٪</strong> على هذا العقار.
+                    للأدوار المشاعة <strong>مع شريك مذكور</strong>، يُحتسب في المنسب التشغيلي والكمبيالة <strong>نصف</strong> مبالغ وحدات ذلك الدور بين المساهمين وفق هذه النسب، والنصف الآخر للشريك (تكاليف التطوير على العقار تبقى موزّعة بالكامل حسب النسب كما هي).
                 </p>
                 <div class="row g-3">
                     @foreach ($shareholders as $shareholder)

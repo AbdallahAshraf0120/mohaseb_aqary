@@ -10,6 +10,7 @@ use App\Models\Shareholder;
 use App\Support\CurrentProject;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StorePropertyRequest extends FormRequest
 {
@@ -92,6 +93,29 @@ class StorePropertyRequest extends FormRequest
             'land_id.unique' => 'هذه الأرض مرتبطة بالفعل بعقار آخر في المشروع. كل أرض يمكن ربطها بعقار واحد فقط.',
             'land_id.exists' => 'الأرض المختارة غير صالحة لهذا المشروع.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v): void {
+            if ($v->errors()->isNotEmpty()) {
+                return;
+            }
+            $positives = collect($this->input('shareholder_percentages', []))
+                ->filter(static fn ($value) => $value !== null && $value !== '')
+                ->map(static fn ($value) => (float) $value)
+                ->filter(static fn (float $pct) => $pct > 0.0001);
+            if ($positives->isEmpty()) {
+                return;
+            }
+            $sum = round((float) $positives->sum(), 4);
+            if (abs($sum - 100.0) > 0.021) {
+                $v->errors()->add(
+                    'shareholder_percentages',
+                    'عند إدخال نسب للمساهمين على العقار يجب أن يكون مجموع النسب الموجبة مساوياً لـ 100٪ (المجموع الحالي: '.number_format($sum, 2).'٪).'
+                );
+            }
+        });
     }
 
     protected function prepareForValidation(): void

@@ -13,42 +13,86 @@ use Illuminate\Support\Collection;
  * يوزّع على المساهمين ما يخص كل عقار من التحصيلات (عبر العقود) ومقدمات المبيعات،
  * مضروباً في نسبة المساهم المحفوظة في توزيع المساهمين على العقار.
  *
+ * مبالغ التحصيل والمقدم و(كمبيالة) سعر البيعة تُوزَّن حسب دور الوحدة: على أدوار «مشاع مع شريك»
+ * يُحتسب نصف المبلغ فقط ضمن منسب المساهمين (النصف الآخر للشريك خارج المساهمين).
+ *
  * كما تُحسب حصة المساهم من تكاليف التطوير المسجّلة على كل عقار، ومنها جاري تقريبي لكل مساهم.
  */
 final class ShareholderAttributedFlowService
 {
     /**
+     * أرقام التحصيلات والمقدمات وأسعار البيعات **بعد** تطبيق عامل المشاع (ما يدخل في منسب المساهمين لكل عقار).
+     *
      * @return array<int, array{revenues: float, down_payments: float, sale_volume: float}>
      */
     public function propertyFinancials(Project $project): array
     {
         $projectId = (int) $project->id;
 
-        $revenueByProperty = Revenue::query()
-            ->join('contracts', 'contracts.id', '=', 'revenues.contract_id')
-            ->where('contracts.project_id', $projectId)
-            ->groupBy('contracts.property_id')
-            ->selectRaw('contracts.property_id as property_id, COALESCE(SUM(revenues.amount), 0) as total')
-            ->pluck('total', 'property_id');
-
-        $salesAgg = Sale::query()
+        /** @var Collection<int, Property> $propertyMap */
+        $propertyMap = Property::query()
             ->where('project_id', $projectId)
-            ->groupBy('property_id')
-            ->selectRaw(
-                'property_id, COALESCE(SUM(COALESCE(down_payment, 0)), 0) as down_total, COALESCE(SUM(sale_price), 0) as price_total'
-            )
             ->get()
-            ->keyBy('property_id');
-
-        $ids = $revenueByProperty->keys()->merge($salesAgg->keys())->unique()->map(static fn ($k) => (int) $k)->values();
+            ->keyBy('id');
 
         $out = [];
-        foreach ($ids as $propId) {
-            $row = $salesAgg->get($propId);
-            $out[$propId] = [
-                'revenues' => (float) ($revenueByProperty[$propId] ?? 0),
-                'down_payments' => $row ? (float) $row->down_total : 0.0,
-                'sale_volume' => $row ? (float) $row->price_total : 0.0,
+
+        $add = static function (array &$bucket, int $propertyId, float $revenues, float $downPayments, float $saleVolume): void {
+            if (! isset($bucket[$propertyId])) {
+                $bucket[$propertyId] = [
+                    'revenues' => 0.0,
+                    'down_payments' => 0.0,
+                    'sale_volume' => 0.0,
+                ];
+            }
+            $bucket[$propertyId]['revenues'] += $revenues;
+            $bucket[$propertyId]['down_payments'] += $downPayments;
+            $bucket[$propertyId]['sale_volume'] += $saleVolume;
+        };
+
+        foreach (
+            Sale::query()
+                ->where('project_id', $projectId)
+                ->cursor() as $sale
+        ) {
+            /** @var Sale $sale */
+            $pid = (int) $sale->property_id;
+            $prop = $propertyMap->get($pid);
+            $factor = $prop instanceof Property
+                ? $prop->shareholderOperatingPoolFactorForFloor((int) $sale->floor_number)
+                : 1.0;
+            $add($out, $pid, 0.0, (float) ($sale->down_payment ?? 0) * $factor, (float) ($sale->sale_price ?? 0) * $factor);
+        }
+
+        foreach (
+            Revenue::query()
+                ->where('project_id', $projectId)
+                ->whereNotNull('contract_id')
+                ->with([
+                    'contract' => static fn ($q) => $q->select('id', 'property_id', 'sale_id', 'project_id'),
+                    'sale' => static fn ($q) => $q->select('id', 'property_id', 'floor_number'),
+                ])
+                ->cursor() as $revenue
+        ) {
+            /** @var Revenue $revenue */
+            $contract = $revenue->contract;
+            if ($contract === null || (int) $contract->project_id !== $projectId) {
+                continue;
+            }
+            $pid = (int) $contract->property_id;
+            $sale = $revenue->sale ?? $contract->sale;
+            $prop = $propertyMap->get($pid);
+            $factor = ($sale && $prop instanceof Property)
+                ? $prop->shareholderOperatingPoolFactorForFloor((int) $sale->floor_number)
+                : 1.0;
+            $add($out, $pid, (float) $revenue->amount * $factor, 0.0, 0.0);
+        }
+
+        foreach ($out as $pid => $row) {
+            $out[$pid] = [
+                'revenues' => round((float) $row['revenues'], 2),
+                'down_payments' => round((float) $row['down_payments'], 2),
+                'sale_volume' => round((float) $row['sale_volume'], 2),
             ];
         }
 

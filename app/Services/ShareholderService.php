@@ -10,9 +10,7 @@ use Illuminate\Support\Collection;
 
 class ShareholderService
 {
-    public function __construct(private readonly ShareholderRepositoryInterface $shareholders)
-    {
-    }
+    public function __construct(private readonly ShareholderRepositoryInterface $shareholders) {}
 
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
@@ -46,9 +44,11 @@ class ShareholderService
     {
         $id = (int) $shareholder->id;
         $name = (string) $shareholder->name;
+        $projectId = (int) $shareholder->project_id;
 
         return Property::query()
             ->with('area:id,name')
+            ->where('project_id', $projectId)
             ->whereNotNull('shareholder_allocations')
             ->orderBy('name')
             ->get()

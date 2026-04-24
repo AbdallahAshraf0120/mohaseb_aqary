@@ -150,4 +150,17 @@ class Property extends Model
     {
         return $this->hasMushaaFloors() && filled($this->mushaa_partner_name);
     }
+
+    /**
+     * نسبة مبلغ التحصيل/المقدم/سعر البيعة التي تدخل في منسب المساهمين لوحدة على هذا الدور
+     * (1 = كامل المبلغ، 0.5 = مشاع مع شريك خارج المساهمين على أدوار المشاع المحددة).
+     */
+    public function shareholderOperatingPoolFactorForFloor(int $floorNumber): float
+    {
+        if (! $this->mushaaFiftyFiftyWithPartnerApplies()) {
+            return 1.0;
+        }
+
+        return in_array($floorNumber, $this->mushaaFloorNumbers(), true) ? 0.5 : 1.0;
+    }
 }
