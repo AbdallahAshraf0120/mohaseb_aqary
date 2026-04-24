@@ -7,6 +7,7 @@ use App\Models\Project;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ProjectController extends Controller
 {
@@ -51,6 +52,54 @@ class ProjectController extends Controller
         session(['current_project_id' => (int) $project->id]);
 
         return redirect()->route('properties.index', $project)->with('success', 'تم إنشاء المشروع. يمكنك الآن إدارة بياناته بشكل منفصل.');
+    }
+
+    public function edit(Project $project): View
+    {
+        return view('projects.edit', [
+            'title' => 'تعديل مشروع | Mohaseb Aqary',
+            'pageTitle' => 'تعديل مشروع',
+            'project' => $project,
+            'modules' => $this->modules(),
+        ]);
+    }
+
+    public function update(Request $request, Project $project): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['nullable', 'string', 'max:50', Rule::unique('projects', 'code')->ignore($project->id)],
+        ]);
+        $code = $data['code'] === '' || $data['code'] === null ? null : $data['code'];
+        if ($project->code === 'default') {
+            $code = 'default';
+        }
+        $project->update(['name' => $data['name'], 'code' => $code]);
+
+        return redirect()->route('projects.index')->with('success', 'تم تحديث بيانات المشروع.');
+    }
+
+    public function destroy(Project $project): RedirectResponse
+    {
+        if ($project->code === 'default') {
+            return redirect()->route('projects.index')
+                ->with('error', 'لا يمكن حذف المشروع الافتراضي «default». يمكنك تعديل اسمه أو نقله إلى مسودة.');
+        }
+
+        $isListed = $project->is_active && ! $project->is_draft;
+        if ($isListed && Project::query()->listed()->count() < 2) {
+            return redirect()->route('projects.index')
+                ->with('error', 'لا يمكن حذف آخر مشروع يظهر في القائمة. أنشئ مشروعًا آخرًا أولًا أو انقل هذا المشروع إلى مسودة.');
+        }
+
+        $deletedId = (int) $project->id;
+        $project->delete();
+
+        if ((int) session('current_project_id') === $deletedId) {
+            session(['current_project_id' => Project::query()->listed()->orderBy('id')->value('id')]);
+        }
+
+        return redirect()->route('projects.index')->with('success', 'تم حذف المشروع وكل البيانات المرتبطة به نهائيًا.');
     }
 
     public function toDraft(Project $managedProject): RedirectResponse

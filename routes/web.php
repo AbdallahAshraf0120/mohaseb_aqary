@@ -1,15 +1,15 @@
 <?php
 
+use App\Http\Controllers\AreaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CashboxController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
-use App\Http\Controllers\AreaController;
-use App\Http\Controllers\LandController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FacingController;
+use App\Http\Controllers\LandController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\RemainingController;
@@ -62,6 +62,9 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('projects', [ProjectController::class, 'index'])->name('projects.index');
     Route::post('projects', [ProjectController::class, 'store'])->name('projects.store');
+    Route::get('projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
+    Route::put('projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
+    Route::delete('projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
     Route::post('projects/{managedProject}/draft', [ProjectController::class, 'toDraft'])->name('projects.draft');
     Route::post('projects/{draftProject}/restore', [ProjectController::class, 'restore'])->name('projects.restore');
 });
@@ -69,7 +72,7 @@ Route::middleware('auth')->group(function (): void {
 Route::middleware(['auth', SyncProjectFromRoute::class])
     ->prefix('{project}')
     ->scopeBindings()
-    ->group(function () use ($modules): void {
+    ->group(function (): void {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::resource('properties', PropertyController::class);
