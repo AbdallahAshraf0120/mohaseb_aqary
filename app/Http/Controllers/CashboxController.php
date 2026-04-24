@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Project;
+use App\Models\Setting;
 use App\Models\TreasuryTransaction;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -9,29 +11,35 @@ use Illuminate\Http\Request;
 
 class CashboxController extends Controller
 {
-    public function index(): View
+    public function index(Project $project): View
     {
         $opening = 0.0;
         $treasuryIn = (float) TreasuryTransaction::query()->where('type', 'revenue')->sum('amount');
         $treasuryOut = (float) TreasuryTransaction::query()->where('type', 'expense')->sum('amount');
+        $currentBalance = $opening + $treasuryIn - $treasuryOut;
+
+        $setting = Setting::query()->first();
+        $currency = $setting?->currency ?? 'EGP';
 
         return view('cashbox.index', [
             'title' => 'الصندوق | Mohaseb Aqary',
             'pageTitle' => 'الصندوق',
+            'project' => $project,
+            'currency' => $currency,
             'openingBalance' => $opening,
             'revenuesTotal' => $treasuryIn,
             'expensesTotal' => $treasuryOut,
-            'currentBalance' => $opening + $treasuryIn - $treasuryOut,
+            'currentBalance' => $currentBalance,
             'transactions' => TreasuryTransaction::query()->latest()->paginate(15),
             'modules' => $this->modules(),
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, Project $project): RedirectResponse
     {
         $data = $request->validate([
             'type' => ['required', 'in:revenue,expense'],
-            'amount' => ['required', 'numeric', 'min:1'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -41,7 +49,9 @@ class CashboxController extends Controller
             'description' => $data['description'] ?? null,
         ]);
 
-        return redirect()->route('cashbox.index')->with('success', 'تم تسجيل حركة الصندوق بنجاح.');
+        return redirect()
+            ->route('cashbox.index', [$project])
+            ->with('success', 'تم تسجيل حركة الصندوق بنجاح.');
     }
 
     private function modules(): array

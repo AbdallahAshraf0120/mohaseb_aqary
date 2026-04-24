@@ -6,6 +6,7 @@ use App\Models\Area;
 use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Debt;
+use App\Models\Project;
 use App\Models\Property;
 use App\Models\Revenue;
 use App\Models\Sale;
@@ -16,7 +17,7 @@ use Illuminate\Contracts\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(): View
+    public function index(Project $project): View
     {
         $setting = Setting::query()->first();
         $currency = $setting?->currency ?? 'EGP';
@@ -57,6 +58,7 @@ class DashboardController extends Controller
         return view('dashboard', [
             'title' => 'لوحة التحكم | Mohaseb Aqary',
             'pageTitle' => 'لوحة التحكم',
+            'project' => $project,
             'modules' => $this->modules(),
             'currency' => $currency,
             'treasuryIn' => $treasuryIn,
