@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    <x-partials.module-wireflow-header label="المناطق" step="3" />
     <x-partials.module-kpis :items="[
         ['label' => 'عدد المناطق', 'value' => (int) ($areaKpis['count'] ?? 0)],
         ['label' => 'عقارات مرتبطة', 'value' => (int) ($areaKpis['properties_sum'] ?? 0)],

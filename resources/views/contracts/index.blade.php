@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    <x-partials.module-wireflow-header label="العقود" step="5" />
     <x-partials.module-kpis :items="[
         ['label' => 'العقود (بعد الفلتر)', 'value' => (int) ($contractKpis['count'] ?? 0)],
         ['label' => 'قيمة العقود بعد المقدم', 'value' => number_format((float) ($contractKpis['net_value'] ?? 0), 2) . ' ج.م'],

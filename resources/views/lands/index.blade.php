@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    <x-partials.module-wireflow-header label="الأراضي" step="2" />
     <x-partials.module-kpis :items="[
         ['label' => 'عدد الأراضي', 'value' => (int) ($landKpis['count'] ?? 0)],
         ['label' => 'أراضٍ مرتبطة بعقارات', 'value' => (int) ($landKpis['with_props'] ?? 0)],

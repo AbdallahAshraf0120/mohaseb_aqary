@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    <x-partials.module-wireflow-header label="العملاء" step="4" />
     <x-partials.module-kpis :items="[
         ['label' => 'عدد العملاء', 'value' => (int) ($clientKpis['count'] ?? 0)],
         ['label' => 'عملاء لديهم مبيعات', 'value' => (int) ($clientKpis['with_sales'] ?? 0)],

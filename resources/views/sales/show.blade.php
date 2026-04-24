@@ -25,7 +25,6 @@
         $contractProgressPct = $contractTotal > 0.01 ? min(100, round(($contractPaid / $contractTotal) * 100, 1)) : 0;
     @endphp
 
-    <x-partials.module-wireflow-header label="المبيعات" step="5" />
     <x-partials.module-kpis :items="[
         ['label' => 'سعر البيعة', 'value' => number_format((float) $sale->sale_price, 2) . ' ج.م'],
         ['label' => 'المقدم', 'value' => number_format((float) $sale->down_payment, 2) . ' ج.م'],

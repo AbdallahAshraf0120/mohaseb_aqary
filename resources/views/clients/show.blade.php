@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    <x-partials.module-wireflow-header label="العملاء" step="4" />
     <x-partials.module-kpis :items="[
         ['label' => 'عدد البيعات', 'value' => $stats['sales_count']],
         ['label' => 'إجمالي قيمة المبيعات', 'value' => number_format($stats['total_sale_price'], 2) . ' ج.م'],

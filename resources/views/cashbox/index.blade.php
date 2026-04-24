@@ -6,8 +6,6 @@
         $currencyLabel = strtoupper((string) $currency) === 'EGP' ? 'ج.م' : $currency;
     @endphp
 
-    <x-partials.module-wireflow-header label="الصندوق" step="8" />
-
     <x-listing.filters
         :placeholder="'وصف الحركة…'"
         :help="'تصفية حركات الصندوق حسب تاريخ التسجيل ووصف الحركة.'"

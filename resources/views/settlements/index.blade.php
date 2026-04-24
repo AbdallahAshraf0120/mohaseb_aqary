@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    <x-partials.module-wireflow-header label="التسويات" step="11" />
 
     <x-listing.filters
         :placeholder="'بحث في تفاصيل التحصيل أو المصروف…'"

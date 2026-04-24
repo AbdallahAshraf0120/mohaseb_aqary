@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    <x-partials.module-wireflow-header label="التحصيل" step="7" />
     <x-partials.module-kpis :items="[
         ['label' => 'إجمالي التحصيل', 'value' => number_format((float) ($revenueStats['sum_amount'] ?? 0), 2) . ' ج.م'],
         ['label' => 'عدد الإيصالات', 'value' => (int) ($revenueStats['count'] ?? 0)],

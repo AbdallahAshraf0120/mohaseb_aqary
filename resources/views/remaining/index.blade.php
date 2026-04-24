@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    <x-partials.module-wireflow-header label="المتبقي" step="8" />
     <x-partials.module-kpis :items="[
         ['label' => 'إجمالي المتبقي', 'value' => number_format((float) ($remainingKpis['remaining'] ?? 0), 2) . ' ج.م'],
         ['label' => 'عدد العقود', 'value' => (int) ($remainingKpis['count'] ?? 0)],

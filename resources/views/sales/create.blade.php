@@ -1,23 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card app-surface mb-4">
-                <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
-                    <div>
-                        <h4 class="mb-1">تسجيل بيع</h4>
-                        <p class="text-muted mb-0">اختيار العقار والدور والنموذج ثم خطة السداد وبيانات العميل</p>
-                    </div>
-                    <div class="text-end">
-                        <div class="badge text-bg-primary mb-2">الخطوة 6 من 13</div>
-                        <div class="small text-muted">Demo Wireflow</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="row g-3">
         <div class="col-lg-8">
             <div class="card app-surface h-100">

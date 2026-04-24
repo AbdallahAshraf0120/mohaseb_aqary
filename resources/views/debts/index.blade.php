@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    <x-partials.module-wireflow-header label="ذمم دائنة على المشروع" step="10" />
     <x-partials.module-kpis :items="[
         ['label' => 'إجمالي أصل الشراء', 'value' => number_format((float) ($debtKpis['total_amount'] ?? 0), 2) . ' ج.م'],
         ['label' => 'ما سُدِّد للمورد', 'value' => number_format((float) ($debtKpis['paid_amount'] ?? 0), 2) . ' ج.م'],

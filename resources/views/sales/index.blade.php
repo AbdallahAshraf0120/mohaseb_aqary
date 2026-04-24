@@ -7,23 +7,6 @@
         $remaining = max(0, $totalSales - $totalDownPayment);
     @endphp
 
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card app-surface mb-4">
-                <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
-                    <div>
-                        <h4 class="mb-1">المبيعات</h4>
-                        <p class="text-muted mb-0">إدارة عمليات البيع وربطها بالعملاء وخطط السداد</p>
-                    </div>
-                    <div class="text-end">
-                        <div class="badge text-bg-primary mb-2">الخطوة 6 من 13</div>
-                        <div class="small text-muted">Demo Wireflow</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="row g-3 mb-3">
         <div class="col-lg-4 col-md-6">
             <div class="small-box text-bg-light border">

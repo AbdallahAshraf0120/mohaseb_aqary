@@ -12,7 +12,6 @@
         $finByPid = collect($participationFinancialBreakdown)->keyBy('property_id');
     @endphp
 
-    <x-partials.module-wireflow-header label="بروفايل المساهم" step="2" />
     <x-partials.module-kpis :items="[
         ['label' => 'عدد العقارات (ضمن التوزيع)', 'value' => $projectsCount],
         ['label' => 'متوسط النسبة في العقارات', 'value' => $avgShareInProjects !== null ? number_format($avgShareInProjects, 2) . '%' : '—'],

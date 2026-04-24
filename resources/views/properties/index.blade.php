@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    <x-partials.module-wireflow-header label="العقارات" step="3" />
     <x-partials.module-kpis :items="[
         ['label' => 'عدد العقارات', 'value' => (int) ($propertyKpis['count'] ?? 0)],
         ['label' => 'متوسط الأدوار', 'value' => number_format((float) ($propertyKpis['avg_floors'] ?? 0), 1)],

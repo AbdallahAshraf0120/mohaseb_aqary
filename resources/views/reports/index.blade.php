@@ -5,8 +5,6 @@
         $fmt = fn (float $n): string => number_format($n, 2, '.', ',');
     @endphp
 
-    <x-partials.module-wireflow-header label="التقارير" step="12" />
-
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
         <div>
             <h2 class="h4 fw-semibold mb-1">تقارير المشروع</h2>
