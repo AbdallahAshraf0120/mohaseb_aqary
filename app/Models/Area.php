@@ -22,4 +22,9 @@ class Area extends Model
     {
         return $this->hasMany(Property::class);
     }
+
+    public function lands(): HasMany
+    {
+        return $this->hasMany(Land::class);
+    }
 }

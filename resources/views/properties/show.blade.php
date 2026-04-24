@@ -46,7 +46,14 @@
                     @php($mushaaFloors = collect($property->mushaa_floors ?? [])->map(fn ($n) => (int) $n)->filter(fn ($n) => $n >= 1)->unique()->sort()->values())
                     @if($mushaaFloors->isNotEmpty())
                         @foreach($mushaaFloors as $mf)
-                            <span class="badge text-bg-info me-1">دور {{ $mf }} (50٪ مساهمين / 50٪ شريك)</span>
+                            <span class="badge text-bg-info me-1">
+                                دور {{ $mf }} (مشاع)
+                                @if(filled($property->mushaa_partner_name))
+                                    — 50٪ مساهمين / 50٪ {{ $property->mushaa_partner_name }}
+                                @else
+                                    — لم يُسجل شريك (أضف الاسم في التعديل لتفعيل تقسيم 50/50 مع الشريك)
+                                @endif
+                            </span>
                         @endforeach
                     @else
                         —

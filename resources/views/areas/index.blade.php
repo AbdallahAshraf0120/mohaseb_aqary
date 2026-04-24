@@ -16,6 +16,9 @@
             @if (session('success'))
                 <div class="alert alert-success">{{ session('success') }}</div>
             @endif
+            @if (session('error'))
+                <div class="alert alert-danger">{{ session('error') }}</div>
+            @endif
             <div class="table-responsive">
                 <table class="table table-striped align-middle">
                     <thead><tr><th>#</th><th>اسم المنطقة</th><th>عدد العقارات</th><th class="text-end">العمليات</th></tr></thead>

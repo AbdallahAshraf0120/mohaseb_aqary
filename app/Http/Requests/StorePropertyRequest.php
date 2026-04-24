@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Area;
 use App\Models\Facing;
 use App\Models\Land;
+use App\Models\Property;
 use App\Models\Shareholder;
 use App\Support\CurrentProject;
 use Illuminate\Foundation\Http\FormRequest;
@@ -24,10 +25,21 @@ class StorePropertyRequest extends FormRequest
             ? ['nullable', Rule::exists('facings', 'code')->where(fn ($q) => $q->where('project_id', $projectId))]
             : ['nullable', 'string', 'max:64'];
 
+        $ignorePropertyId = $this->route('property') instanceof Property
+            ? (int) $this->route('property')->getKey()
+            : null;
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'area_id' => ['required', 'exists:areas,id'],
-            'land_id' => ['nullable', 'exists:lands,id'],
+            'land_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('lands', 'id')->where(fn ($q) => $q->where('project_id', $projectId)),
+                Rule::unique('properties', 'land_id')
+                    ->where(fn ($q) => $q->where('project_id', $projectId))
+                    ->ignore($ignorePropertyId),
+            ],
             'property_type' => ['required', 'string', 'max:255'],
             'land_name' => ['nullable', 'string', 'max:255'],
             'building_total_floors' => ['required', 'integer', 'min:1'],
@@ -74,6 +86,14 @@ class StorePropertyRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'land_id.unique' => 'هذه الأرض مرتبطة بالفعل بعقار آخر في المشروع. كل أرض يمكن ربطها بعقار واحد فقط.',
+            'land_id.exists' => 'الأرض المختارة غير صالحة لهذا المشروع.',
+        ];
+    }
+
     protected function prepareForValidation(): void
     {
         $buildingTotalFloors = max(1, (int) $this->input('building_total_floors', 1));
@@ -97,7 +117,7 @@ class StorePropertyRequest extends FormRequest
             ->filter(static fn (int $n) => $n >= 1 && $n <= $buildingTotalFloors)
             ->unique();
         $mezzanineFloors = collect($this->input('mezzanine_floors', []))
-            ->filter(static fn (array $item) => !empty($item['floor_number']) && !empty($item['apartments_count']))
+            ->filter(static fn (array $item) => ! empty($item['floor_number']) && ! empty($item['apartments_count']))
             ->map(static function (array $item) use ($buildingTotalFloors): ?array {
                 $floorNumber = (int) $item['floor_number'];
                 $apartmentsCount = (int) $item['apartments_count'];
@@ -135,7 +155,8 @@ class StorePropertyRequest extends FormRequest
             ? (int) collect($mezzanineFloors)->sum('apartments_count')
             : max(0, (int) $this->input('mezzanine_apartments_count', 0));
         $providedTotal = (int) $this->input('total_apartments', 0);
-        $calculatedTotal = ($effectiveFloors * $apartmentsPerFloor) + $effectiveMezzanineApartments;
+        $groundFloorShops = max(0, (int) $this->input('ground_floor_shops_count', 0));
+        $calculatedTotal = ($effectiveFloors * $apartmentsPerFloor) + $effectiveMezzanineApartments + $groundFloorShops;
 
         $percentages = collect($this->input('shareholder_percentages', []))
             ->filter(static fn ($value) => $value !== null && $value !== '')
@@ -157,7 +178,7 @@ class StorePropertyRequest extends FormRequest
         $defaultFacingCode = $allowedFacingCodes[0] ?? 'normal';
 
         $models = collect($this->input('apartment_models', []))
-            ->filter(static fn (array $item) => !empty($item['model_name']) && !empty($item['area']))
+            ->filter(static fn (array $item) => ! empty($item['model_name']) && ! empty($item['area']))
             ->map(static function (array $item) use ($allowedFacingCodes, $defaultFacingCode): array {
                 $vt = (string) ($item['view_type'] ?? $defaultFacingCode);
                 if ($allowedFacingCodes !== [] && ! in_array($vt, $allowedFacingCodes, true)) {
@@ -219,7 +240,7 @@ class StorePropertyRequest extends FormRequest
             'floors_count' => $effectiveFloors,
             'registered_floors' => $registeredFloors,
             'mezzanine_floors' => $mezzanineFloors,
-            'ground_floor_shops_count' => max(0, (int) $this->input('ground_floor_shops_count', 0)),
+            'ground_floor_shops_count' => $groundFloorShops,
             'has_mezzanine' => $hasMezzanine,
             'mezzanine_apartments_count' => $effectiveMezzanineApartments,
             'shareholder_allocations' => $percentages,

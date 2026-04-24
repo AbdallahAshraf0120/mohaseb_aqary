@@ -13,6 +13,7 @@ use App\Models\Shareholder;
 use App\Services\PropertyService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
 
 class PropertyController extends Controller
 {
@@ -37,27 +38,7 @@ class PropertyController extends Controller
             'pageTitle' => 'إضافة عقار',
             'property' => new Property,
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
-            'lands' => Land::query()
-                ->select([
-                    'id',
-                    'name',
-                    'area_id',
-                    'land_cost',
-                    'building_license_cost',
-                    'piles_cost',
-                    'excavation_cost',
-                    'gravel_cost',
-                    'sand_cost',
-                    'cement_cost',
-                    'steel_cost',
-                    'carpentry_labor_cost',
-                    'blacksmith_labor_cost',
-                    'mason_labor_cost',
-                    'electrician_labor_cost',
-                    'tips_cost',
-                ])
-                ->orderBy('name')
-                ->get(),
+            'lands' => $this->landsSelectableForProperty(new Property),
             'shareholders' => Shareholder::query()->select('id', 'name', 'share_percentage')->orderBy('name')->get(),
             'facings' => Facing::query()->orderBy('sort_order')->orderBy('name')->get(),
             'modules' => $this->modules(),
@@ -89,27 +70,7 @@ class PropertyController extends Controller
             'pageTitle' => 'تعديل العقار',
             'property' => $this->propertyService->findOrFail((int) $property->id),
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
-            'lands' => Land::query()
-                ->select([
-                    'id',
-                    'name',
-                    'area_id',
-                    'land_cost',
-                    'building_license_cost',
-                    'piles_cost',
-                    'excavation_cost',
-                    'gravel_cost',
-                    'sand_cost',
-                    'cement_cost',
-                    'steel_cost',
-                    'carpentry_labor_cost',
-                    'blacksmith_labor_cost',
-                    'mason_labor_cost',
-                    'electrician_labor_cost',
-                    'tips_cost',
-                ])
-                ->orderBy('name')
-                ->get(),
+            'lands' => $this->landsSelectableForProperty($property),
             'shareholders' => Shareholder::query()->select('id', 'name', 'share_percentage')->orderBy('name')->get(),
             'facings' => Facing::query()->orderBy('sort_order')->orderBy('name')->get(),
             'modules' => $this->modules(),
@@ -128,6 +89,42 @@ class PropertyController extends Controller
         $this->propertyService->delete($property);
 
         return redirect()->route('properties.index')->with('success', 'تم حذف العقار بنجاح.');
+    }
+
+    /**
+     * أراضٍ غير مربوطة بعقار آخر في المشروع (العقار الحالي يُستثنى عند التعديل).
+     *
+     * @return Collection<int, Land>
+     */
+    private function landsSelectableForProperty(Property $property): Collection
+    {
+        $usedLandIds = Property::query()
+            ->whereNotNull('land_id')
+            ->when($property->exists, static fn ($q) => $q->where('id', '!=', $property->id))
+            ->pluck('land_id');
+
+        return Land::query()
+            ->select([
+                'id',
+                'name',
+                'area_id',
+                'land_cost',
+                'building_license_cost',
+                'piles_cost',
+                'excavation_cost',
+                'gravel_cost',
+                'sand_cost',
+                'cement_cost',
+                'steel_cost',
+                'carpentry_labor_cost',
+                'blacksmith_labor_cost',
+                'mason_labor_cost',
+                'electrician_labor_cost',
+                'tips_cost',
+            ])
+            ->when($usedLandIds->isNotEmpty(), static fn ($q) => $q->whereNotIn('id', $usedLandIds))
+            ->orderBy('name')
+            ->get();
     }
 
     private function modules(): array

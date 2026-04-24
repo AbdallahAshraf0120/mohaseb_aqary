@@ -95,4 +95,29 @@ class Property extends Model
     {
         return $this->belongsTo(Land::class);
     }
+
+    /** @return list<int> */
+    public function mushaaFloorNumbers(): array
+    {
+        return collect($this->mushaa_floors ?? [])
+            ->map(static fn ($n) => (int) $n)
+            ->filter(static fn (int $n) => $n >= 1)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+    }
+
+    public function hasMushaaFloors(): bool
+    {
+        return $this->mushaaFloorNumbers() !== [];
+    }
+
+    /**
+     * أدوار مشاعة مع شريك مسجّل: يُفترض تقسيم عائد وحدات ذلك الدور 50٪ لمجموعة المساهمين و50٪ للشريك.
+     */
+    public function mushaaFiftyFiftyWithPartnerApplies(): bool
+    {
+        return $this->hasMushaaFloors() && filled($this->mushaa_partner_name);
+    }
 }

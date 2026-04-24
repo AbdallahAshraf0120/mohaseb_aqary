@@ -111,6 +111,7 @@
                 <option value="{{ $land->id }}" @selected((string) old('land_id', $property->land_id ?? '') === (string) $land->id)>{{ $land->name }}</option>
             @endforeach
         </select>
+        <p class="form-text small text-muted mb-0">كل أرض يمكن ربطها بعقار واحد فقط ضمن نفس المشروع؛ الأراضي المستخدمة لا تظهر في القائمة.</p>
     </div>
     <div class="col-md-6">
         <label class="form-label">اسم الأرض (اختياري)</label>
@@ -218,7 +219,7 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">عدد محلات الأرضي (دور 0)</label>
-        <input type="number" min="0" name="ground_floor_shops_count" class="form-control"
+        <input type="number" min="0" name="ground_floor_shops_count" id="ground_floor_shops_count" class="form-control"
                value="{{ old('ground_floor_shops_count', $property->ground_floor_shops_count ?? 0) }}">
     </div>
     <div class="col-md-3">
@@ -228,6 +229,10 @@
         </label>
         <input type="number" min="1" name="total_apartments" id="total_apartments" class="form-control"
                value="{{ old('total_apartments', $property->total_apartments ?? 1) }}" required>
+        <p class="form-text small text-muted mb-0">
+            يُحسب تلقائيًا: (الأدوار المختارة × الشقق لكل دور) + شقق الميزان (صفوف كاملة برقم دور) + محلات الأرضي.
+            <strong>أدوار مشاعة:</strong> لا تُنقص ولا تُزيد هذا الرقم — الوحدات على تلك الأدوار ما زالت تُحسب ضمن الإجمالي؛ «المشاع» يخص <strong>تقسيم العائد أو الحصص</strong> بين المساهمين والشريك وليس حذف شقق من العدد.
+        </p>
     </div>
 
     <div class="col-12">
@@ -242,9 +247,16 @@
 
     <div class="col-12">
         <div class="card border">
-            <div class="card-header py-2"><strong>أدوار مشاعة في العقار (50٪ مساهمين / 50٪ شريك)</strong></div>
+            <div class="card-header py-2"><strong>أدوار مشاعة في العقار</strong></div>
             <div class="card-body">
-                <p class="text-muted small mb-2">حدّد أي دور من أدوار البرج (1 … إجمالي الأدوار) يكون <strong>مشاعًا</strong>، سواء كان ضمن الأدوار المسجلة أو ضمن الميزان. يُقسَّم عائد وحدات ذلك الدور بين مجموعة المساهمين والشريك الآخر.</p>
+                <p class="text-muted small mb-2">
+                    حدّد أي دور من أدوار البرج (1 … إجمالي الأدوار) يكون <strong>مشاعًا</strong>، سواء كان ضمن الأدوار المسجلة أو ضمن الميزان.
+                    هذا <strong>لا يغيّر «إجمالي الشقق بالعقار»</strong>: الشقق على الأدوار المشاعة تبقى وحدات فعلية ضمن المجموع؛ يتغيّر فقط <strong>من يستحق كم من عائد</strong> تلك الوحدات عند وجود شريك.
+                    <strong>عند إدخال اسم الشريك أدناه:</strong> يُفترض أن يكون عائد وحدات ذلك الدور (مثلاً من البيع أو التحصيل)
+                    <strong>بالنصف</strong> — <strong>50٪</strong> لمجموعة المساهمين (ويُوزَّع نصف المساهمين هذا بينهم بنسب الحقول في «نسبة كل مساهم في العقار»)،
+                    و<strong>50٪</strong> لصالح الشريك المسمّى.
+                    <strong>بدون اسم شريك:</strong> لا يُطبَّق تقسيم 50/50 مع شريك خارجي؛ يُنصح بتعبئة الاسم عند وجود شراكة فعلية على تلك الأدوار.
+                </p>
                 <div class="d-flex flex-wrap gap-2 mb-3" id="mushaa-floors-box"></div>
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -300,6 +312,11 @@
         <div class="card border">
             <div class="card-header py-2"><strong>نسبة كل مساهم في العقار</strong></div>
             <div class="card-body">
+                <p class="small text-muted border rounded px-2 py-2 bg-body-secondary mb-3">
+                    النسب هنا تخص <strong>حصة المساهمين</strong> من العقار. للأدوار المشاعة <strong>مع شريك مذكور</strong>،
+                    يُوزَّع <strong>نصف</strong> عائد وحدات ذلك الدور بين المساهمين وفق هذه النسب (من أصل 100٪ لحصة المساهمين في ذلك النصف)،
+                    والنصف الآخر للشريك.
+                </p>
                 <div class="row g-3">
                     @foreach ($shareholders as $shareholder)
                         <div class="col-md-4">
@@ -409,6 +426,7 @@
         const mezzanineFloorsBody = document.getElementById('mezzanine-floors-body');
         const addMezzanineRowBtn = document.getElementById('add-mezzanine-row');
         const total = document.getElementById('total_apartments');
+        const groundFloorShops = document.getElementById('ground_floor_shops_count');
         const recalculateTotalBtn = document.getElementById('recalculate-total');
         const registeredFloorsBox = document.getElementById('registered-floors-box');
         const mushaaFloorsBox = document.getElementById('mushaa-floors-box');
@@ -575,12 +593,21 @@
             const floorsValue = Math.max(1, selectedFloorsCount || parseInt(floors?.value || '1', 10));
             const apartmentsValue = Math.max(1, parseInt(apartments?.value || '1', 10));
             const mezzanineValue = mezzanineFloorsBody
-                ? Array.from(mezzanineFloorsBody.querySelectorAll('input[name*="[apartments_count]"]'))
-                    .map((input) => Math.max(0, parseInt(input.value || '0', 10)))
-                    .reduce((acc, current) => acc + current, 0)
+                ? Array.from(mezzanineFloorsBody.querySelectorAll('tr')).reduce((acc, tr) => {
+                    const floorInput = tr.querySelector('input[name*="[floor_number]"]');
+                    const countInput = tr.querySelector('input[name*="[apartments_count]"]');
+                    const floorNum = parseInt(floorInput?.value || '0', 10);
+                    const countNum = parseInt(countInput?.value || '0', 10);
+                    if (floorNum < 1 || countNum < 1) {
+                        return acc;
+                    }
+
+                    return acc + countNum;
+                }, 0)
                 : 0;
+            const shopsValue = Math.max(0, parseInt(groundFloorShops?.value || '0', 10));
             if (total) {
-                total.value = String((floorsValue * apartmentsValue) + mezzanineValue);
+                total.value = String((floorsValue * apartmentsValue) + mezzanineValue + shopsValue);
             }
         };
 
@@ -591,6 +618,7 @@
             syncTotal();
         });
         apartments?.addEventListener('input', syncTotal);
+        groundFloorShops?.addEventListener('input', syncTotal);
         mezzanineFloorsBody?.addEventListener('input', () => {
             syncRegisteredFloors();
             syncMushaaFloors();

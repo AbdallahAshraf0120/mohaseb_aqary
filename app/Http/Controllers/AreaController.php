@@ -39,7 +39,7 @@ class AreaController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('areas', 'name')->where(fn($q) => $q->where('project_id', $projectId)),
+                Rule::unique('areas', 'name')->where(fn ($q) => $q->where('project_id', $projectId)),
             ],
         ]);
 
@@ -68,7 +68,7 @@ class AreaController extends Controller
                 'max:255',
                 Rule::unique('areas', 'name')
                     ->ignore($area->id)
-                    ->where(fn($q) => $q->where('project_id', $projectId)),
+                    ->where(fn ($q) => $q->where('project_id', $projectId)),
             ],
         ]);
 
@@ -79,8 +79,9 @@ class AreaController extends Controller
 
     public function destroy(Project $project, Area $area): RedirectResponse
     {
-        if ($area->properties()->exists()) {
-            return redirect()->route('areas.index')->with('success', 'لا يمكن حذف المنطقة لأنها مرتبطة بعقارات.');
+        if ($area->properties()->exists() || $area->lands()->exists()) {
+            return redirect()->route('areas.index')
+                ->with('error', 'لا يمكن حذف المنطقة لأنها مرتبطة بعقارات أو أراضٍ.');
         }
 
         $area->delete();
