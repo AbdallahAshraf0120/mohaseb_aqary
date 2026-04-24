@@ -58,11 +58,12 @@ class PropertyController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Project $project): View
     {
         return view('properties.create', [
             'title' => 'إضافة عقار | Mohaseb Aqary',
             'pageTitle' => 'إضافة عقار',
+            'project' => $project,
             'property' => new Property,
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
             'lands' => $this->landsSelectableForProperty(new Property),
@@ -72,11 +73,11 @@ class PropertyController extends Controller
         ]);
     }
 
-    public function store(StorePropertyRequest $request): RedirectResponse
+    public function store(Project $project, StorePropertyRequest $request): RedirectResponse
     {
         $this->propertyService->create($request->validated());
 
-        return redirect()->route('properties.index')->with('success', 'تم إضافة العقار بنجاح.');
+        return redirect()->route('properties.index', $project)->with('success', 'تم إضافة العقار بنجاح.');
     }
 
     public function show(Project $project, Property $property): View
@@ -84,6 +85,7 @@ class PropertyController extends Controller
         return view('properties.show', [
             'title' => 'تفاصيل العقار | Mohaseb Aqary',
             'pageTitle' => 'تفاصيل العقار',
+            'project' => $project,
             'property' => $this->propertyService->findOrFail((int) $property->id),
             'facingNames' => Facing::query()->orderBy('sort_order')->pluck('name', 'code'),
             'modules' => $this->modules(),
@@ -95,6 +97,7 @@ class PropertyController extends Controller
         return view('properties.edit', [
             'title' => 'تعديل العقار | Mohaseb Aqary',
             'pageTitle' => 'تعديل العقار',
+            'project' => $project,
             'property' => $this->propertyService->findOrFail((int) $property->id),
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
             'lands' => $this->landsSelectableForProperty($property),
@@ -108,14 +111,14 @@ class PropertyController extends Controller
     {
         $this->propertyService->update($property, $request->validated());
 
-        return redirect()->route('properties.index')->with('success', 'تم تحديث العقار بنجاح.');
+        return redirect()->route('properties.index', $project)->with('success', 'تم تحديث العقار بنجاح.');
     }
 
     public function destroy(Project $project, Property $property): RedirectResponse
     {
         $this->propertyService->delete($property);
 
-        return redirect()->route('properties.index')->with('success', 'تم حذف العقار بنجاح.');
+        return redirect()->route('properties.index', $project)->with('success', 'تم حذف العقار بنجاح.');
     }
 
     /**
@@ -169,7 +172,7 @@ class PropertyController extends Controller
             'expenses' => ['label' => 'المصروفات', 'icon' => 'fa-money-bill-wave', 'route' => 'expenses.index'],
             'cashbox' => ['label' => 'الصندوق', 'icon' => 'fa-vault', 'route' => 'cashbox.index'],
             'remaining' => ['label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'route' => 'remaining.index'],
-            'debts' => ['label' => 'المديونيه', 'icon' => 'fa-hand-holding-dollar', 'route' => 'debts.index'],
+            'debts' => ['label' => 'ذمم دائنة', 'icon' => 'fa-hand-holding-dollar', 'route' => 'debts.index'],
             'settlements' => ['label' => 'تصفيات', 'icon' => 'fa-filter-circle-dollar', 'route' => 'settlements.index'],
             'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'shareholders.index'],
             'reports' => ['label' => 'التقارير', 'icon' => 'fa-chart-line', 'route' => 'reports.index'],

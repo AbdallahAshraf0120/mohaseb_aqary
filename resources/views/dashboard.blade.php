@@ -17,7 +17,7 @@
                     </p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ route('properties.index') }}" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ route('properties.index', $project) }}" class="btn btn-outline-primary btn-sm">
                         <i class="fa-solid fa-building ms-1"></i> العقارات
                     </a>
                     <a href="{{ route('projects.index') }}" class="btn btn-outline-secondary btn-sm">
@@ -109,7 +109,7 @@
         <div class="card-body p-4">
             <div class="row g-2 g-md-3">
                 <div class="col-6 col-md-4 col-xl-2">
-                    <a href="{{ route('properties.index') }}" class="dashboard-stat-tile text-decoration-none text-reset h-100">
+                    <a href="{{ route('properties.index', $project) }}" class="dashboard-stat-tile text-decoration-none text-reset h-100">
                         <span class="tile-icon text-bg-secondary"><i class="fa-solid fa-building"></i></span>
                         <div class="min-w-0">
                             <div class="small text-body-secondary">عقارات</div>
@@ -145,10 +145,10 @@
                     </a>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
-                    <a href="{{ route('debts.index') }}" class="dashboard-stat-tile text-decoration-none text-reset h-100">
+                    <a href="{{ route('debts.index', $project) }}" class="dashboard-stat-tile text-decoration-none text-reset h-100">
                         <span class="tile-icon text-bg-danger"><i class="fa-solid fa-scale-balanced"></i></span>
                         <div class="min-w-0">
-                            <div class="small text-body-secondary">ديون مفتوحة</div>
+                            <div class="small text-body-secondary">ذمم موردين مفتوحة</div>
                             <div class="fs-5 fw-semibold font-monospace">{{ $stats['debts_open'] }}</div>
                         </div>
                     </a>
@@ -296,7 +296,7 @@
         </div>
         <div class="card-body">
             <div class="d-flex flex-wrap gap-2">
-                <a href="{{ route('properties.create') }}" class="btn btn-outline-primary">
+                <a href="{{ route('properties.create', $project) }}" class="btn btn-outline-primary">
                     <i class="fa-solid fa-plus ms-1"></i> إضافة عقار
                 </a>
                 <a href="{{ route('sales.create') }}" class="btn btn-outline-primary">

@@ -12,6 +12,8 @@ use Illuminate\Support\Collection;
 /**
  * يوزّع على المساهمين ما يخص كل عقار من التحصيلات (عبر العقود) ومقدمات المبيعات،
  * مضروباً في نسبة المساهم المحفوظة في توزيع المساهمين على العقار.
+ *
+ * كما تُحسب حصة المساهم من تكاليف التطوير المسجّلة على كل عقار، ومنها جاري تقريبي لكل مساهم.
  */
 final class ShareholderAttributedFlowService
 {
@@ -108,6 +110,60 @@ final class ShareholderAttributedFlowService
     }
 
     /**
+     * @return array<int, float> property_id => مجموع تكاليف التطوير المسجّلة على العقار
+     */
+    public function propertyDevelopmentCosts(Project $project): array
+    {
+        $out = [];
+        foreach (
+            Property::query()
+                ->where('project_id', (int) $project->id)
+                ->get() as $property
+        ) {
+            $out[(int) $property->id] = $property->totalRecordedDevelopmentCost();
+        }
+
+        return $out;
+    }
+
+    /**
+     * حصة المساهم من تكاليف التطوير المسجّلة على العقارات (حسب نسبته في التوزيع على كل عقار).
+     *
+     * @param  array<int, float>|null  $propertyDevelopmentCosts
+     */
+    public function attributedDevelopmentCostShare(Shareholder $shareholder, Project $project, ?array $propertyDevelopmentCosts = null): float
+    {
+        $propertyDevelopmentCosts ??= $this->propertyDevelopmentCosts($project);
+
+        $properties = Property::query()
+            ->where('project_id', (int) $project->id)
+            ->whereNotNull('shareholder_allocations')
+            ->get(['id', 'name', 'shareholder_allocations']);
+
+        $total = 0.0;
+        foreach ($properties as $property) {
+            $pct = $this->allocationPercent($property, $shareholder);
+            if ($pct <= 0) {
+                continue;
+            }
+            $pid = (int) $property->id;
+            $cost = (float) ($propertyDevelopmentCosts[$pid] ?? 0.0);
+            $total += $cost * ($pct / 100.0);
+        }
+
+        return round($total, 2);
+    }
+
+    /**
+     * جاري مساهم (تقريبي): المنسب التشغيلي (تحصيلات + مقدمات) ناقص حصة التكاليف المنسوبة من العقار.
+     * موجب يعني أن التدفق المنسوب للمساهم يتجاوز — في هذا النموذج — حصته من التكاليف المسجّلة على العقارات.
+     */
+    public function shareholderCurrentAccountApprox(float $attributedOperatingFlow, float $attributedDevelopmentCostShare): float
+    {
+        return round($attributedOperatingFlow - $attributedDevelopmentCostShare, 2);
+    }
+
+    /**
      * حصة المساهم من إجمالي سعر البيعات على العقار (كمبيالة / حجم صفقات).
      *
      * @param  array<int, array{revenues: float, down_payments: float, sale_volume: float}>|null  $propertyFinancials
@@ -138,10 +194,14 @@ final class ShareholderAttributedFlowService
     /**
      * @param  Collection<int, object{property: Property, percentage: float, allocation: array<string, mixed>}>  $participations
      * @param  array<int, array{revenues: float, down_payments: float, sale_volume: float}>  $propertyFinancials
-     * @return list<array{property_id: int, revenues: float, down_payments: float, sale_volume: float, percentage: float, operating_pool: float, attributed_operating: float, attributed_sale_volume: float}>
+     * @param  array<int, float>  $propertyDevelopmentCosts
+     * @return list<array{property_id: int, revenues: float, down_payments: float, sale_volume: float, percentage: float, operating_pool: float, attributed_operating: float, attributed_sale_volume: float, development_cost_total: float, attributed_development_cost: float, current_account_slice: float}>
      */
-    public function participationFinancialBreakdown(Collection $participations, array $propertyFinancials): array
-    {
+    public function participationFinancialBreakdown(
+        Collection $participations,
+        array $propertyFinancials,
+        array $propertyDevelopmentCosts = [],
+    ): array {
         $rows = [];
         foreach ($participations as $item) {
             $pid = (int) $item->property->id;
@@ -152,6 +212,9 @@ final class ShareholderAttributedFlowService
             ];
             $pct = (float) $item->percentage;
             $pool = (float) $f['revenues'] + (float) $f['down_payments'];
+            $devTotal = (float) ($propertyDevelopmentCosts[$pid] ?? $item->property->totalRecordedDevelopmentCost());
+            $attributedDev = $devTotal * ($pct / 100.0);
+            $attributedOp = $pool * ($pct / 100.0);
             $rows[] = [
                 'property_id' => $pid,
                 'revenues' => round((float) $f['revenues'], 2),
@@ -159,8 +222,11 @@ final class ShareholderAttributedFlowService
                 'sale_volume' => round((float) $f['sale_volume'], 2),
                 'percentage' => round($pct, 2),
                 'operating_pool' => round($pool, 2),
-                'attributed_operating' => round($pool * ($pct / 100.0), 2),
+                'attributed_operating' => round($attributedOp, 2),
                 'attributed_sale_volume' => round((float) $f['sale_volume'] * ($pct / 100.0), 2),
+                'development_cost_total' => round($devTotal, 2),
+                'attributed_development_cost' => round($attributedDev, 2),
+                'current_account_slice' => round($attributedOp - $attributedDev, 2),
             ];
         }
 

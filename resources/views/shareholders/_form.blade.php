@@ -11,15 +11,15 @@
                value="{{ old('share_percentage', $shareholder->share_percentage ?? '') }}" required>
     </div>
     <div class="col-md-3">
-        <label class="form-label">رأس المال</label>
-        <input type="number" step="0.01" min="0" name="total_investment" class="form-control"
+        <label class="form-label" for="shareholder-total-investment">رأس المال / التمويل المُدخل (ج.م)</label>
+        <input id="shareholder-total-investment" type="number" step="0.01" min="0" name="total_investment" class="form-control font-monospace"
                value="{{ old('total_investment', $shareholder->total_investment ?? '') }}" required>
+        <div class="form-text">يُحدَّد في <strong>لحظة التسجيل</strong> أو عند <strong>أي تعديل</strong> لاحق — سجل إداري لما اعتمدتموه كتمويل للمساهم.</div>
     </div>
     <div class="col-12">
         <div class="alert alert-light border small mb-0">
             <i class="fa-solid fa-calculator text-primary ms-1"></i>
-            <strong>المنسب والأرباح المحسوبة:</strong> تُعرض في قائمة المساهمين وبروفايل المساهم تلقائياً من
-            <strong>التحصيلات</strong> (عبر العقود على كل عقار) و<strong>مقدمات البيعات</strong> على نفس العقار، مضروبة في نسبة المساهم المحفوظة في توزيع المساهمين على العقار.
+            <strong>لكل مساهم على حدة:</strong> يُحسب <strong>حصة التكاليف</strong> من حقول تكلفة كل عقار × نسبة المساهم في التوزيع، و<strong>المنسب التشغيلي</strong> من التحصيلات ومقدمات البيع على العقار بنفس النسبة، و<strong>الجاري (تقريبي)</strong> = المنسب − حصة التكلفة — يظهر في القائمة والبروفايل دون تكرار لكل المساهمين في حساب واحد.
         </div>
     </div>
 </div>

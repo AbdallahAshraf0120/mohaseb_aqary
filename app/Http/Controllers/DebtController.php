@@ -16,7 +16,11 @@ class DebtController extends Controller
         $query = Debt::query()->with('client:id,name,phone');
         if ($filters->q !== '') {
             $like = '%'.$filters->likeTerm().'%';
-            $query->whereHas('client', fn ($c) => $c->where('name', 'like', $like)->orWhere('phone', 'like', $like));
+            $query->where(function ($w) use ($like): void {
+                $w->where('creditor_name', 'like', $like)
+                    ->orWhere('purchase_description', 'like', $like)
+                    ->orWhereHas('client', fn ($c) => $c->where('name', 'like', $like)->orWhere('phone', 'like', $like));
+            });
         }
         $filters->applyWhereDate($query, 'created_at');
 
@@ -27,8 +31,8 @@ class DebtController extends Controller
         ];
 
         return view('debts.index', [
-            'title' => 'المديونية | Mohaseb Aqary',
-            'pageTitle' => 'المديونية',
+            'title' => 'ذمم دائنة على المشروع | Mohaseb Aqary',
+            'pageTitle' => 'ذمم دائنة (مستحقات موردين)',
             'project' => $project,
             'debtKpis' => $debtKpis,
             'debts' => $query->latest()->paginate(15)->withQueryString(),
@@ -50,7 +54,7 @@ class DebtController extends Controller
             'expenses' => ['label' => 'المصروفات', 'icon' => 'fa-money-bill-wave', 'route' => 'expenses.index'],
             'cashbox' => ['label' => 'الصندوق', 'icon' => 'fa-vault', 'route' => 'cashbox.index'],
             'remaining' => ['label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'route' => 'remaining.index'],
-            'debts' => ['label' => 'المديونيه', 'icon' => 'fa-hand-holding-dollar', 'route' => 'debts.index'],
+            'debts' => ['label' => 'ذمم دائنة', 'icon' => 'fa-hand-holding-dollar', 'route' => 'debts.index'],
             'settlements' => ['label' => 'تصفيات', 'icon' => 'fa-filter-circle-dollar', 'route' => 'settlements.index'],
             'reports' => ['label' => 'التقارير', 'icon' => 'fa-chart-line', 'route' => 'reports.index'],
             'settings' => ['label' => 'الاعدادات', 'icon' => 'fa-gear', 'route' => 'settings.edit'],

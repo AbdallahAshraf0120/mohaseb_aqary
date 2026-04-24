@@ -15,7 +15,7 @@
     <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">قائمة الأراضي</h5>
-            <a href="{{ route('lands.create') }}" class="btn btn-primary btn-sm">إضافة أرض</a>
+            <a href="{{ route('lands.create', $project) }}" class="btn btn-primary btn-sm">إضافة أرض</a>
         </div>
         <div class="card-body">
             @if (session('success'))

@@ -31,7 +31,7 @@
                 <div class="text-body-secondary small mb-1">عقار</div>
                 <h4 class="mb-0 fw-semibold">{{ $property->name }}</h4>
             </div>
-            <a href="{{ route('properties.index') }}" class="btn btn-outline-secondary btn-sm">رجوع للقائمة</a>
+            <a href="{{ route('properties.index', $project) }}" class="btn btn-outline-secondary btn-sm">رجوع للقائمة</a>
         </div>
         <div class="card-body">
             <div class="row g-3 mb-3">

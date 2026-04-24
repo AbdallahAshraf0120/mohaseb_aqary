@@ -47,21 +47,22 @@ class LandController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Project $project): View
     {
         return view('lands.create', [
             'title' => 'إضافة أرض | Mohaseb Aqary',
             'pageTitle' => 'إضافة أرض',
+            'project' => $project,
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
     }
 
-    public function store(StoreLandRequest $request): RedirectResponse
+    public function store(Project $project, StoreLandRequest $request): RedirectResponse
     {
         Land::query()->create($request->validated());
 
-        return redirect()->route('lands.index')->with('success', 'تم إضافة الأرض بنجاح.');
+        return redirect()->route('lands.index', $project)->with('success', 'تم إضافة الأرض بنجاح.');
     }
 
     public function edit(Project $project, Land $land): View
@@ -69,6 +70,7 @@ class LandController extends Controller
         return view('lands.edit', [
             'title' => 'تعديل الأرض | Mohaseb Aqary',
             'pageTitle' => 'تعديل الأرض',
+            'project' => $project,
             'land' => $land,
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
             'modules' => $this->modules(),
@@ -79,18 +81,18 @@ class LandController extends Controller
     {
         $land->update($request->validated());
 
-        return redirect()->route('lands.index')->with('success', 'تم تحديث الأرض بنجاح.');
+        return redirect()->route('lands.index', $project)->with('success', 'تم تحديث الأرض بنجاح.');
     }
 
     public function destroy(Project $project, Land $land): RedirectResponse
     {
         if ($land->properties()->exists()) {
-            return redirect()->route('lands.index')->with('success', 'لا يمكن حذف الأرض لأنها مرتبطة بعقارات.');
+            return redirect()->route('lands.index', $project)->with('success', 'لا يمكن حذف الأرض لأنها مرتبطة بعقارات.');
         }
 
         $land->delete();
 
-        return redirect()->route('lands.index')->with('success', 'تم حذف الأرض بنجاح.');
+        return redirect()->route('lands.index', $project)->with('success', 'تم حذف الأرض بنجاح.');
     }
 
     private function modules(): array
@@ -107,7 +109,7 @@ class LandController extends Controller
             'expenses' => ['label' => 'المصروفات', 'icon' => 'fa-money-bill-wave', 'route' => 'expenses.index'],
             'cashbox' => ['label' => 'الصندوق', 'icon' => 'fa-vault', 'route' => 'cashbox.index'],
             'remaining' => ['label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'route' => 'remaining.index'],
-            'debts' => ['label' => 'المديونيه', 'icon' => 'fa-hand-holding-dollar', 'route' => 'debts.index'],
+            'debts' => ['label' => 'ذمم دائنة', 'icon' => 'fa-hand-holding-dollar', 'route' => 'debts.index'],
             'settlements' => ['label' => 'تصفيات', 'icon' => 'fa-filter-circle-dollar', 'route' => 'settlements.index'],
             'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'shareholders.index'],
             'reports' => ['label' => 'التقارير', 'icon' => 'fa-chart-line', 'route' => 'reports.index'],

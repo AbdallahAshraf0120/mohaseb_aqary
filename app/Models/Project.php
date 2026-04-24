@@ -68,4 +68,9 @@ class Project extends Model
     {
         return $this->hasMany(Facing::class);
     }
+
+    public function lands(): HasMany
+    {
+        return $this->hasMany(Land::class);
+    }
 }

@@ -31,9 +31,21 @@ class ShareholderController extends Controller
         $filters->applyWhereDate($query, 'created_at');
 
         $propertyFinancials = $this->attributedFlowService->propertyFinancials($project);
+        $propertyDevelopmentCosts = $this->attributedFlowService->propertyDevelopmentCosts($project);
         $shareholdersForKpis = (clone $query)->get();
         $attributedOperatingTotal = (float) $shareholdersForKpis->sum(
             fn ($sh) => $this->attributedFlowService->attributedOperatingFlow($sh, $project, $propertyFinancials)
+        );
+        $attributedCostTotal = (float) $shareholdersForKpis->sum(
+            fn ($sh) => $this->attributedFlowService->attributedDevelopmentCostShare($sh, $project, $propertyDevelopmentCosts)
+        );
+        $currentAccountTotal = (float) $shareholdersForKpis->sum(
+            function ($sh) use ($project, $propertyFinancials, $propertyDevelopmentCosts): float {
+                $op = $this->attributedFlowService->attributedOperatingFlow($sh, $project, $propertyFinancials);
+                $cost = $this->attributedFlowService->attributedDevelopmentCostShare($sh, $project, $propertyDevelopmentCosts);
+
+                return $this->attributedFlowService->shareholderCurrentAccountApprox($op, $cost);
+            }
         );
 
         $shareholderKpis = [
@@ -41,13 +53,19 @@ class ShareholderController extends Controller
             'total_investment' => (float) (clone $query)->sum('total_investment'),
             'share_percentage' => (float) (clone $query)->sum('share_percentage'),
             'attributed_operating_total' => $attributedOperatingTotal,
+            'attributed_cost_total' => $attributedCostTotal,
+            'current_account_total' => $currentAccountTotal,
         ];
 
         $shareholders = $query->latest()->paginate(10)->withQueryString();
-        $shareholders->getCollection()->transform(function (Shareholder $sh) use ($project, $propertyFinancials): Shareholder {
+        $shareholders->getCollection()->transform(function (Shareholder $sh) use ($project, $propertyFinancials, $propertyDevelopmentCosts): Shareholder {
+            $operating = $this->attributedFlowService->attributedOperatingFlow($sh, $project, $propertyFinancials);
+            $cost = $this->attributedFlowService->attributedDevelopmentCostShare($sh, $project, $propertyDevelopmentCosts);
+            $sh->setAttribute('attributed_operating_flow', $operating);
+            $sh->setAttribute('attributed_development_cost_share', $cost);
             $sh->setAttribute(
-                'attributed_operating_flow',
-                $this->attributedFlowService->attributedOperatingFlow($sh, $project, $propertyFinancials)
+                'shareholder_current_account',
+                $this->attributedFlowService->shareholderCurrentAccountApprox($operating, $cost)
             );
 
             return $sh;
@@ -95,9 +113,20 @@ class ShareholderController extends Controller
             $project,
             $propertyFinancials
         );
+        $propertyDevelopmentCosts = $this->attributedFlowService->propertyDevelopmentCosts($project);
+        $attributedDevelopmentCostShare = $this->attributedFlowService->attributedDevelopmentCostShare(
+            $shareholder,
+            $project,
+            $propertyDevelopmentCosts
+        );
+        $shareholderCurrentAccountApprox = $this->attributedFlowService->shareholderCurrentAccountApprox(
+            $attributedOperatingTotal,
+            $attributedDevelopmentCostShare
+        );
         $participationFinancialBreakdown = $this->attributedFlowService->participationFinancialBreakdown(
             $participations,
-            $propertyFinancials
+            $propertyFinancials,
+            $propertyDevelopmentCosts
         );
 
         return view('shareholders.show', [
@@ -109,6 +138,8 @@ class ShareholderController extends Controller
             'propertyFinancials' => $propertyFinancials,
             'attributedOperatingTotal' => $attributedOperatingTotal,
             'attributedSaleVolumeShare' => $attributedSaleVolumeShare,
+            'attributedDevelopmentCostShare' => $attributedDevelopmentCostShare,
+            'shareholderCurrentAccountApprox' => $shareholderCurrentAccountApprox,
             'participationFinancialBreakdown' => $participationFinancialBreakdown,
             'modules' => $this->modules(),
         ]);
@@ -153,7 +184,7 @@ class ShareholderController extends Controller
             'expenses' => ['label' => 'المصروفات', 'icon' => 'fa-money-bill-wave', 'route' => 'expenses.index'],
             'cashbox' => ['label' => 'الصندوق', 'icon' => 'fa-vault', 'route' => 'cashbox.index'],
             'remaining' => ['label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'route' => 'remaining.index'],
-            'debts' => ['label' => 'المديونيه', 'icon' => 'fa-hand-holding-dollar', 'route' => 'debts.index'],
+            'debts' => ['label' => 'ذمم دائنة', 'icon' => 'fa-hand-holding-dollar', 'route' => 'debts.index'],
             'settlements' => ['label' => 'تصفيات', 'icon' => 'fa-filter-circle-dollar', 'route' => 'settlements.index'],
             'reports' => ['label' => 'التقارير', 'icon' => 'fa-chart-line', 'route' => 'reports.index'],
             'settings' => ['label' => 'الاعدادات', 'icon' => 'fa-gear', 'route' => 'settings.edit'],

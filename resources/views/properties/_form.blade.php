@@ -103,7 +103,7 @@
     <div class="col-md-6">
         <label class="form-label d-flex justify-content-between align-items-center">
             <span>الأرض</span>
-            <a href="{{ route('lands.create') }}" class="small text-decoration-none">+ إضافة أرض جديدة</a>
+            <a href="{{ route('lands.create', $project) }}" class="small text-decoration-none">+ إضافة أرض جديدة</a>
         </label>
         <select name="land_id" id="land_id" class="form-select">
             <option value="">اختر الأرض</option>

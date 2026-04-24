@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Models\TreasuryTransaction;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -173,7 +174,7 @@ class ReportController extends Controller
         ]);
     }
 
-    private function applyRevenueSearch(\Illuminate\Database\Eloquent\Builder $q, ListingFilters $filters): void
+    private function applyRevenueSearch(Builder $q, ListingFilters $filters): void
     {
         if ($filters->q === '') {
             return;
@@ -187,7 +188,7 @@ class ReportController extends Controller
         });
     }
 
-    private function applyExpenseSearch(\Illuminate\Database\Eloquent\Builder $q, ListingFilters $filters): void
+    private function applyExpenseSearch(Builder $q, ListingFilters $filters): void
     {
         if ($filters->q === '') {
             return;
@@ -199,7 +200,7 @@ class ReportController extends Controller
         });
     }
 
-    private function applySaleSearch(\Illuminate\Database\Eloquent\Builder $q, ListingFilters $filters): void
+    private function applySaleSearch(Builder $q, ListingFilters $filters): void
     {
         if ($filters->q === '') {
             return;
@@ -212,7 +213,7 @@ class ReportController extends Controller
         });
     }
 
-    private function applyTreasurySearch(\Illuminate\Database\Eloquent\Builder $q, ListingFilters $filters): void
+    private function applyTreasurySearch(Builder $q, ListingFilters $filters): void
     {
         if ($filters->q === '') {
             return;
@@ -235,7 +236,7 @@ class ReportController extends Controller
             'expenses' => ['label' => 'المصروفات', 'icon' => 'fa-money-bill-wave', 'route' => 'expenses.index'],
             'cashbox' => ['label' => 'الصندوق', 'icon' => 'fa-vault', 'route' => 'cashbox.index'],
             'remaining' => ['label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'route' => 'remaining.index'],
-            'debts' => ['label' => 'المديونيه', 'icon' => 'fa-hand-holding-dollar', 'route' => 'debts.index'],
+            'debts' => ['label' => 'ذمم دائنة', 'icon' => 'fa-hand-holding-dollar', 'route' => 'debts.index'],
             'settlements' => ['label' => 'تصفيات', 'icon' => 'fa-filter-circle-dollar', 'route' => 'settlements.index'],
             'reports' => ['label' => 'التقارير', 'icon' => 'fa-chart-line', 'route' => 'reports.index'],
             'settings' => ['label' => 'الاعدادات', 'icon' => 'fa-gear', 'route' => 'settings.edit'],

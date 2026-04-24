@@ -113,6 +113,36 @@ class Property extends Model
         return $this->mushaaFloorNumbers() !== [];
     }
 
+    /** @var list<string> */
+    private const DEVELOPMENT_COST_ATTRIBUTES = [
+        'land_cost',
+        'building_license_cost',
+        'piles_cost',
+        'excavation_cost',
+        'gravel_cost',
+        'sand_cost',
+        'cement_cost',
+        'steel_cost',
+        'carpentry_labor_cost',
+        'blacksmith_labor_cost',
+        'mason_labor_cost',
+        'electrician_labor_cost',
+        'tips_cost',
+    ];
+
+    /**
+     * مجموع حقول التكلفة المسجّلة على العقار (يُستخدم لتوزيع التزام التكلفة على المساهمين حسب النسبة).
+     */
+    public function totalRecordedDevelopmentCost(): float
+    {
+        $sum = 0.0;
+        foreach (self::DEVELOPMENT_COST_ATTRIBUTES as $attr) {
+            $sum += (float) ($this->getAttribute($attr) ?? 0);
+        }
+
+        return round($sum, 2);
+    }
+
     /**
      * أدوار مشاعة مع شريك مسجّل: يُفترض تقسيم عائد وحدات ذلك الدور 50٪ لمجموعة المساهمين و50٪ للشريك.
      */

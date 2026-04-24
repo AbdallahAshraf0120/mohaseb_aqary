@@ -21,6 +21,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
 {
@@ -357,14 +358,42 @@ class DatabaseSeeder extends Seeder
             );
         });
 
-        $contracts->each(function (Contract $contract) use ($pid): void {
-            Debt::query()->updateOrCreate(
-                ['project_id' => $pid, 'client_id' => $contract->client_id],
+        $carrierClientId = Client::query()->where('project_id', $pid)->orderBy('id')->value('id');
+        $suppliers = [
+            'مؤسسة مواد البناء',
+            'شركة حديد وصلب',
+            'مقاول تشطيبات',
+            'مورد خرسانة جاهزة',
+            'مكتب استشارات هندسية',
+            'محل كهرباء وسباكة',
+            'مورد ألوميتال',
+            'شركة نقل ورفع',
+        ];
+
+        collect(range(1, 8))->each(function (int $i) use ($pid, $slug, $carrierClientId, $suppliers): void {
+            $total = (float) fake()->numberBetween(80_000, 3_500_000);
+            $paidRatio = fake()->randomFloat(2, 0, 0.9);
+            $paid = round($total * $paidRatio, 2);
+            $remaining = round(max(0, $total - $paid), 2);
+            $creditor = $suppliers[($i - 1) % count($suppliers)];
+
+            $purchaseDescription = "شراء للمشروع — {$slug} — بند {$i} (لم يُسدَّد بالكامل بعد)";
+            $clientId = Schema::getConnection()->getDriverName() === 'mysql'
+                ? null
+                : $carrierClientId;
+
+            Debt::query()->firstOrCreate(
                 [
-                    'total_amount' => $contract->total_price,
-                    'paid_amount' => $contract->paid_amount,
-                    'remaining_amount' => $contract->remaining_amount,
-                    'status' => $contract->remaining_amount > 0 ? 'open' : 'closed',
+                    'project_id' => $pid,
+                    'purchase_description' => $purchaseDescription,
+                ],
+                [
+                    'client_id' => $clientId,
+                    'creditor_name' => $creditor,
+                    'total_amount' => $total,
+                    'paid_amount' => $paid,
+                    'remaining_amount' => $remaining,
+                    'status' => $remaining > 0.01 ? 'open' : 'closed',
                 ]
             );
         });

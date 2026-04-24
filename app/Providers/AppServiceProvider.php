@@ -109,7 +109,7 @@ class AppServiceProvider extends ServiceProvider
                 'create_route' => 'expenses.create',
                 'create_active' => ['expenses.create'],
             ],
-            ['route' => 'debts.index', 'label' => 'المديونية', 'icon' => 'fa-scale-balanced', 'active' => ['debts.*']],
+            ['route' => 'debts.index', 'label' => 'ذمم دائنة', 'icon' => 'fa-scale-balanced', 'active' => ['debts.*']],
             ['route' => 'remaining.index', 'label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'active' => ['remaining.*']],
             ['route' => 'settlements.index', 'label' => 'التصفيات', 'icon' => 'fa-filter-circle-dollar', 'active' => ['settlements.*']],
             ['route' => 'reports.index', 'label' => 'التقارير', 'icon' => 'fa-chart-line', 'active' => ['reports.*']],
