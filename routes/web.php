@@ -88,6 +88,7 @@ Route::middleware(['auth', SyncProjectFromRoute::class])
 
         Route::get('cashbox', [CashboxController::class, 'index'])->name('cashbox.index');
         Route::post('cashbox', [CashboxController::class, 'store'])->name('cashbox.store');
+        Route::post('debts/{debt}/pay-from-cashbox', [DebtController::class, 'payFromCashbox'])->name('debts.pay-from-cashbox');
         Route::resource('debts', DebtController::class)->except(['show']);
         Route::get('remaining', [RemainingController::class, 'index'])->name('remaining.index');
         Route::get('settlements', [SettlementController::class, 'index'])->name('settlements.index');

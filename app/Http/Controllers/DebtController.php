@@ -7,14 +7,18 @@ use App\Http\Requests\UpdateDebtRequest;
 use App\Models\Client;
 use App\Models\Debt;
 use App\Models\Project;
+use App\Services\CashboxLedgerService;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class DebtController extends Controller
 {
+    public function __construct(private readonly CashboxLedgerService $cashboxLedger) {}
+
     public function index(Project $project, Request $request): View
     {
         $filters = ListingFilters::fromRequest($request);
@@ -68,6 +72,8 @@ class DebtController extends Controller
 
     public function edit(Project $project, Debt $debt): View
     {
+        $debt->load(['debtPayments' => static fn ($q) => $q->latest()]);
+
         return view('debts.edit', [
             'title' => 'تعديل ذمة دائنة | Mohaseb Aqary',
             'pageTitle' => 'تعديل ذمة دائنة',
@@ -75,6 +81,45 @@ class DebtController extends Controller
             'debt' => $debt,
             'modules' => $this->modules(),
         ]);
+    }
+
+    public function payFromCashbox(Request $request, Project $project, Debt $debt): RedirectResponse
+    {
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $amount = round((float) $validated['amount'], 2);
+        $remaining = round((float) $debt->remaining_amount, 2);
+        if ($amount - $remaining > 0.009) {
+            return redirect()
+                ->route('debts.edit', [$project, $debt])
+                ->withErrors(['pay_amount' => 'المبلغ أكبر من المتبقي في الذمة ('.number_format($remaining, 2).' ج.م).'])
+                ->withInput();
+        }
+
+        DB::transaction(function () use ($debt, $amount, $validated): void {
+            $payment = $debt->debtPayments()->create([
+                'amount' => $amount,
+                'note' => $validated['note'] ?? null,
+            ]);
+            $this->cashboxLedger->syncFromDebtPayment($payment->fresh(['debt']));
+
+            $debt->refresh();
+            $total = round((float) $debt->total_amount, 2);
+            $newPaid = round(min((float) $debt->paid_amount + $amount, $total), 2);
+            $newRemaining = round(max(0.0, $total - $newPaid), 2);
+            $debt->update([
+                'paid_amount' => $newPaid,
+                'remaining_amount' => $newRemaining,
+                'status' => $newRemaining > 0.01 ? 'open' : 'closed',
+            ]);
+        });
+
+        return redirect()
+            ->route('debts.edit', [$project, $debt])
+            ->with('success', 'تم تسجيل السداد من الصندوق وإضافة حركة مصروف مرتبطة بالذمة.');
     }
 
     public function update(Project $project, Debt $debt, UpdateDebtRequest $request): RedirectResponse

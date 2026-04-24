@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Debt extends Model
 {
@@ -29,6 +30,11 @@ class Debt extends Model
     public function client()
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function debtPayments(): HasMany
+    {
+        return $this->hasMany(DebtPayment::class);
     }
 
     /**

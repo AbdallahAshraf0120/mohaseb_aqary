@@ -49,7 +49,10 @@
                             <td class="text-end font-monospace">{{ number_format((float) $debt->paid_amount, 2) }}</td>
                             <td class="text-end font-monospace">{{ number_format((float) $debt->remaining_amount, 2) }}</td>
                             <td>{{ $debt->status }}</td>
-                            <td class="text-end">
+                            <td class="text-end text-nowrap">
+                                @if ((float) $debt->remaining_amount > 0.009)
+                                    <a href="{{ route('debts.edit', [$project, $debt]) }}#pay-from-cashbox" class="btn btn-outline-success btn-sm">سداد من الصندوق</a>
+                                @endif
                                 <a href="{{ route('debts.edit', [$project, $debt]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
                                 <form action="{{ route('debts.destroy', [$project, $debt]) }}" method="post" class="d-inline" data-swal-confirm="{{ e('هل تريد حذف هذا السجل؟') }}">
                                     @csrf

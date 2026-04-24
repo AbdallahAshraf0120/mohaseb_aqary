@@ -16,7 +16,7 @@
         <label class="form-label" for="debt-paid">ما سُدِّد حتى الآن (ج.م)</label>
         <input id="debt-paid" type="number" step="0.01" min="0" name="paid_amount" class="form-control font-monospace"
                value="{{ old('paid_amount', isset($debt) ? $debt->paid_amount : 0) }}">
-        <div class="form-text">يُحدَّث المتبقي والحالة (مفتوح/مغلق) تلقائياً عند الحفظ.</div>
+        <div class="form-text">يُحدَّث المتبقي والحالة (مفتوح/مغلق) تلقائياً عند الحفظ. لا يمكن أن يقل المجموع عن سدادات الصندوق المسجَّلة.</div>
     </div>
     <div class="col-12">
         <label class="form-label" for="debt-desc">وصف الشراء (اختياري)</label>
