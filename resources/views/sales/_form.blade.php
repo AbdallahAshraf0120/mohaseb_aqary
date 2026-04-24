@@ -9,7 +9,17 @@
     );
     $selectedModel = (string) old('apartment_model', $sale->apartment_model ?? '');
     $paymentType = old('payment_type', $sale->payment_type ?? 'cash');
-    $installmentSchedule = old('installment_schedule', $sale->installment_plan['schedule_type'] ?? 'monthly');
+    $installmentSchedule = old('installment_schedule', ($sale->installment_plan ?? [])['schedule_type'] ?? 'monthly');
+    $secondaryPayments = old('secondary_payments');
+    if (! is_array($secondaryPayments)) {
+        $savedPlan = $sale->installment_plan ?? [];
+        $secondaryPayments = ($sale->exists && is_array($savedPlan['secondary_payments'] ?? null))
+            ? $savedPlan['secondary_payments']
+            : [];
+    }
+    if ($secondaryPayments === []) {
+        $secondaryPayments = [['label' => '', 'amount' => '', 'due_date' => '']];
+    }
     $salePriceValue = (float) old('sale_price', $sale->sale_price ?? 0);
     $downPaymentValue = (float) old('down_payment', $sale->down_payment ?? 0);
     $downPaymentPercentageValue = (float) old(
@@ -118,12 +128,50 @@
         <select name="installment_schedule" id="installment_schedule" class="form-select">
             <option value="monthly" @selected($installmentSchedule === 'monthly')>شهري (كل شهر)</option>
             <option value="quarterly" @selected($installmentSchedule === 'quarterly')>كل 3 شهور</option>
+            <option value="semiannual" @selected($installmentSchedule === 'semiannual')>كل 6 شهور</option>
         </select>
     </div>
     <div class="col-md-4 installment-field">
         <label class="form-label">بداية أول قسط</label>
         <input type="date" name="installment_start_date" class="form-control"
                value="{{ old('installment_start_date', isset($sale->installment_start_date) ? $sale->installment_start_date->format('Y-m-d') : '') }}">
+    </div>
+
+    <div class="col-12 installment-field">
+        <h6 class="mb-2 text-body-secondary">دفعات ثانوية <span class="fw-normal text-muted small">(اختياري)</span></h6>
+        <p class="small text-muted mb-2">
+            مبالغ بتاريخ استحقاق محدد تُخصم من المتبقي بعد المقدم، ثم يُقسّط ما تبقى على أقساط النظام المختار (شهري / كل 3 شهور / كل 6 شهور).
+        </p>
+        <div id="secondary-payments-rows" class="border rounded p-2 bg-body-tertiary">
+            @foreach ($secondaryPayments as $idx => $sp)
+                <div class="row g-2 align-items-end secondary-pay-row mb-2">
+                    <div class="col-md-4">
+                        <label class="form-label small mb-0">الوصف</label>
+                        <input type="text" class="form-control form-control-sm" data-field="label"
+                               name="secondary_payments[{{ $idx }}][label]"
+                               value="{{ old("secondary_payments.$idx.label", $sp['label'] ?? '') }}"
+                               maxlength="255" placeholder="مثال: دفعة تشطيب">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small mb-0">المبلغ (ج.م)</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control form-control-sm" data-field="amount"
+                               name="secondary_payments[{{ $idx }}][amount]"
+                               value="{{ old("secondary_payments.$idx.amount", $sp['amount'] ?? '') }}"
+                               placeholder="0">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small mb-0">تاريخ الاستحقاق</label>
+                        <input type="date" class="form-control form-control-sm" data-field="due_date"
+                               name="secondary_payments[{{ $idx }}][due_date]"
+                               value="{{ old("secondary_payments.$idx.due_date", isset($sp['due_date']) ? (string) $sp['due_date'] : '') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-secondary-pay" title="حذف الصف">حذف</button>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="add-secondary-payment">+ إضافة دفعة ثانوية</button>
     </div>
     <div class="col-md-4">
         <label class="form-label">تاريخ البيعة</label>
@@ -179,6 +227,7 @@
         const modelSelect = document.getElementById('apartment_model');
         const paymentType = document.getElementById('payment_type');
         const installmentSchedule = document.getElementById('installment_schedule');
+        const secondaryRowsWrap = document.getElementById('secondary-payments-rows');
         const salePriceInput = document.getElementById('sale_price');
         const downPaymentInput = document.getElementById('down_payment');
         const downPaymentPercentageInput = document.getElementById('down_payment_percentage');
@@ -196,6 +245,55 @@
                 return;
             }
             hidden.value = opt.dataset.isMezzanine === '1' ? '1' : '0';
+        }
+
+        function reindexSecondaryPaymentRows() {
+            if (!secondaryRowsWrap) {
+                return;
+            }
+            secondaryRowsWrap.querySelectorAll('.secondary-pay-row').forEach((row, i) => {
+                row.querySelectorAll('[data-field]').forEach((el) => {
+                    const field = el.getAttribute('data-field');
+                    el.name = `secondary_payments[${i}][${field}]`;
+                });
+            });
+        }
+
+        function ensureAtLeastOneSecondaryRow() {
+            if (!secondaryRowsWrap) {
+                return;
+            }
+            if (!secondaryRowsWrap.querySelector('.secondary-pay-row')) {
+                const row = document.createElement('div');
+                row.className = 'row g-2 align-items-end secondary-pay-row mb-2';
+                row.innerHTML = `
+                    <div class="col-md-4">
+                        <label class="form-label small mb-0">الوصف</label>
+                        <input type="text" class="form-control form-control-sm" data-field="label" maxlength="255" placeholder="مثال: دفعة تشطيب">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small mb-0">المبلغ (ج.م)</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control form-control-sm" data-field="amount" placeholder="0">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small mb-0">تاريخ الاستحقاق</label>
+                        <input type="date" class="form-control form-control-sm" data-field="due_date">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-secondary-pay" title="حذف الصف">حذف</button>
+                    </div>`;
+                secondaryRowsWrap.appendChild(row);
+                bindSecondaryRowButtons(row);
+                reindexSecondaryPaymentRows();
+            }
+        }
+
+        function bindSecondaryRowButtons(row) {
+            row.querySelector('.remove-secondary-pay')?.addEventListener('click', () => {
+                row.remove();
+                ensureAtLeastOneSecondaryRow();
+                reindexSecondaryPaymentRows();
+            });
         }
 
         function refreshPropertyMeta() {
@@ -349,6 +447,23 @@
 
             downPaymentPercentageInput.value = String(Math.round((down / price) * 10000) / 100);
         }
+
+        document.getElementById('add-secondary-payment')?.addEventListener('click', () => {
+            const first = secondaryRowsWrap?.querySelector('.secondary-pay-row');
+            if (!first || !secondaryRowsWrap) {
+                return;
+            }
+            const row = first.cloneNode(true);
+            row.querySelectorAll('input').forEach((el) => {
+                el.value = '';
+            });
+            secondaryRowsWrap.appendChild(row);
+            bindSecondaryRowButtons(row);
+            reindexSecondaryPaymentRows();
+        });
+
+        secondaryRowsWrap?.querySelectorAll('.secondary-pay-row').forEach((row) => bindSecondaryRowButtons(row));
+        reindexSecondaryPaymentRows();
 
         propertySelect?.addEventListener('change', refreshPropertyMeta);
         floorSelect?.addEventListener('change', syncMezzanineHiddenFromFloor);

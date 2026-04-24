@@ -3,8 +3,9 @@
 @section('content')
     @php
         $plan = $sale->installment_plan ?? [];
-        $scheduleType = $plan['schedule_type'] ?? 'monthly';
-        $scheduleLabel = $scheduleType === 'quarterly' ? 'كل 3 شهور' : 'شهري';
+        $scheduleLabel = $sale->installmentScheduleTypeLabel();
+        $secondaryList = $plan['secondary_payments'] ?? [];
+        $secondaryTotal = (float) ($plan['secondary_payments_total'] ?? 0);
         $mzNums = collect($sale->property?->mezzanine_floors ?? [])
             ->pluck('floor_number')
             ->map(static fn ($n) => (int) $n)
@@ -74,6 +75,10 @@
                         <div><strong>عدد الأقساط (الخطة):</strong> {{ (int) ($plan['installments_count'] ?? 0) }}</div>
                         <div><strong>قيمة القسط (متساوية):</strong> {{ number_format((float) ($plan['installment_amount'] ?? $plan['monthly_installment'] ?? 0), 2) }} ج.م</div>
                         <div><strong>المتبقي بعد المقدم (الخطة):</strong> {{ number_format((float) ($plan['remaining_amount'] ?? 0), 2) }} ج.م</div>
+                        @if (is_array($secondaryList) && count($secondaryList) > 0)
+                            <div><strong>دفعات ثانوية:</strong> {{ count($secondaryList) }} بندًا — إجمالي {{ number_format($secondaryTotal, 2) }} ج.م</div>
+                            <div><strong>المبلغ المقسّط على الأقساط المنتظمة:</strong> {{ number_format((float) ($plan['installment_base_for_schedule'] ?? max(0, (float) ($plan['remaining_amount'] ?? 0) - $secondaryTotal)), 2) }} ج.م</div>
+                        @endif
                     @endif
                     <div><strong>تاريخ البيعة:</strong> {{ $sale->sale_date?->format('Y-m-d') ?? '—' }}</div>
                 </div>
@@ -125,6 +130,7 @@
                         <thead class="table-light">
                         <tr>
                             <th>#</th>
+                            <th>البند</th>
                             <th>تاريخ الاستحقاق</th>
                             <th class="text-end">مبلغ القسط</th>
                             <th class="text-end">المسدد (تقديري)</th>
@@ -136,6 +142,14 @@
                         @foreach ($installmentRows as $row)
                             <tr>
                                 <td>{{ $row['number'] }}</td>
+                                <td>
+                                    @if (($row['kind'] ?? 'installment') === 'secondary')
+                                        <span class="badge text-bg-info">دفعة ثانوية</span>
+                                        <span class="small">{{ $row['label'] ?? '—' }}</span>
+                                    @else
+                                        <span class="text-muted">قسط منتظم</span>
+                                    @endif
+                                </td>
                                 <td>{{ $row['due_date']->format('Y-m-d') }}</td>
                                 <td class="text-end">{{ number_format($row['amount'], 2) }}</td>
                                 <td class="text-end">{{ number_format($row['paid'], 2) }}</td>
@@ -148,7 +162,7 @@
                         </tbody>
                         <tfoot class="table-group-divider fw-semibold">
                         <tr>
-                            <td colspan="2">الإجمالي</td>
+                            <td colspan="3">الإجمالي</td>
                             <td class="text-end">{{ number_format(collect($installmentRows)->sum('amount'), 2) }}</td>
                             <td class="text-end">{{ number_format(collect($installmentRows)->sum('paid'), 2) }}</td>
                             <td class="text-end">{{ number_format(collect($installmentRows)->sum('balance'), 2) }}</td>

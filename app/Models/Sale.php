@@ -57,9 +57,27 @@ class Sale extends Model
     }
 
     /**
-     * جدول تواريخ الاستحقاق ومبالغ الأقساط (متساوية مع تعديل آخر قسط للفرق التقريبي).
+     * عرض عربي لنظام القسط حسب الخطة المحفوظة.
+     */
+    public function installmentScheduleTypeLabel(): string
+    {
+        $plan = $this->installment_plan ?? [];
+        $type = $plan['schedule_type'] ?? 'monthly';
+
+        return match ($type) {
+            'quarterly' => 'كل 3 شهور',
+            'semiannual' => 'كل 6 شهور',
+            'monthly' => 'شهري',
+            default => isset($plan['interval_months']) && (int) $plan['interval_months'] > 1
+                ? 'كل '.(int) $plan['interval_months'].' شهر'
+                : 'شهري',
+        };
+    }
+
+    /**
+     * جدول تواريخ الاستحقاق: أقساط منتظمة + دفعات ثانوية، مرتبة حسب التاريخ.
      *
-     * @return list<array{number: int, due_date: Carbon, amount: float}>
+     * @return list<array{number: int, due_date: Carbon, amount: float, kind: string, label: ?string}>
      */
     public function installmentScheduleRows(): array
     {
@@ -68,41 +86,87 @@ class Sale extends Model
         }
         $plan = $this->installment_plan ?? [];
         $count = max(0, (int) ($plan['installments_count'] ?? 0));
-        if ($count < 1) {
+        $interval = max(1, (int) ($plan['interval_months'] ?? 1));
+
+        $remainingTotal = (float) ($plan['remaining_amount'] ?? max(0, (float) $this->sale_price - (float) $this->down_payment));
+        $baseForSchedule = (float) ($plan['installment_base_for_schedule'] ?? $remainingTotal);
+        if ($baseForSchedule < 0) {
+            $baseForSchedule = 0.0;
+        }
+
+        $mainRows = [];
+        if ($count >= 1 && $baseForSchedule > 0) {
+            $per = (float) ($plan['installment_amount'] ?? ($count > 0 ? round($baseForSchedule / $count, 2) : 0));
+            $cursor = Carbon::parse($this->installment_start_date)->startOfDay();
+            $acc = 0.0;
+            for ($i = 1; $i <= $count; $i++) {
+                $due = $cursor->copy();
+                if ($i === $count) {
+                    $amount = round($baseForSchedule - $acc, 2);
+                } else {
+                    $amount = round($per, 2);
+                    $acc += $amount;
+                }
+                $mainRows[] = [
+                    'number' => 0,
+                    'due_date' => $due,
+                    'amount' => $amount,
+                    'kind' => 'installment',
+                    'label' => null,
+                ];
+                if ($i < $count) {
+                    $cursor->addMonths($interval);
+                }
+            }
+        }
+
+        $secondaryPlanned = $plan['secondary_payments'] ?? [];
+        $secRows = [];
+        if (is_array($secondaryPlanned)) {
+            foreach ($secondaryPlanned as $sp) {
+                if (! is_array($sp) || empty($sp['due_date']) || ! isset($sp['amount'])) {
+                    continue;
+                }
+                $amt = (float) $sp['amount'];
+                if ($amt <= 0) {
+                    continue;
+                }
+                $secRows[] = [
+                    'number' => 0,
+                    'due_date' => Carbon::parse((string) $sp['due_date'])->startOfDay(),
+                    'amount' => round($amt, 2),
+                    'kind' => 'secondary',
+                    'label' => trim((string) ($sp['label'] ?? '')) ?: 'دفعة ثانوية',
+                ];
+            }
+        }
+
+        $all = array_merge($mainRows, $secRows);
+        if ($all === []) {
             return [];
         }
-        $interval = max(1, (int) ($plan['interval_months'] ?? 1));
-        $remaining = (float) ($plan['remaining_amount'] ?? max(0, (float) $this->sale_price - (float) $this->down_payment));
-        $per = (float) ($plan['installment_amount'] ?? ($count > 0 ? round($remaining / $count, 2) : 0));
 
-        $cursor = Carbon::parse($this->installment_start_date)->startOfDay();
-        $rows = [];
-        $acc = 0.0;
-        for ($i = 1; $i <= $count; $i++) {
-            $due = $cursor->copy();
-            if ($i === $count) {
-                $amount = round($remaining - $acc, 2);
-            } else {
-                $amount = round($per, 2);
-                $acc += $amount;
+        usort($all, static function (array $a, array $b): int {
+            $ta = $a['due_date']->timestamp;
+            $tb = $b['due_date']->timestamp;
+            if ($ta !== $tb) {
+                return $ta <=> $tb;
             }
-            $rows[] = [
-                'number' => $i,
-                'due_date' => $due,
-                'amount' => $amount,
-            ];
-            if ($i < $count) {
-                $cursor->addMonths($interval);
-            }
+
+            return ($a['kind'] === 'secondary' ? 1 : 0) <=> ($b['kind'] === 'secondary' ? 1 : 0);
+        });
+
+        foreach ($all as $k => $row) {
+            $all[$k]['number'] = $k + 1;
         }
 
-        return $rows;
+        return $all;
     }
 
     /**
-     * نفس جدول الأقساط مع تقدير المسدد على كل قسط (توزيع FIFO على مجموع تحصيلات العقد).
+     * نفس جدول الاستحقاقات مع تقدير المسدد على كل بند (توزيع FIFO على مجموع تحصيلات العقد).
      *
-     * @return list<array{number: int, due_date: Carbon, amount: float, paid: float, balance: float, status: string}>
+     * @return list<array{number: int, due_date: Carbon, amount: float, paid: float, balance: float, status: string, kind: string, label: ?string}>
      */
     public function installmentScheduleWithPaymentSummary(): array
     {
@@ -126,6 +190,8 @@ class Sale extends Model
                 'paid' => $paid,
                 'balance' => $balance,
                 'status' => $status,
+                'kind' => $row['kind'] ?? 'installment',
+                'label' => $row['label'] ?? null,
             ];
         }
 

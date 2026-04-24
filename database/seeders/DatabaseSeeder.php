@@ -4,10 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\Area;
 use App\Models\Client;
-use App\Models\Facing;
 use App\Models\Contract;
 use App\Models\Debt;
 use App\Models\Expense;
+use App\Models\Facing;
 use App\Models\Project;
 use App\Models\Property;
 use App\Models\Revenue;
@@ -100,7 +100,7 @@ class DatabaseSeeder extends Seeder
             $base = $areaNames[($i - 1) % count($areaNames)];
 
             return Area::query()->firstOrCreate(
-                ['project_id' => $pid, 'name' => $base . ' — ' . $slug . ' — ' . $i]
+                ['project_id' => $pid, 'name' => $base.' — '.$slug.' — '.$i]
             );
         });
 
@@ -170,7 +170,7 @@ class DatabaseSeeder extends Seeder
         });
 
         $clients = collect(range(1, $counts['clients']))->map(function (int $i) use ($pid) {
-            $phone = '010' . str_pad((string) (($pid * 1_000_000) + $i), 8, '0', STR_PAD_LEFT);
+            $phone = '010'.str_pad((string) (($pid * 1_000_000) + $i), 8, '0', STR_PAD_LEFT);
 
             return Client::query()->updateOrCreate(
                 ['project_id' => $pid, 'phone' => $phone],
@@ -228,12 +228,31 @@ class DatabaseSeeder extends Seeder
                 ? $salePrice
                 : fake()->numberBetween((int) ($salePrice * 0.2), (int) ($salePrice * 0.72));
             $months = $paymentType === 'cash' ? null : fake()->randomElement([12, 18, 24, 30, 36, 42, 48, 60]);
-            $scheduleType = $paymentType === 'cash' ? null : fake()->randomElement(['monthly', 'quarterly']);
-            $intervalMonths = $scheduleType === 'quarterly' ? 3 : 1;
+            $scheduleType = $paymentType === 'cash' ? null : fake()->randomElement(['monthly', 'quarterly', 'semiannual']);
+            $intervalMonths = match ($scheduleType) {
+                'quarterly' => 3,
+                'semiannual' => 6,
+                default => 1,
+            };
             $remaining = max(0, $salePrice - $downPayment);
             $installmentsCount = ($months && $paymentType !== 'cash') ? max(1, (int) ceil($months / $intervalMonths)) : 0;
-            $installmentAmount = ($installmentsCount && $remaining > 0) ? round($remaining / $installmentsCount, 2) : 0;
             $saleDate = Carbon::now()->subDays(fake()->numberBetween(1, 900))->toDateString();
+            $secondaryRows = [];
+            $secondaryTotal = 0.0;
+            if ($paymentType !== 'cash' && fake()->boolean(25) && $remaining > 120_000) {
+                $amt = round(min($remaining * 0.12, (float) fake()->numberBetween(30_000, 150_000)), 2);
+                if ($amt >= 5000 && $amt < $remaining - 50_000) {
+                    $secondaryRows[] = [
+                        'label' => 'دفعة تشطيب',
+                        'amount' => $amt,
+                        'due_date' => Carbon::parse($saleDate)->addMonths(fake()->numberBetween(2, 8))->toDateString(),
+                    ];
+                    $secondaryTotal = $amt;
+                }
+            }
+            $secondaryTotal = round($secondaryTotal, 2);
+            $baseForSchedule = max(0, round($remaining - $secondaryTotal, 2));
+            $installmentAmount = ($installmentsCount && $baseForSchedule > 0) ? round($baseForSchedule / $installmentsCount, 2) : 0;
 
             return Sale::query()->updateOrCreate(
                 [
@@ -257,11 +276,14 @@ class DatabaseSeeder extends Seeder
                             'interval_months' => $intervalMonths,
                             'installments_count' => $installmentsCount,
                             'remaining_amount' => $remaining,
+                            'secondary_payments' => $secondaryRows,
+                            'secondary_payments_total' => $secondaryTotal,
+                            'installment_base_for_schedule' => $baseForSchedule,
                             'installment_amount' => $installmentAmount,
                             'monthly_installment' => $installmentAmount,
                         ],
                     'sale_date' => $saleDate,
-                    'notes' => "بيع تجريبي {$pid}/" . ($i + 1),
+                    'notes' => "بيع تجريبي {$pid}/".($i + 1),
                     'broker_name' => fake()->name(),
                 ]
             );

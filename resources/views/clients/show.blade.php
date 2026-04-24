@@ -34,11 +34,13 @@
             @forelse ($client->sales as $sale)
                 @php
                     $plan = $sale->installment_plan ?? [];
-                    $scheduleType = $plan['schedule_type'] ?? 'monthly';
-                    $scheduleLabel = $scheduleType === 'quarterly' ? 'كل 3 شهور' : 'شهري';
+                    $scheduleLabel = $sale->installmentScheduleTypeLabel();
                     $instCount = (int) ($plan['installments_count'] ?? 0);
                     $instAmount = (float) ($plan['installment_amount'] ?? $plan['monthly_installment'] ?? 0);
                     $planRemaining = (float) ($plan['remaining_amount'] ?? 0);
+                    $secondaryPlan = $plan['secondary_payments'] ?? [];
+                    $secondaryPlanTotal = (float) ($plan['secondary_payments_total'] ?? 0);
+                    $installmentBasePlan = (float) ($plan['installment_base_for_schedule'] ?? max(0, $planRemaining - $secondaryPlanTotal));
                     $mzNums = collect($sale->property?->mezzanine_floors ?? [])
                         ->pluck('floor_number')
                         ->map(static fn ($n) => (int) $n)
@@ -104,6 +106,16 @@
                                         <th class="bg-body-secondary">المتبقي حسب الخطة (بعد المقدم)</th>
                                         <td>{{ number_format($planRemaining, 2) }} ج.م</td>
                                     </tr>
+                                    @if (is_array($secondaryPlan) && count($secondaryPlan) > 0)
+                                        <tr>
+                                            <th class="bg-body-secondary">دفعات ثانوية</th>
+                                            <td>{{ count($secondaryPlan) }} بندًا — {{ number_format($secondaryPlanTotal, 2) }} ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-body-secondary">المقسّط على الأقساط المنتظمة</th>
+                                            <td>{{ number_format($installmentBasePlan, 2) }} ج.م</td>
+                                        </tr>
+                                    @endif
                                     <tr>
                                         <th class="bg-body-secondary">إجمالي الأقساط المتوقع</th>
                                         <td>{{ number_format($instCount * $instAmount, 2) }} ج.م <span class="text-muted small">(عدد × قيمة القسط)</span></td>
