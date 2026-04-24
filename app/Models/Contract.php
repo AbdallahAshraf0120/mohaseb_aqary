@@ -52,4 +52,45 @@ class Contract extends Model
     {
         return $this->hasMany(Revenue::class);
     }
+
+    /**
+     * مبلغ التحصيل المقترح للقسط التالي: أول بند في جدول البيعة ما زال له متبقي (نفس منطق FIFO في صفحة البيعة).
+     * إن لم يوجد جدول أقساط، يُقترح المتبقي في العقد.
+     *
+     * @param  int|null  $excludeRevenueId  عند تعديل تحصيل: استبعاده من مجموع التحصيلات لحساب القسط القادم بدقة.
+     */
+    public function suggestedNextCollectionAmount(?int $excludeRevenueId = null): ?float
+    {
+        $remaining = round((float) $this->remaining_amount, 2);
+        if ($remaining < 0.01) {
+            return null;
+        }
+
+        $sale = $this->sale;
+        if ($sale && $sale->payment_type === 'installment') {
+            $this->loadMissing([
+                'revenues' => static fn ($q) => $q->orderBy('paid_at')->orderBy('id'),
+            ]);
+            $originalRevenues = $this->revenues;
+            if ($excludeRevenueId) {
+                $filtered = $originalRevenues->filter(static fn (Revenue $r): bool => (int) $r->id !== $excludeRevenueId)->values();
+                $this->setRelation('revenues', $filtered);
+            }
+            $sale->setRelation('contract', $this);
+
+            $rows = $sale->installmentScheduleWithPaymentSummary();
+            if ($excludeRevenueId) {
+                $this->setRelation('revenues', $originalRevenues);
+            }
+
+            foreach ($rows as $row) {
+                $balance = (float) ($row['balance'] ?? 0);
+                if ($balance > 0.01) {
+                    return round(min($balance, $remaining), 2);
+                }
+            }
+        }
+
+        return $remaining;
+    }
 }

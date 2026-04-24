@@ -15,8 +15,7 @@ class RevenueController extends Controller
 {
     public function __construct(
         private CashboxLedgerService $cashboxLedger,
-    ) {
-    }
+    ) {}
 
     public function index(): View
     {
@@ -30,10 +29,26 @@ class RevenueController extends Controller
 
     public function create(): View
     {
+        $contracts = Contract::query()
+            ->with([
+                'client:id,name',
+                'sale',
+                'revenues' => static fn ($q) => $q->orderBy('paid_at')->orderBy('id'),
+            ])
+            ->where('remaining_amount', '>', 0)
+            ->latest()
+            ->get();
+
+        $contractSuggestedAmounts = $contracts
+            ->mapWithKeys(static fn (Contract $c): array => [$c->id => $c->suggestedNextCollectionAmount(null)])
+            ->all();
+
         return view('revenues.create', [
             'title' => 'تحصيل دفعة | Mohaseb Aqary',
             'pageTitle' => 'تحصيل دفعة',
-            'contracts' => Contract::query()->with(['client:id,name', 'sale:id'])->where('remaining_amount', '>', 0)->latest()->get(),
+            'revenue' => new Revenue,
+            'contracts' => $contracts,
+            'contractSuggestedAmounts' => $contractSuggestedAmounts,
             'modules' => $this->modules(),
         ]);
     }
@@ -60,11 +75,29 @@ class RevenueController extends Controller
 
     public function edit(Project $project, Revenue $revenue): View
     {
+        $contracts = Contract::query()
+            ->with([
+                'client:id,name',
+                'sale',
+                'revenues' => static fn ($q) => $q->orderBy('paid_at')->orderBy('id'),
+            ])
+            ->latest()
+            ->get();
+
+        $contractSuggestedAmounts = $contracts
+            ->mapWithKeys(static function (Contract $c) use ($revenue): array {
+                $exclude = (int) $revenue->contract_id === (int) $c->id ? (int) $revenue->id : null;
+
+                return [$c->id => $c->suggestedNextCollectionAmount($exclude)];
+            })
+            ->all();
+
         return view('revenues.edit', [
             'title' => 'تعديل التحصيل | Mohaseb Aqary',
             'pageTitle' => 'تعديل التحصيل',
             'revenue' => $revenue,
-            'contracts' => Contract::query()->with(['client:id,name', 'sale:id'])->latest()->get(),
+            'contracts' => $contracts,
+            'contractSuggestedAmounts' => $contractSuggestedAmounts,
             'modules' => $this->modules(),
         ]);
     }

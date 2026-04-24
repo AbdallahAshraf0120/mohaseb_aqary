@@ -2,6 +2,8 @@
 
 @php
     $selectedContractId = (string) old('contract_id', $revenue->contract_id ?? '');
+    $contractSuggestedAmounts = $contractSuggestedAmounts ?? [];
+    $skipInitialAmountSuggestion = filled(old('amount')) || (isset($revenue) && $revenue->exists);
 @endphp
 
 <div class="row g-3">
@@ -10,11 +12,15 @@
         <select name="contract_id" id="contract_id" class="form-select" required>
             <option value="">اختر العقد</option>
             @foreach ($contracts as $contract)
+                @php
+                    $suggested = $contractSuggestedAmounts[$contract->id] ?? null;
+                @endphp
                 <option value="{{ $contract->id }}"
                         data-client-id="{{ $contract->client_id }}"
                         data-client-name="{{ $contract->client?->name }}"
                         data-sale-id="{{ $contract->sale_id }}"
                         data-remaining="{{ $contract->remaining_amount }}"
+                        data-suggested-amount="{{ $suggested !== null ? number_format((float) $suggested, 2, '.', '') : '' }}"
                         @selected($selectedContractId === (string) $contract->id)>
                     CT-{{ now()->format('Y') }}-{{ str_pad((string) $contract->id, 3, '0', STR_PAD_LEFT) }} |
                     {{ $contract->client?->name }} | متبقي: {{ number_format((float) $contract->remaining_amount, 2) }}
@@ -35,7 +41,12 @@
 
     <div class="col-md-3">
         <label class="form-label">قيمة التحصيل</label>
-        <input type="number" step="0.01" min="1" name="amount" class="form-control" value="{{ old('amount', $revenue->amount ?? '') }}" required>
+        <input type="number" step="0.01" min="0.01" name="amount" id="revenue_amount" class="form-control"
+               value="{{ old('amount', $revenue->amount ?? '') }}" required>
+        <small class="text-muted">يُقترح تلقائياً من <strong>القسط القادم</strong> (جدول البيعة) عند اختيار العقد؛ يمكنك التعديل إن لزم.</small>
+        <div class="mt-1">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="apply-suggested-amount">تطبيق مبلغ القسط القادم</button>
+        </div>
     </div>
     <div class="col-md-3">
         <label class="form-label">نوع الإيراد</label>
@@ -86,24 +97,52 @@
         const saleDisplay = document.getElementById('sale_display');
         const clientIdInput = document.getElementById('client_id');
         const saleIdInput = document.getElementById('sale_id');
+        const amountInput = document.getElementById('revenue_amount');
+        const skipInitialAmountSuggestion = @json($skipInitialAmountSuggestion);
 
-        function syncContractMeta() {
+        function applySuggestedAmountFromContract() {
+            if (!amountInput || !contractSelect) {
+                return;
+            }
             const selected = contractSelect.options[contractSelect.selectedIndex];
             if (!selected || !selected.value) {
-                clientDisplay.value = '';
-                saleDisplay.value = '';
-                clientIdInput.value = '';
-                saleIdInput.value = '';
+                return;
+            }
+            const suggested = selected.dataset.suggestedAmount;
+            if (suggested !== undefined && suggested !== '') {
+                amountInput.value = suggested;
+            }
+        }
+
+        function syncContractMeta(options) {
+            const fillAmount = options && options.fillAmount;
+            const selected = contractSelect?.options?.[contractSelect.selectedIndex];
+            if (!selected || !selected.value) {
+                if (clientDisplay) clientDisplay.value = '';
+                if (saleDisplay) saleDisplay.value = '';
+                if (clientIdInput) clientIdInput.value = '';
+                if (saleIdInput) saleIdInput.value = '';
                 return;
             }
 
-            clientDisplay.value = selected.dataset.clientName || '';
-            saleDisplay.value = selected.dataset.saleId ? 'SL-' + String(selected.dataset.saleId).padStart(3, '0') : '-';
-            clientIdInput.value = selected.dataset.clientId || '';
-            saleIdInput.value = selected.dataset.saleId || '';
+            if (clientDisplay) clientDisplay.value = selected.dataset.clientName || '';
+            if (saleDisplay) saleDisplay.value = selected.dataset.saleId ? 'SL-' + String(selected.dataset.saleId).padStart(3, '0') : '-';
+            if (clientIdInput) clientIdInput.value = selected.dataset.clientId || '';
+            if (saleIdInput) saleIdInput.value = selected.dataset.saleId || '';
+
+            if (fillAmount) {
+                applySuggestedAmountFromContract();
+            }
         }
 
-        contractSelect.addEventListener('change', syncContractMeta);
-        syncContractMeta();
+        contractSelect.addEventListener('change', function () {
+            syncContractMeta({ fillAmount: true });
+        });
+
+        document.getElementById('apply-suggested-amount')?.addEventListener('click', function () {
+            applySuggestedAmountFromContract();
+        });
+
+        syncContractMeta({ fillAmount: !skipInitialAmountSuggestion });
     })();
 </script>
