@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Contract;
 use App\Models\Project;
+use App\Services\ContractWordDocumentService;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class ContractController extends Controller
 {
@@ -47,8 +49,28 @@ class ContractController extends Controller
             'pageTitle' => 'تفاصيل العقد',
             'project' => $project,
             'contract' => $contract->load(['client', 'property', 'sale']),
+            'hasContractTemplate' => $project->hasContractTemplate(),
             'modules' => $this->modules(),
         ]);
+    }
+
+    public function downloadWord(Project $project, Contract $contract, ContractWordDocumentService $documents): Response
+    {
+        if (! $project->hasContractTemplate()) {
+            abort(404, 'لم يُرفَع قالب عقد ‎Word‎ لهذا المشروع. ارفع القالب من «تعديل المشروع».');
+        }
+
+        try {
+            $path = $documents->buildFilledDocument($contract->loadMissing(['client', 'property', 'sale', 'project']));
+        } catch (\Throwable) {
+            abort(422, 'تعذّر إنشاء الملف من القالب. تأكد أن الملف ‎.docx‎ سليمًا.');
+        }
+
+        $year = $contract->created_at?->format('Y') ?? now()->format('Y');
+        $ref = 'CT-'.$year.'-'.str_pad((string) $contract->id, 3, '0', STR_PAD_LEFT);
+        $filename = 'contract-'.$ref.'.docx';
+
+        return response()->download($path, $filename)->deleteFileAfterSend(true);
     }
 
     private function modules(): array

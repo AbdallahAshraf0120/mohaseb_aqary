@@ -66,6 +66,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('projects', [ProjectController::class, 'index'])->name('projects.index');
         Route::post('projects', [ProjectController::class, 'store'])->name('projects.store');
         Route::get('projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
+        Route::get('projects/{project}/contract-template', [ProjectController::class, 'downloadContractTemplate'])->name('projects.contract-template');
         Route::put('projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
         Route::delete('projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
         Route::post('projects/{managedProject}/draft', [ProjectController::class, 'toDraft'])->name('projects.draft');
@@ -88,6 +89,7 @@ Route::middleware(['auth', AuthorizeRoutePermission::class, SyncProjectFromRoute
         Route::resource('shareholders', ShareholderController::class);
         Route::resource('sales', SaleController::class);
         Route::resource('clients', ClientController::class)->only(['index', 'show']);
+        Route::get('contracts/{contract}/word', [ContractController::class, 'downloadWord'])->name('contracts.word');
         Route::resource('contracts', ContractController::class)->only(['index', 'show']);
         Route::resource('revenues', RevenueController::class);
         Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'destroy']);

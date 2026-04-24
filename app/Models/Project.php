@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Project extends Model
 {
@@ -12,6 +13,7 @@ class Project extends Model
         'code',
         'is_active',
         'is_draft',
+        'contract_template_path',
     ];
 
     protected function casts(): array
@@ -20,6 +22,31 @@ class Project extends Model
             'is_active' => 'boolean',
             'is_draft' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Project $project): void {
+            $project->purgeContractTemplateFiles();
+        });
+    }
+
+    public function hasContractTemplate(): bool
+    {
+        $path = $this->contract_template_path;
+
+        return is_string($path) && $path !== '' && Storage::disk('local')->exists($path);
+    }
+
+    /** مسار التخزين النسبي لقرص local (مثل ‎project-contract-templates/1/template.docx‎). */
+    public static function contractTemplateRelativePath(int $projectId): string
+    {
+        return 'project-contract-templates/'.$projectId.'/template.docx';
+    }
+
+    public function purgeContractTemplateFiles(): void
+    {
+        Storage::disk('local')->deleteDirectory('project-contract-templates/'.$this->id);
     }
 
     /** مشاريع تظهر في الشريط الجانبي والتنقل (ليست مسودة). */

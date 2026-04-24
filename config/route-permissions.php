@@ -9,6 +9,7 @@ return [
     'projects.index' => 'projects.view',
     'projects.store' => 'projects.manage',
     'projects.edit' => 'projects.manage',
+    'projects.contract-template' => 'projects.manage',
     'projects.update' => 'projects.manage',
     'projects.destroy' => 'projects.manage',
     'projects.draft' => 'projects.manage',
@@ -66,6 +67,7 @@ return [
 
     'contracts.index' => 'contracts.view',
     'contracts.show' => 'contracts.view',
+    'contracts.word' => 'contracts.view',
 
     'revenues.index' => 'revenues.view',
     'revenues.show' => 'revenues.view',

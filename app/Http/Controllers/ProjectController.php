@@ -7,7 +7,9 @@ use App\Models\Project;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\Response;
 
 class ProjectController extends Controller
 {
@@ -69,14 +71,45 @@ class ProjectController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:50', Rule::unique('projects', 'code')->ignore($project->id)],
+            'contract_template' => ['nullable', 'file', 'mimes:docx', 'max:20480'],
+            'remove_contract_template' => ['nullable', 'in:0,1'],
         ]);
         $code = $data['code'] === '' || $data['code'] === null ? null : $data['code'];
         if ($project->code === 'default') {
             $code = 'default';
         }
-        $project->update(['name' => $data['name'], 'code' => $code]);
+
+        $payload = ['name' => $data['name'], 'code' => $code];
+
+        $remove = $request->boolean('remove_contract_template');
+        if ($remove && ! $request->hasFile('contract_template')) {
+            $project->purgeContractTemplateFiles();
+            $payload['contract_template_path'] = null;
+        }
+
+        if ($request->hasFile('contract_template')) {
+            $project->purgeContractTemplateFiles();
+            $relative = Project::contractTemplateRelativePath((int) $project->id);
+            Storage::disk('local')->makeDirectory(\dirname($relative));
+            Storage::disk('local')->put($relative, file_get_contents($request->file('contract_template')->getRealPath()));
+            $payload['contract_template_path'] = $relative;
+        }
+
+        $project->update($payload);
 
         return redirect()->route('projects.index')->with('success', 'تم تحديث بيانات المشروع.');
+    }
+
+    public function downloadContractTemplate(Project $project): Response
+    {
+        if (! $project->hasContractTemplate()) {
+            return redirect()->route('projects.edit', $project)
+                ->with('error', 'لا يوجد قالب عقد مرفوع لهذا المشروع.');
+        }
+
+        $safeName = $project->code ? 'contract-template-'.$project->code.'.docx' : 'contract-template-'.$project->id.'.docx';
+
+        return Storage::disk('local')->download((string) $project->contract_template_path, $safeName);
     }
 
     public function destroy(Project $project): RedirectResponse

@@ -19,6 +19,9 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ route('contracts.index', $project) }}" class="btn btn-outline-secondary btn-sm">رجوع للعقود</a>
+                @if ($hasContractTemplate ?? false)
+                    <a href="{{ route('contracts.word', [$project, $contract]) }}" class="btn btn-outline-success btn-sm"><i class="fa-regular fa-file-word ms-1"></i> تصدير عقد Word</a>
+                @endif
                 @if ($contract->sale_id)
                     <a href="{{ route('sales.show', [$project, $contract->sale]) }}" class="btn btn-primary btn-sm">تفاصيل البيعة</a>
                 @endif
