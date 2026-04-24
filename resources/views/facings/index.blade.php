@@ -1,6 +1,15 @@
 @extends('layouts.admin')
 
 @section('content')
+    <x-partials.module-kpis :items="[
+        ['label' => 'عدد الوجهات', 'value' => (int) ($facingCount ?? 0)],
+    ]" />
+
+    <x-listing.filters
+        :placeholder="'اسم أو رمز الوجهة…'"
+        :help="'التصفية حسب تاريخ الإنشاء.'"
+    />
+
     <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="mb-0">الوجهات (لنماذج الشقق)</h5>
@@ -25,13 +34,13 @@
                     <tbody>
                     @forelse ($facings as $facing)
                         <tr>
-                            <td>{{ $loop->iteration + ($facings->currentPage() - 1) * $facings->perPage() }}</td>
+                            <td>{{ $facings->firstItem() + $loop->index }}</td>
                             <td><code>{{ $facing->code }}</code></td>
                             <td>{{ $facing->name }}</td>
                             <td>{{ $facing->sort_order }}</td>
                             <td class="text-end">
-                                <a href="{{ route('facings.edit', $facing) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
-                                <form method="post" action="{{ route('facings.destroy', $facing) }}" class="d-inline" data-swal-confirm="{{ e('حذف هذه الوجهة؟ قد تحتاج لتحديث النماذج التي تستخدم الرمز '.$facing->code.'.') }}">
+                                <a href="{{ route('facings.edit', [$project, $facing]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
+                                <form method="post" action="{{ route('facings.destroy', [$project, $facing]) }}" class="d-inline" data-swal-confirm="{{ e('حذف هذه الوجهة؟ قد تحتاج لتحديث النماذج التي تستخدم الرمز '.$facing->code.'.') }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
