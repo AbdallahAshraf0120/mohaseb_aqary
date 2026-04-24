@@ -48,6 +48,12 @@ class Project extends Model
         return $this->hasMany(Contract::class);
     }
 
+    /** مطلوب لربط المسارات المقيّدة `{project}/revenues/{revenue}` (scopeBindings). */
+    public function revenues(): HasMany
+    {
+        return $this->hasMany(Revenue::class);
+    }
+
     public function clients(): HasMany
     {
         return $this->hasMany(Client::class);

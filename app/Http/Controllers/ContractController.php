@@ -23,6 +23,7 @@ class ContractController extends Controller
         return view('contracts.show', [
             'title' => 'تفاصيل العقد | Mohaseb Aqary',
             'pageTitle' => 'تفاصيل العقد',
+            'project' => $project,
             'contract' => $contract->load(['client', 'property', 'sale']),
             'modules' => $this->modules(),
         ]);

@@ -68,7 +68,8 @@ class RevenueController extends Controller
         return view('revenues.show', [
             'title' => 'تفاصيل التحصيل | Mohaseb Aqary',
             'pageTitle' => 'تفاصيل التحصيل',
-            'revenue' => $revenue->load(['client', 'contract', 'sale']),
+            'project' => $project,
+            'revenue' => $revenue->load(['client', 'contract.sale', 'sale']),
             'modules' => $this->modules(),
         ]);
     }
