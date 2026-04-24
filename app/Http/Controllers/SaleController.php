@@ -18,8 +18,7 @@ class SaleController extends Controller
 {
     public function __construct(
         private CashboxLedgerService $cashboxLedger,
-    ) {
-    }
+    ) {}
 
     public function index(): View
     {
@@ -82,10 +81,33 @@ class SaleController extends Controller
 
     public function show(Project $project, Sale $sale): View
     {
+        $sale->load([
+            'property.area:id,name',
+            'property.land:id,name',
+            'client',
+            'contract.revenues' => static fn ($q) => $q->orderBy('paid_at')->orderBy('id'),
+        ]);
+
+        $installmentRows = $sale->installmentScheduleWithPaymentSummary();
+        $revenues = $sale->contract?->revenues ?? collect();
+        $scheduledTotal = (float) collect($installmentRows)->sum(static fn (array $r) => $r['amount']);
+        $stats = [
+            'installment_rows' => count($installmentRows),
+            'scheduled_total' => round($scheduledTotal, 2),
+            'revenues_count' => $revenues->count(),
+            'revenues_sum' => round((float) $revenues->sum(static fn ($r) => (float) $r->amount), 2),
+            'contract_total' => round((float) ($sale->contract?->total_price ?? 0), 2),
+            'contract_paid' => round((float) ($sale->contract?->paid_amount ?? 0), 2),
+            'contract_remaining' => round((float) ($sale->contract?->remaining_amount ?? 0), 2),
+        ];
+
         return view('sales.show', [
             'title' => 'تفاصيل البيعة | Mohaseb Aqary',
             'pageTitle' => 'تفاصيل البيعة',
-            'sale' => $sale->load(['property', 'client']),
+            'project' => $project,
+            'sale' => $sale,
+            'installmentRows' => $installmentRows,
+            'stats' => $stats,
             'modules' => $this->modules(),
         ]);
     }
