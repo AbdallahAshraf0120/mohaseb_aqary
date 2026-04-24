@@ -3,11 +3,16 @@
 @section('content')
     <x-partials.module-wireflow-header label="العقارات" step="3" />
     <x-partials.module-kpis :items="[
-        ['label' => 'عدد العقارات', 'value' => $properties->total()],
-        ['label' => 'متوسط الأدوار', 'value' => number_format((float) $properties->avg('floors_count'), 1)],
-        ['label' => 'إجمالي الوحدات', 'value' => number_format((float) $properties->sum('total_apartments'))],
-        ['label' => 'أنواع عقارات', 'value' => $properties->pluck('property_type')->filter()->unique()->count()],
+        ['label' => 'عدد العقارات', 'value' => (int) ($propertyKpis['count'] ?? 0)],
+        ['label' => 'متوسط الأدوار', 'value' => number_format((float) ($propertyKpis['avg_floors'] ?? 0), 1)],
+        ['label' => 'إجمالي الوحدات', 'value' => number_format((float) ($propertyKpis['sum_units'] ?? 0), 0)],
+        ['label' => 'أنواع عقارات', 'value' => (int) ($propertyKpis['type_count'] ?? 0)],
     ]" />
+
+    <x-listing.filters
+        :placeholder="'اسم عقار، نوع، منطقة، أرض…'"
+        :help="'التصفية حسب تاريخ إنشاء العقار.'"
+    />
 
     <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -38,7 +43,7 @@
                     <tbody>
                     @forelse ($properties as $property)
                         <tr>
-                            <td>{{ $property->id }}</td>
+                            <td>{{ $properties->firstItem() + $loop->index }}</td>
                             <td>{{ $property->name }}</td>
                             <td>{{ $property->property_type ?? '-' }}</td>
                             <td>{{ $property->land?->name ?? ($property->land_name ?? '-') }}</td>
@@ -52,9 +57,9 @@
                             </td>
                             <td>{{ $property->total_apartments ?? '-' }}</td>
                             <td class="text-end">
-                                <a href="{{ route('properties.show', $property) }}" class="btn btn-outline-info btn-sm">عرض</a>
-                                <a href="{{ route('properties.edit', $property) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
-                                <form action="{{ route('properties.destroy', $property) }}" method="post" class="d-inline" data-swal-confirm="{{ e('هل تريد حذف هذا العقار؟') }}">
+                                <a href="{{ route('properties.show', [$project, $property]) }}" class="btn btn-outline-info btn-sm">عرض</a>
+                                <a href="{{ route('properties.edit', [$project, $property]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
+                                <form action="{{ route('properties.destroy', [$project, $property]) }}" method="post" class="d-inline" data-swal-confirm="{{ e('هل تريد حذف هذا العقار؟') }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>

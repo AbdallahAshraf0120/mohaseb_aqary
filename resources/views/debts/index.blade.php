@@ -3,10 +3,15 @@
 @section('content')
     <x-partials.module-wireflow-header label="المديونية" step="10" />
     <x-partials.module-kpis :items="[
-        ['label' => 'إجمالي الدين', 'value' => number_format((float) $debts->sum('total_amount')) . ' ج.م'],
-        ['label' => 'المسدَّد', 'value' => number_format((float) $debts->sum('paid_amount')) . ' ج.م'],
-        ['label' => 'المتبقي', 'value' => number_format((float) $debts->sum('remaining_amount')) . ' ج.م'],
+        ['label' => 'إجمالي الدين', 'value' => number_format((float) ($debtKpis['total_amount'] ?? 0), 2) . ' ج.م'],
+        ['label' => 'المسدَّد', 'value' => number_format((float) ($debtKpis['paid_amount'] ?? 0), 2) . ' ج.م'],
+        ['label' => 'المتبقي', 'value' => number_format((float) ($debtKpis['remaining_amount'] ?? 0), 2) . ' ج.م'],
     ]" />
+
+    <x-listing.filters
+        :placeholder="'اسم أو هاتف العميل…'"
+        :help="'التصفية حسب تاريخ تسجيل المديونية.'"
+    />
 
     <div class="card app-surface mb-4">
         <div class="card-header"><h5 class="mb-0">سجل المديونيات</h5></div>
@@ -17,7 +22,7 @@
                     <tbody>
                     @forelse ($debts as $debt)
                         <tr>
-                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $debts->firstItem() + $loop->index }}</td>
                             <td>{{ $debt->client?->name ?? '-' }}</td>
                             <td>{{ number_format((float) $debt->total_amount, 2) }}</td>
                             <td>{{ number_format((float) $debt->paid_amount, 2) }}</td>
