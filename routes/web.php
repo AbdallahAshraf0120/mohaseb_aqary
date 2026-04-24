@@ -92,6 +92,7 @@ Route::middleware(['auth', SyncProjectFromRoute::class])
         Route::get('remaining', [RemainingController::class, 'index'])->name('remaining.index');
         Route::get('settlements', [SettlementController::class, 'index'])->name('settlements.index');
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/export', [ReportController::class, 'exportCsv'])->name('reports.export');
         Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
     });

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Facing;
 use App\Models\Project;
 use App\Support\CurrentProject;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,12 +13,25 @@ use Illuminate\Validation\Rule;
 
 class FacingController extends Controller
 {
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
+        $filters = ListingFilters::fromRequest($request);
+        $query = Facing::query();
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where(function ($w) use ($like): void {
+                $w->where('name', 'like', $like)
+                    ->orWhere('code', 'like', $like);
+            });
+        }
+        $filters->applyWhereDate($query, 'created_at');
+
         return view('facings.index', [
             'title' => 'الوجهات | Mohaseb Aqary',
             'pageTitle' => 'الوجهات',
-            'facings' => Facing::query()->orderBy('sort_order')->orderBy('name')->paginate(20),
+            'project' => $project,
+            'facingCount' => (clone $query)->count(),
+            'facings' => $query->orderBy('sort_order')->orderBy('name')->paginate(20)->withQueryString(),
             'modules' => $this->modules(),
         ]);
     }

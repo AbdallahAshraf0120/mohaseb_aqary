@@ -6,16 +6,44 @@ use App\Models\Client;
 use App\Models\Project;
 use App\Models\Revenue;
 use App\Models\Sale;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 class ClientController extends Controller
 {
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
+        $filters = ListingFilters::fromRequest($request);
+        $query = Client::query()->withCount('sales');
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where(function ($w) use ($like): void {
+                $w->where('name', 'like', $like)
+                    ->orWhere('phone', 'like', $like)
+                    ->orWhere('email', 'like', $like)
+                    ->orWhere('national_id', 'like', $like);
+            });
+        }
+        $filters->applyWhereDate($query, 'created_at');
+
+        $clientIds = (clone $query)->pluck('id');
+        $clientKpis = [
+            'count' => $clientIds->count(),
+            'with_sales' => $clientIds->isEmpty()
+                ? 0
+                : (int) Client::query()->whereKey($clientIds)->whereHas('sales')->count(),
+            'sales_ops' => $clientIds->isEmpty()
+                ? 0
+                : (int) Sale::query()->whereIn('client_id', $clientIds)->count(),
+        ];
+
         return view('clients.index', [
             'title' => 'العملاء | Mohaseb Aqary',
             'pageTitle' => 'العملاء',
-            'clients' => Client::query()->withCount('sales')->latest()->paginate(15),
+            'project' => $project,
+            'clientKpis' => $clientKpis,
+            'clients' => $query->latest()->paginate(15)->withQueryString(),
             'modules' => $this->modules(),
         ]);
     }

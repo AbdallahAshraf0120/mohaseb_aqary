@@ -3,19 +3,41 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Models\Project;
 use App\Models\Revenue;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 class SettlementController extends Controller
 {
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
-        $revenues = (float) Revenue::query()->sum('amount');
-        $expenses = (float) Expense::query()->sum('amount');
+        $filters = ListingFilters::fromRequest($request);
+        $revQ = Revenue::query();
+        $expQ = Expense::query();
+        $filters->applyWhereDate($revQ, 'paid_at');
+        $filters->applyWhereDate($expQ, 'created_at');
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $revQ->where(function ($w) use ($like): void {
+                $w->where('notes', 'like', $like)
+                    ->orWhere('category', 'like', $like)
+                    ->orWhereHas('client', fn ($c) => $c->where('name', 'like', $like));
+            });
+            $expQ->where(function ($w) use ($like): void {
+                $w->where('category', 'like', $like)
+                    ->orWhere('description', 'like', $like);
+            });
+        }
+
+        $revenues = (float) (clone $revQ)->sum('amount');
+        $expenses = (float) (clone $expQ)->sum('amount');
 
         return view('settlements.index', [
             'title' => 'التسويات | Mohaseb Aqary',
             'pageTitle' => 'التسويات',
+            'project' => $project,
             'revenues' => $revenues,
             'expenses' => $expenses,
             'net' => $revenues - $expenses,

@@ -3,16 +3,35 @@
 namespace App\Http\Controllers;
 
 use App\Models\Debt;
+use App\Models\Project;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 class DebtController extends Controller
 {
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
+        $filters = ListingFilters::fromRequest($request);
+        $query = Debt::query()->with('client:id,name,phone');
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->whereHas('client', fn ($c) => $c->where('name', 'like', $like)->orWhere('phone', 'like', $like));
+        }
+        $filters->applyWhereDate($query, 'created_at');
+
+        $debtKpis = [
+            'total_amount' => (float) (clone $query)->sum('total_amount'),
+            'paid_amount' => (float) (clone $query)->sum('paid_amount'),
+            'remaining_amount' => (float) (clone $query)->sum('remaining_amount'),
+        ];
+
         return view('debts.index', [
             'title' => 'المديونية | Mohaseb Aqary',
             'pageTitle' => 'المديونية',
-            'debts' => Debt::query()->with('client:id,name,phone')->latest()->paginate(15),
+            'project' => $project,
+            'debtKpis' => $debtKpis,
+            'debts' => $query->latest()->paginate(15)->withQueryString(),
             'modules' => $this->modules(),
         ]);
     }

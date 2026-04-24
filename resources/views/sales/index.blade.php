@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $totalSales = (float) $sales->sum('sale_price');
-        $totalDownPayment = (float) $sales->sum('down_payment');
+        $totalSales = (float) ($saleTotals['total_sales'] ?? 0);
+        $totalDownPayment = (float) ($saleTotals['total_down_payment'] ?? 0);
         $remaining = max(0, $totalSales - $totalDownPayment);
     @endphp
 
@@ -51,16 +51,19 @@
         </div>
     </div>
 
+    <x-listing.filters
+        :placeholder="'عميل، هاتف، عقار، بروكر…'"
+        :help="'تصفية حسب تاريخ البيعة (عمود تاريخ البيع). الملخصات أعلاه تعكس نفس الفلاتر.'"
+    />
+
     <div class="row g-3">
         <div class="col-lg-8">
             <div class="card app-surface h-100">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">بيانات المبيعات</h5>
-                    <div class="d-flex flex-wrap gap-2">
-                        <span class="badge text-bg-secondary">حالة التحصيل</span>
-                        <span class="badge text-bg-secondary">الفترة</span>
-                        <span class="badge text-bg-secondary">رقم عملية البيع</span>
-                    </div>
+                    @if (request()->filled('q') || request()->filled('date_from') || request()->filled('date_to'))
+                        <span class="badge text-bg-primary">فلاتر نشطة</span>
+                    @endif
                 </div>
                 <div class="card-body">
                     @if (session('success'))
@@ -83,15 +86,15 @@
                             <tbody>
                             @forelse ($sales as $sale)
                                 <tr>
-                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{ $sales->firstItem() + $loop->index }}</td>
                                     <td>SL-{{ str_pad((string) $sale->id, 3, '0', STR_PAD_LEFT) }}</td>
                                     <td>{{ $sale->property?->name ?? '-' }} / {{ $sale->client?->name ?? '-' }}</td>
                                     <td>{{ $sale->broker_name ?: '—' }}</td>
                                     <td>{{ number_format((float) $sale->sale_price, 2) }} ج.م</td>
                                     <td>{{ number_format((float) $sale->down_payment, 2) }} ج.م</td>
                                     <td class="text-end">
-                                        <a href="{{ route('sales.show', $sale) }}" class="btn btn-outline-info btn-sm">عرض</a>
-                                        <a href="{{ route('sales.edit', $sale) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
+                                        <a href="{{ route('sales.show', [$project, $sale]) }}" class="btn btn-outline-info btn-sm">عرض</a>
+                                        <a href="{{ route('sales.edit', [$project, $sale]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
                                     </td>
                                 </tr>
                             @empty

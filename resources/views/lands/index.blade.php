@@ -3,9 +3,14 @@
 @section('content')
     <x-partials.module-wireflow-header label="الأراضي" step="2" />
     <x-partials.module-kpis :items="[
-        ['label' => 'عدد الأراضي', 'value' => $lands->total()],
-        ['label' => 'أراضٍ مرتبطة بعقارات', 'value' => $lands->where('properties_count', '>', 0)->count()],
+        ['label' => 'عدد الأراضي', 'value' => (int) ($landKpis['count'] ?? 0)],
+        ['label' => 'أراضٍ مرتبطة بعقارات', 'value' => (int) ($landKpis['with_props'] ?? 0)],
     ]" />
+
+    <x-listing.filters
+        :placeholder="'اسم الأرض أو المنطقة…'"
+        :help="'التصفية حسب تاريخ تسجيل الأرض.'"
+    />
 
     <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -47,15 +52,15 @@
                                 + (float) $land->tips_cost;
                         @endphp
                         <tr>
-                            <td>{{ $land->id }}</td>
+                            <td>{{ $lands->firstItem() + $loop->index }}</td>
                             <td>{{ $land->name }}</td>
                             <td>{{ $land->area?->name ?? '-' }}</td>
                             <td>{{ number_format((float) $land->land_cost, 2) }}</td>
                             <td>{{ number_format($buildTotal, 2) }}</td>
                             <td>{{ $land->properties_count }}</td>
                             <td class="text-end">
-                                <a href="{{ route('lands.edit', $land) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
-                                <form method="post" action="{{ route('lands.destroy', $land) }}" class="d-inline" data-swal-confirm="{{ e('هل تريد حذف الأرض؟') }}">
+                                <a href="{{ route('lands.edit', [$project, $land]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
+                                <form method="post" action="{{ route('lands.destroy', [$project, $land]) }}" class="d-inline" data-swal-confirm="{{ e('هل تريد حذف الأرض؟') }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>

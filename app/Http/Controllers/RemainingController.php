@@ -3,16 +3,37 @@
 namespace App\Http\Controllers;
 
 use App\Models\Contract;
+use App\Models\Project;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 class RemainingController extends Controller
 {
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
+        $filters = ListingFilters::fromRequest($request);
+        $query = Contract::query()->with(['client:id,name', 'property:id,name'])->where('remaining_amount', '>', 0);
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where(function ($w) use ($like): void {
+                $w->whereHas('client', fn ($c) => $c->where('name', 'like', $like)->orWhere('phone', 'like', $like))
+                    ->orWhereHas('property', fn ($p) => $p->where('name', 'like', $like));
+            });
+        }
+        $filters->applyWhereDate($query, 'created_at');
+
+        $remainingKpis = [
+            'remaining' => (float) (clone $query)->sum('remaining_amount'),
+            'count' => (clone $query)->count(),
+        ];
+
         return view('remaining.index', [
             'title' => 'المتبقي | Mohaseb Aqary',
             'pageTitle' => 'المتبقي',
-            'contracts' => Contract::query()->with(['client:id,name', 'property:id,name'])->where('remaining_amount', '>', 0)->latest()->paginate(15),
+            'project' => $project,
+            'remainingKpis' => $remainingKpis,
+            'contracts' => $query->latest()->paginate(15)->withQueryString(),
             'modules' => $this->modules(),
         ]);
     }

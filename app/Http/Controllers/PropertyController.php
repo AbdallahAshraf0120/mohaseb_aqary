@@ -11,21 +11,48 @@ use App\Models\Project;
 use App\Models\Property;
 use App\Models\Shareholder;
 use App\Services\PropertyService;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 class PropertyController extends Controller
 {
     public function __construct(private readonly PropertyService $propertyService) {}
 
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
-        $properties = $this->propertyService->paginate(10);
+        $filters = ListingFilters::fromRequest($request);
+        $query = Property::query()->with(['area:id,name', 'land:id,name']);
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where(function ($w) use ($like): void {
+                $w->where('name', 'like', $like)
+                    ->orWhere('property_type', 'like', $like)
+                    ->orWhere('location', 'like', $like)
+                    ->orWhere('land_name', 'like', $like)
+                    ->orWhereHas('area', fn ($a) => $a->where('name', 'like', $like))
+                    ->orWhereHas('land', fn ($l) => $l->where('name', 'like', $like));
+            });
+        }
+        $filters->applyWhereDate($query, 'created_at');
+
+        $forKpis = (clone $query)->get();
+        $propertyKpis = [
+            'count' => $forKpis->count(),
+            'avg_floors' => $forKpis->count() ? round((float) $forKpis->avg('floors_count'), 1) : 0,
+            'sum_units' => (float) $forKpis->sum('total_apartments'),
+            'type_count' => $forKpis->pluck('property_type')->filter()->unique()->count(),
+        ];
+
+        $properties = $query->latest()->paginate(10)->withQueryString();
 
         return view('properties.index', [
             'title' => 'العقارات | Mohaseb Aqary',
             'pageTitle' => 'العقارات',
+            'project' => $project,
+            'propertyKpis' => $propertyKpis,
             'properties' => $properties,
             'modules' => $this->modules(),
         ]);

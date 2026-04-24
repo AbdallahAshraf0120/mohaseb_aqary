@@ -3,9 +3,14 @@
 @section('content')
     <x-partials.module-wireflow-header label="المناطق" step="3" />
     <x-partials.module-kpis :items="[
-        ['label' => 'عدد المناطق', 'value' => $areas->total()],
-        ['label' => 'عقارات مرتبطة', 'value' => $areas->sum('properties_count')],
+        ['label' => 'عدد المناطق', 'value' => (int) ($areaKpis['count'] ?? 0)],
+        ['label' => 'عقارات مرتبطة', 'value' => (int) ($areaKpis['properties_sum'] ?? 0)],
     ]" />
+
+    <x-listing.filters
+        :placeholder="'اسم المنطقة…'"
+        :help="'التصفية حسب تاريخ إنشاء المنطقة.'"
+    />
 
     <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -25,12 +30,12 @@
                     <tbody>
                     @forelse ($areas as $area)
                         <tr>
-                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $areas->firstItem() + $loop->index }}</td>
                             <td>{{ $area->name }}</td>
                             <td>{{ $area->properties_count }}</td>
                             <td class="text-end">
-                                <a href="{{ route('areas.edit', $area) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
-                                <form method="post" action="{{ route('areas.destroy', $area) }}" class="d-inline" data-swal-confirm="{{ e('هل تريد حذف المنطقة؟') }}">
+                                <a href="{{ route('areas.edit', [$project, $area]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
+                                <form method="post" action="{{ route('areas.destroy', [$project, $area]) }}" class="d-inline" data-swal-confirm="{{ e('هل تريد حذف المنطقة؟') }}">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
                                 </form>

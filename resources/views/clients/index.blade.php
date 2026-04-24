@@ -3,10 +3,15 @@
 @section('content')
     <x-partials.module-wireflow-header label="العملاء" step="4" />
     <x-partials.module-kpis :items="[
-        ['label' => 'عدد العملاء', 'value' => $clients->total()],
-        ['label' => 'عملاء لديهم مبيعات', 'value' => $clients->where('sales_count', '>', 0)->count()],
-        ['label' => 'إجمالي عمليات البيع', 'value' => $clients->sum('sales_count')],
+        ['label' => 'عدد العملاء', 'value' => (int) ($clientKpis['count'] ?? 0)],
+        ['label' => 'عملاء لديهم مبيعات', 'value' => (int) ($clientKpis['with_sales'] ?? 0)],
+        ['label' => 'إجمالي عمليات البيع', 'value' => (int) ($clientKpis['sales_ops'] ?? 0)],
     ]" />
+
+    <x-listing.filters
+        :placeholder="'اسم، هاتف، بريد، رقم قومي…'"
+        :help="'التصفية حسب تاريخ تسجيل العميل.'"
+    />
 
     <div class="card app-surface mb-4">
         <div class="card-header">
@@ -29,14 +34,14 @@
                     <tbody>
                     @forelse ($clients as $client)
                         <tr>
-                            <td>{{ $client->id }}</td>
+                            <td>{{ $clients->firstItem() + $loop->index }}</td>
                             <td>{{ $client->name }}</td>
                             <td>{{ $client->phone }}</td>
                             <td>{{ $client->email ?: '-' }}</td>
                             <td>{{ $client->national_id ?: '-' }}</td>
                             <td>{{ $client->sales_count }}</td>
                             <td class="text-end">
-                                <a href="{{ route('clients.show', $client) }}" class="btn btn-outline-info btn-sm">بروفايل</a>
+                                <a href="{{ route('clients.show', [$project, $client]) }}" class="btn btn-outline-info btn-sm">بروفايل</a>
                             </td>
                         </tr>
                     @empty

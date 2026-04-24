@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Area;
+use App\Models\Property;
 use App\Models\Project;
 use App\Support\CurrentProject;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,12 +14,32 @@ use Illuminate\Validation\Rule;
 
 class AreaController extends Controller
 {
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
+        $filters = ListingFilters::fromRequest($request);
+        $query = Area::query()->withCount('properties');
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where('name', 'like', $like);
+        }
+        $filters->applyWhereDate($query, 'created_at');
+
+        $areaIds = (clone $query)->pluck('id');
+        $areaKpis = [
+            'count' => (clone $query)->count(),
+            'properties_sum' => $areaIds->isEmpty()
+                ? 0
+                : (int) Property::query()->whereIn('area_id', $areaIds)->count(),
+        ];
+
+        $areas = $query->orderBy('name')->paginate(15)->withQueryString();
+
         return view('areas.index', [
             'title' => 'المناطق | Mohaseb Aqary',
             'pageTitle' => 'المناطق',
-            'areas' => Area::query()->withCount('properties')->orderBy('name')->paginate(15),
+            'project' => $project,
+            'areaKpis' => $areaKpis,
+            'areas' => $areas,
             'modules' => $this->modules(),
         ]);
     }

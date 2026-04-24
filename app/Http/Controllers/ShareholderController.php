@@ -7,19 +7,40 @@ use App\Http\Requests\UpdateShareholderRequest;
 use App\Models\Project;
 use App\Models\Shareholder;
 use App\Services\ShareholderService;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class ShareholderController extends Controller
 {
     public function __construct(private readonly ShareholderService $shareholderService) {}
 
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
+        $filters = ListingFilters::fromRequest($request);
+        $query = Shareholder::query();
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where('name', 'like', $like);
+        }
+        $filters->applyWhereDate($query, 'created_at');
+
+        $shareholderKpis = [
+            'count' => (clone $query)->count(),
+            'total_investment' => (float) (clone $query)->sum('total_investment'),
+            'share_percentage' => (float) (clone $query)->sum('share_percentage'),
+            'profit_amount' => (float) (clone $query)->sum('profit_amount'),
+        ];
+
+        $shareholders = $query->latest()->paginate(10)->withQueryString();
+
         return view('shareholders.index', [
             'title' => 'المساهمين | Mohaseb Aqary',
             'pageTitle' => 'المساهمين',
-            'shareholders' => $this->shareholderService->paginate(10),
+            'project' => $project,
+            'shareholderKpis' => $shareholderKpis,
+            'shareholders' => $shareholders,
             'modules' => $this->modules(),
         ]);
     }

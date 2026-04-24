@@ -11,8 +11,11 @@ use App\Models\Property;
 use App\Models\Revenue;
 use App\Models\Sale;
 use App\Services\CashboxLedgerService;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class SaleController extends Controller
 {
@@ -20,14 +23,41 @@ class SaleController extends Controller
         private CashboxLedgerService $cashboxLedger,
     ) {}
 
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
+        $filters = ListingFilters::fromRequest($request);
+        $totalsQuery = Sale::query();
+        $this->applySaleListingFilters($totalsQuery, $filters);
+        $saleTotals = [
+            'total_sales' => (float) (clone $totalsQuery)->sum('sale_price'),
+            'total_down_payment' => (float) (clone $totalsQuery)->sum('down_payment'),
+        ];
+
+        $listQuery = Sale::query()->with(['property:id,name', 'client:id,name,phone']);
+        $this->applySaleListingFilters($listQuery, $filters);
+        $sales = $listQuery->latest()->paginate(15)->withQueryString();
+
         return view('sales.index', [
             'title' => 'المبيعات | Mohaseb Aqary',
             'pageTitle' => 'المبيعات',
-            'sales' => Sale::query()->with(['property:id,name', 'client:id,name,phone'])->latest()->paginate(15),
+            'project' => $project,
+            'saleTotals' => $saleTotals,
+            'sales' => $sales,
             'modules' => $this->modules(),
         ]);
+    }
+
+    private function applySaleListingFilters(Builder $query, ListingFilters $filters): void
+    {
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where(function ($w) use ($like): void {
+                $w->where('broker_name', 'like', $like)
+                    ->orWhereHas('client', fn ($c) => $c->where('name', 'like', $like)->orWhere('phone', 'like', $like))
+                    ->orWhereHas('property', fn ($p) => $p->where('name', 'like', $like));
+            });
+        }
+        $filters->applyWhereDate($query, 'sale_date');
     }
 
     public function create(): View

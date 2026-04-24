@@ -3,10 +3,15 @@
 @section('content')
     <x-partials.module-wireflow-header label="المصروفات" step="9" />
     <x-partials.module-kpis :items="[
-        ['label' => 'إجمالي المصروفات', 'value' => number_format((float) $expenses->sum('amount')) . ' ج.م'],
-        ['label' => 'عدد الحركات', 'value' => $expenses->total()],
-        ['label' => 'متوسط الحركة', 'value' => number_format((float) $expenses->avg('amount')) . ' ج.م'],
+        ['label' => 'إجمالي المصروفات', 'value' => number_format((float) ($expenseStats['sum_amount'] ?? 0), 2) . ' ج.م'],
+        ['label' => 'عدد الحركات', 'value' => (int) ($expenseStats['count'] ?? 0)],
+        ['label' => 'متوسط الحركة', 'value' => ($expenseStats['count'] ?? 0) > 0 ? number_format((float) ($expenseStats['avg_amount'] ?? 0), 2) . ' ج.م' : '—'],
     ]" />
+
+    <x-listing.filters
+        :placeholder="'فئة، وصف…'"
+        :help="'التصفية حسب تاريخ تسجيل المصروف.'"
+    />
 
     <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -23,12 +28,12 @@
                     <tbody>
                     @forelse ($expenses as $expense)
                         <tr>
-                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $expenses->firstItem() + $loop->index }}</td>
                             <td>{{ $expense->category }}</td>
                             <td>{{ number_format((float) $expense->amount, 2) }}</td>
                             <td>{{ $expense->description ?: '-' }}</td>
                             <td class="text-end">
-                                <form method="post" action="{{ route('expenses.destroy', $expense) }}" data-swal-confirm="{{ e('حذف المصروف؟') }}">
+                                <form method="post" action="{{ route('expenses.destroy', [$project, $expense]) }}" data-swal-confirm="{{ e('حذف المصروف؟') }}">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
                                 </form>

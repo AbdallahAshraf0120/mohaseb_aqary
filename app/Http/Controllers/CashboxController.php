@@ -5,18 +5,38 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Setting;
 use App\Models\TreasuryTransaction;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class CashboxController extends Controller
 {
-    public function index(Project $project): View
+    public function index(Project $project, Request $request): View
     {
+        $filters = ListingFilters::fromRequest($request);
         $opening = 0.0;
-        $treasuryIn = (float) TreasuryTransaction::query()->where('type', 'revenue')->sum('amount');
-        $treasuryOut = (float) TreasuryTransaction::query()->where('type', 'expense')->sum('amount');
+
+        $inQuery = TreasuryTransaction::query()->where('type', 'revenue');
+        $outQuery = TreasuryTransaction::query()->where('type', 'expense');
+        $filters->applyWhereDate($inQuery, 'created_at');
+        $filters->applyWhereDate($outQuery, 'created_at');
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $inQuery->where('description', 'like', $like);
+            $outQuery->where('description', 'like', $like);
+        }
+
+        $treasuryIn = (float) (clone $inQuery)->sum('amount');
+        $treasuryOut = (float) (clone $outQuery)->sum('amount');
         $currentBalance = $opening + $treasuryIn - $treasuryOut;
+
+        $txQuery = TreasuryTransaction::query()->latest();
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $txQuery->where('description', 'like', $like);
+        }
+        $filters->applyWhereDate($txQuery, 'created_at');
 
         $setting = Setting::query()->first();
         $currency = $setting?->currency ?? 'EGP';
@@ -30,7 +50,7 @@ class CashboxController extends Controller
             'revenuesTotal' => $treasuryIn,
             'expensesTotal' => $treasuryOut,
             'currentBalance' => $currentBalance,
-            'transactions' => TreasuryTransaction::query()->latest()->paginate(15),
+            'transactions' => $txQuery->paginate(15)->withQueryString(),
             'modules' => $this->modules(),
         ]);
     }

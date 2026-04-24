@@ -4,16 +4,38 @@ namespace App\Http\Controllers;
 
 use App\Models\Contract;
 use App\Models\Project;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 class ContractController extends Controller
 {
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
+        $filters = ListingFilters::fromRequest($request);
+        $query = Contract::query()->with(['client:id,name', 'property:id,name', 'sale:id,down_payment']);
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where(function ($w) use ($like): void {
+                $w->whereHas('client', fn ($c) => $c->where('name', 'like', $like)->orWhere('phone', 'like', $like))
+                    ->orWhereHas('property', fn ($p) => $p->where('name', 'like', $like));
+            });
+        }
+        $filters->applyWhereDate($query, 'created_at');
+
+        $forKpis = (clone $query)->get();
+        $contractKpis = [
+            'count' => $forKpis->count(),
+            'net_value' => (float) $forKpis->sum(static fn ($c) => max(0, (float) $c->total_price - (float) ($c->sale?->down_payment ?? 0))),
+            'remaining' => (float) $forKpis->sum(static fn ($c) => (float) $c->remaining_amount),
+        ];
+
         return view('contracts.index', [
             'title' => 'العقود | Mohaseb Aqary',
             'pageTitle' => 'العقود',
-            'contracts' => Contract::query()->with(['client:id,name', 'property:id,name', 'sale:id,down_payment'])->latest()->paginate(15),
+            'project' => $project,
+            'contractKpis' => $contractKpis,
+            'contracts' => $query->latest()->paginate(15)->withQueryString(),
             'modules' => $this->modules(),
         ]);
     }

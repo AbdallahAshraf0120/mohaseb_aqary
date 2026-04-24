@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Expense;
 use App\Models\Project;
 use App\Services\CashboxLedgerService;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,12 +16,31 @@ class ExpenseController extends Controller
         private CashboxLedgerService $cashboxLedger,
     ) {}
 
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
+        $filters = ListingFilters::fromRequest($request);
+        $query = Expense::query();
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where(function ($w) use ($like): void {
+                $w->where('category', 'like', $like)
+                    ->orWhere('description', 'like', $like);
+            });
+        }
+        $filters->applyWhereDate($query, 'created_at');
+
+        $expenseStats = [
+            'sum_amount' => (float) (clone $query)->sum('amount'),
+            'count' => (clone $query)->count(),
+            'avg_amount' => (float) (clone $query)->avg('amount'),
+        ];
+
         return view('expenses.index', [
             'title' => 'المصروفات | Mohaseb Aqary',
             'pageTitle' => 'المصروفات',
-            'expenses' => Expense::query()->latest()->paginate(15),
+            'project' => $project,
+            'expenseStats' => $expenseStats,
+            'expenses' => $query->latest()->paginate(15)->withQueryString(),
             'modules' => $this->modules(),
         ]);
     }

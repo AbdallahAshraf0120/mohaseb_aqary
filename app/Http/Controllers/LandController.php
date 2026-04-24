@@ -7,21 +7,42 @@ use App\Http\Requests\UpdateLandRequest;
 use App\Models\Area;
 use App\Models\Land;
 use App\Models\Project;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class LandController extends Controller
 {
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
+        $filters = ListingFilters::fromRequest($request);
+        $query = Land::query()
+            ->with('area:id,name')
+            ->withCount('properties');
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where(function ($w) use ($like): void {
+                $w->where('name', 'like', $like)
+                    ->orWhereHas('area', fn ($a) => $a->where('name', 'like', $like));
+            });
+        }
+        $filters->applyWhereDate($query, 'created_at');
+
+        $landIds = (clone $query)->pluck('id');
+        $landKpis = [
+            'count' => $landIds->count(),
+            'with_props' => $landIds->isEmpty()
+                ? 0
+                : (int) Land::query()->whereKey($landIds)->has('properties')->count(),
+        ];
+
         return view('lands.index', [
             'title' => 'الأراضي | Mohaseb Aqary',
             'pageTitle' => 'الأراضي',
-            'lands' => Land::query()
-                ->with('area:id,name')
-                ->withCount('properties')
-                ->latest()
-                ->paginate(15),
+            'project' => $project,
+            'landKpis' => $landKpis,
+            'lands' => $query->latest()->paginate(15)->withQueryString(),
             'modules' => $this->modules(),
         ]);
     }

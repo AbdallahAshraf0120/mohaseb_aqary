@@ -8,8 +8,11 @@ use App\Models\Contract;
 use App\Models\Project;
 use App\Models\Revenue;
 use App\Services\CashboxLedgerService;
+use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class RevenueController extends Controller
 {
@@ -17,14 +20,44 @@ class RevenueController extends Controller
         private CashboxLedgerService $cashboxLedger,
     ) {}
 
-    public function index(): View
+    public function index(Project $project, Request $request): View
     {
+        $filters = ListingFilters::fromRequest($request);
+        $totalsQuery = Revenue::query();
+        $this->applyRevenueListingFilters($totalsQuery, $filters);
+        $revenueStats = [
+            'sum_amount' => (float) (clone $totalsQuery)->sum('amount'),
+            'count' => (clone $totalsQuery)->count(),
+            'avg_amount' => (float) (clone $totalsQuery)->avg('amount'),
+        ];
+
+        $listQuery = Revenue::query()->with(['client:id,name', 'contract:id']);
+        $this->applyRevenueListingFilters($listQuery, $filters);
+        $revenues = $listQuery->latest()->paginate(15)->withQueryString();
+
         return view('revenues.index', [
             'title' => 'التحصيل | Mohaseb Aqary',
             'pageTitle' => 'التحصيل',
-            'revenues' => Revenue::query()->with(['client:id,name', 'contract:id'])->latest()->paginate(15),
+            'project' => $project,
+            'revenueStats' => $revenueStats,
+            'revenues' => $revenues,
             'modules' => $this->modules(),
         ]);
+    }
+
+    private function applyRevenueListingFilters(Builder $query, ListingFilters $filters): void
+    {
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where(function ($w) use ($like): void {
+                $w->where('notes', 'like', $like)
+                    ->orWhere('category', 'like', $like)
+                    ->orWhere('payment_method', 'like', $like)
+                    ->orWhere('source', 'like', $like)
+                    ->orWhereHas('client', fn ($c) => $c->where('name', 'like', $like));
+            });
+        }
+        $filters->applyWhereDate($query, 'paid_at');
     }
 
     public function create(): View
