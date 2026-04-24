@@ -27,6 +27,8 @@ class StoreSaleRequest extends FormRequest
             'installment_months' => ['nullable', 'integer', 'min:1', 'required_if:payment_type,installment'],
             'installment_schedule' => ['nullable', 'in:monthly,quarterly', 'required_if:payment_type,installment'],
             'installment_start_date' => ['nullable', 'date', 'required_if:payment_type,installment'],
+            // Built in prepareForValidation(); must be in rules so validated() includes it on store/update.
+            'installment_plan' => ['nullable', 'array', 'required_if:payment_type,installment'],
             'sale_date' => ['required', 'date'],
             'broker_name' => ['required', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
@@ -102,7 +104,7 @@ class StoreSaleRequest extends FormRequest
             }
 
             $modelName = (string) $this->input('apartment_model');
-            $ignoreSaleId = ($this->route('sale') instanceof Sale) ? (int) $this->route('sale')->getKey() : null;
+            $ignoreSaleId = $this->saleIdToIgnoreForDuplicateUnitCheck();
             $duplicateQuery = Sale::query()->withoutGlobalScope('project')
                 ->where('property_id', (int) $property->id)
                 ->where('floor_number', $floor)
@@ -128,6 +130,10 @@ class StoreSaleRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if ($this->has('apartment_model') && is_string($this->input('apartment_model'))) {
+            $this->merge(['apartment_model' => trim($this->input('apartment_model'))]);
+        }
+
         $isCash = $this->input('payment_type') === 'cash';
         $salePrice = (float) $this->input('sale_price', 0);
         $downPayment = $this->input('down_payment');
@@ -156,5 +162,25 @@ class StoreSaleRequest extends FormRequest
                 'monthly_installment' => $installmentAmount,
             ],
         ]);
+    }
+
+    /**
+     * On update, the route may expose the bound Sale or only its key (string) depending on pipeline timing.
+     */
+    protected function saleIdToIgnoreForDuplicateUnitCheck(): ?int
+    {
+        $sale = $this->route('sale');
+
+        if ($sale instanceof Sale) {
+            $key = $sale->getKey();
+
+            return is_numeric($key) ? (int) $key : null;
+        }
+
+        if (is_int($sale) || (is_string($sale) && ctype_digit($sale))) {
+            return (int) $sale;
+        }
+
+        return null;
     }
 }
