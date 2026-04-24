@@ -30,7 +30,10 @@ class Facing extends Model
             ['code' => 'corner', 'name' => 'ناصية', 'sort_order' => 20],
         ];
         foreach ($defaults as $row) {
-            static::query()->firstOrCreate(
+            // Must bypass BelongsToProject global scope: session "current" project may
+            // differ from $projectId (e.g. restoring a draft), so scoped SELECT would
+            // miss existing rows and duplicate-insert would hit the unique index.
+            static::withoutGlobalScope('project')->firstOrCreate(
                 [
                     'project_id' => $projectId,
                     'code' => $row['code'],
