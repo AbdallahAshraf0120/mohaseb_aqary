@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\Project;
+use App\Models\Revenue;
+use App\Models\Sale;
 use Illuminate\Contracts\View\View;
 
 class ClientController extends Controller
@@ -20,10 +22,34 @@ class ClientController extends Controller
 
     public function show(Project $project, Client $client): View
     {
+        $client->load([
+            'sales' => function ($query): void {
+                $query->orderByDesc('sale_date')
+                    ->orderByDesc('id')
+                    ->with([
+                        'property:id,name,mezzanine_floors',
+                        'contract.revenues' => function ($q): void {
+                            $q->orderBy('paid_at')->orderBy('id');
+                        },
+                    ]);
+            },
+        ]);
+
+        $sales = $client->sales;
+        $stats = [
+            'sales_count' => $sales->count(),
+            'total_sale_price' => round((float) $sales->sum(static fn (Sale $s) => (float) $s->sale_price), 2),
+            'total_down_payment' => round((float) $sales->sum(static fn (Sale $s) => (float) $s->down_payment), 2),
+            'total_remaining_contracts' => round((float) $sales->sum(static fn (Sale $s) => (float) ($s->contract?->remaining_amount ?? 0)), 2),
+            'total_collected_revenues' => round((float) Revenue::query()->where('client_id', $client->id)->sum('amount'), 2),
+        ];
+
         return view('clients.show', [
-            'title' => 'تفاصيل العميل | Mohaseb Aqary',
-            'pageTitle' => 'تفاصيل العميل',
-            'client' => $client->load(['sales.property:id,name']),
+            'title' => 'بروفايل العميل | Mohaseb Aqary',
+            'pageTitle' => 'بروفايل العميل',
+            'project' => $project,
+            'client' => $client,
+            'stats' => $stats,
             'modules' => $this->modules(),
         ]);
     }

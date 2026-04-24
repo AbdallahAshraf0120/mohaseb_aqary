@@ -36,7 +36,7 @@
                             <td>{{ $client->national_id ?: '-' }}</td>
                             <td>{{ $client->sales_count }}</td>
                             <td class="text-end">
-                                <a href="{{ route('clients.show', $client) }}" class="btn btn-outline-info btn-sm">عرض</a>
+                                <a href="{{ route('clients.show', $client) }}" class="btn btn-outline-info btn-sm">بروفايل</a>
                             </td>
                         </tr>
                     @empty
