@@ -55,10 +55,10 @@
                             <td>{{ $land->properties_count }}</td>
                             <td class="text-end">
                                 <a href="{{ route('lands.edit', $land) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
-                                <form method="post" action="{{ route('lands.destroy', $land) }}" class="d-inline">
+                                <form method="post" action="{{ route('lands.destroy', $land) }}" class="d-inline" data-swal-confirm="{{ e('هل تريد حذف الأرض؟') }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="btn btn-outline-danger btn-sm" onclick="return confirm('هل تريد حذف الأرض؟')">حذف</button>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
                                 </form>
                             </td>
                         </tr>

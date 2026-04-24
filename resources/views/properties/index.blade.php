@@ -54,11 +54,10 @@
                             <td class="text-end">
                                 <a href="{{ route('properties.show', $property) }}" class="btn btn-outline-info btn-sm">عرض</a>
                                 <a href="{{ route('properties.edit', $property) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
-                                <form action="{{ route('properties.destroy', $property) }}" method="post" class="d-inline">
+                                <form action="{{ route('properties.destroy', $property) }}" method="post" class="d-inline" data-swal-confirm="{{ e('هل تريد حذف هذا العقار؟') }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm"
-                                            onclick="return confirm('هل تريد حذف هذا العقار؟')">حذف</button>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
                                 </form>
                             </td>
                         </tr>

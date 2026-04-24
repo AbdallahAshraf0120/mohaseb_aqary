@@ -35,12 +35,12 @@
                                         <a href="{{ route('properties.index', $p) }}" class="btn btn-sm btn-primary">فتح لوحة التحكم</a>
                                         <a href="{{ route('properties.index', $p) }}" class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener">تبويب جديد</a>
                                         <a href="{{ route('projects.edit', $p) }}" class="btn btn-sm btn-outline-primary">تعديل</a>
-                                        <form method="post" action="{{ route('projects.draft', $p) }}" class="d-inline" onsubmit="return confirm('نقل المشروع إلى المسودة؟ سيختفي من الشريط الجانبي إلى أن تستعيده.');">
+                                        <form method="post" action="{{ route('projects.draft', $p) }}" class="d-inline" data-swal-confirm="{{ e('نقل المشروع إلى المسودة؟ سيختفي من الشريط الجانبي إلى أن تستعيده.') }}">
                                             @csrf
                                             <button type="submit" class="btn btn-sm btn-outline-warning">مسودة</button>
                                         </form>
                                         @if ($p->code !== 'default')
-                                            <form method="post" action="{{ route('projects.destroy', $p) }}" class="d-inline" onsubmit="return confirm('حذف المشروع نهائيًا مع كل المناطق والعقارات والعقود والبيانات المرتبطة؟ لا يمكن التراجع.');">
+                                            <form method="post" action="{{ route('projects.destroy', $p) }}" class="d-inline" data-swal-confirm="{{ e('حذف المشروع نهائيًا مع كل المناطق والعقارات والعقود والبيانات المرتبطة؟ لا يمكن التراجع.') }}">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
@@ -79,7 +79,7 @@
                                             <button type="submit" class="btn btn-sm btn-success">إرجاع للقائمة</button>
                                         </form>
                                         @if ($p->code !== 'default')
-                                            <form method="post" action="{{ route('projects.destroy', $p) }}" class="mb-0 d-inline" onsubmit="return confirm('حذف مشروع المسودة نهائيًا مع كل بياناته؟ لا يمكن التراجع.');">
+                                            <form method="post" action="{{ route('projects.destroy', $p) }}" class="mb-0 d-inline" data-swal-confirm="{{ e('حذف مشروع المسودة نهائيًا مع كل بياناته؟ لا يمكن التراجع.') }}">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>

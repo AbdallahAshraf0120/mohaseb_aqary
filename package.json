@@ -17,6 +17,7 @@
     "dependencies": {
         "@fortawesome/fontawesome-free": "^7.2.0",
         "admin-lte": "^4.0.0-rc7",
-        "bootstrap": "^5.3.8"
+        "bootstrap": "^5.3.8",
+        "sweetalert2": "^11.26.24"
     }
 }

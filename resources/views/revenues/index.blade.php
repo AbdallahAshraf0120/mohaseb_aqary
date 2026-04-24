@@ -42,10 +42,10 @@
                             <td class="text-end">
                                 <a href="{{ route('revenues.show', $revenue) }}" class="btn btn-outline-info btn-sm">عرض</a>
                                 <a href="{{ route('revenues.edit', $revenue) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
-                                <form action="{{ route('revenues.destroy', $revenue) }}" method="post" class="d-inline">
+                                <form action="{{ route('revenues.destroy', $revenue) }}" method="post" class="d-inline" data-swal-confirm="{{ e('حذف حركة التحصيل؟') }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('حذف حركة التحصيل؟')">حذف</button>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
                                 </form>
                             </td>
                         </tr>

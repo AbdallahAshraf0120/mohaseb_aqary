@@ -28,9 +28,9 @@
                             <td>{{ number_format((float) $expense->amount, 2) }}</td>
                             <td>{{ $expense->description ?: '-' }}</td>
                             <td class="text-end">
-                                <form method="post" action="{{ route('expenses.destroy', $expense) }}">
+                                <form method="post" action="{{ route('expenses.destroy', $expense) }}" data-swal-confirm="{{ e('حذف المصروف؟') }}">
                                     @csrf @method('DELETE')
-                                    <button class="btn btn-outline-danger btn-sm" onclick="return confirm('حذف المصروف؟')">حذف</button>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
                                 </form>
                             </td>
                         </tr>

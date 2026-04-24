@@ -31,10 +31,10 @@
                             <td>{{ $facing->sort_order }}</td>
                             <td class="text-end">
                                 <a href="{{ route('facings.edit', $facing) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
-                                <form method="post" action="{{ route('facings.destroy', $facing) }}" class="d-inline">
+                                <form method="post" action="{{ route('facings.destroy', $facing) }}" class="d-inline" data-swal-confirm="{{ e('حذف هذه الوجهة؟ قد تحتاج لتحديث النماذج التي تستخدم الرمز '.$facing->code.'.') }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('حذف هذه الوجهة؟ قد تحتاج لتحديث النماذج التي تستخدم الرمز {{ $facing->code }}.')">حذف</button>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
                                 </form>
                             </td>
                         </tr>

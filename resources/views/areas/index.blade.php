@@ -27,9 +27,9 @@
                             <td>{{ $area->properties_count }}</td>
                             <td class="text-end">
                                 <a href="{{ route('areas.edit', $area) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
-                                <form method="post" action="{{ route('areas.destroy', $area) }}" class="d-inline">
+                                <form method="post" action="{{ route('areas.destroy', $area) }}" class="d-inline" data-swal-confirm="{{ e('هل تريد حذف المنطقة؟') }}">
                                     @csrf @method('DELETE')
-                                    <button class="btn btn-outline-danger btn-sm" onclick="return confirm('هل تريد حذف المنطقة؟')">حذف</button>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
                                 </form>
                             </td>
                         </tr>

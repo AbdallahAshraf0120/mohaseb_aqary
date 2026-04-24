@@ -42,11 +42,10 @@
                             <td class="text-end">
                                 <a href="{{ route('shareholders.show', $shareholder) }}" class="btn btn-outline-info btn-sm">بروفايل</a>
                                 <a href="{{ route('shareholders.edit', $shareholder) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
-                                <form action="{{ route('shareholders.destroy', $shareholder) }}" method="post" class="d-inline">
+                                <form action="{{ route('shareholders.destroy', $shareholder) }}" method="post" class="d-inline" data-swal-confirm="{{ e('هل تريد حذف هذا المساهم؟') }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm"
-                                            onclick="return confirm('هل تريد حذف هذا المساهم؟')">حذف</button>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
                                 </form>
                             </td>
                         </tr>
