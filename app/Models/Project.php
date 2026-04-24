@@ -73,4 +73,9 @@ class Project extends Model
     {
         return $this->hasMany(Land::class);
     }
+
+    public function debts(): HasMany
+    {
+        return $this->hasMany(Debt::class);
+    }
 }

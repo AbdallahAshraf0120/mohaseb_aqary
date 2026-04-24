@@ -305,6 +305,9 @@
                 <a href="{{ route('revenues.create') }}" class="btn btn-outline-success">
                     <i class="fa-solid fa-money-bill-wave ms-1"></i> تحصيل
                 </a>
+                <a href="{{ route('debts.create', $project) }}" class="btn btn-outline-danger">
+                    <i class="fa-solid fa-file-invoice-dollar ms-1"></i> ذمة مورد
+                </a>
                 <a href="{{ route('clients.index') }}" class="btn btn-outline-secondary">
                     <i class="fa-solid fa-users ms-1"></i> العملاء
                 </a>

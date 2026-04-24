@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreDebtRequest;
+use App\Http\Requests\UpdateDebtRequest;
+use App\Models\Client;
 use App\Models\Debt;
 use App\Models\Project;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class DebtController extends Controller
 {
@@ -38,6 +43,90 @@ class DebtController extends Controller
             'debts' => $query->latest()->paginate(15)->withQueryString(),
             'modules' => $this->modules(),
         ]);
+    }
+
+    public function create(Project $project): View
+    {
+        return view('debts.create', [
+            'title' => 'إضافة ذمة دائنة | Mohaseb Aqary',
+            'pageTitle' => 'إضافة ذمة دائنة',
+            'project' => $project,
+            'debt' => new Debt,
+            'modules' => $this->modules(),
+        ]);
+    }
+
+    public function store(Project $project, StoreDebtRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+        $payload = $this->normalizedDebtPayload($project, $data);
+
+        Debt::query()->create($payload);
+
+        return redirect()->route('debts.index', $project)->with('success', 'تم تسجيل الذمة الدائنة بنجاح.');
+    }
+
+    public function edit(Project $project, Debt $debt): View
+    {
+        return view('debts.edit', [
+            'title' => 'تعديل ذمة دائنة | Mohaseb Aqary',
+            'pageTitle' => 'تعديل ذمة دائنة',
+            'project' => $project,
+            'debt' => $debt,
+            'modules' => $this->modules(),
+        ]);
+    }
+
+    public function update(Project $project, Debt $debt, UpdateDebtRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+        $payload = $this->normalizedDebtPayload($project, $data, $debt);
+
+        $debt->update($payload);
+
+        return redirect()->route('debts.index', $project)->with('success', 'تم تحديث الذمة الدائنة بنجاح.');
+    }
+
+    public function destroy(Project $project, Debt $debt): RedirectResponse
+    {
+        $debt->delete();
+
+        return redirect()->route('debts.index', $project)->with('success', 'تم حذف سجل الذمة الدائنة.');
+    }
+
+    /**
+     * @param  array{creditor_name: string, purchase_description?: string|null, total_amount: float|int|string, paid_amount?: float|int|string|null}  $data
+     * @return array{project_id: int, client_id: int|null, creditor_name: string, purchase_description: ?string, total_amount: float, paid_amount: float, remaining_amount: float, status: string}
+     */
+    private function normalizedDebtPayload(Project $project, array $data, ?Debt $existing = null): array
+    {
+        $total = round((float) $data['total_amount'], 2);
+        $paid = round((float) ($data['paid_amount'] ?? 0), 2);
+        $paid = min($paid, $total);
+        $remaining = round(max(0.0, $total - $paid), 2);
+        $status = $remaining > 0.01 ? 'open' : 'closed';
+
+        $clientId = $existing?->client_id;
+        if ($clientId === null && Schema::getConnection()->getDriverName() !== 'mysql') {
+            $clientId = Client::query()->where('project_id', $project->id)->orderBy('id')->value('id');
+        }
+
+        $desc = $data['purchase_description'] ?? null;
+        if (is_string($desc)) {
+            $desc = trim($desc);
+        }
+        $desc = $desc === '' || $desc === null ? null : (string) $desc;
+
+        return [
+            'project_id' => (int) $project->id,
+            'client_id' => $clientId,
+            'creditor_name' => (string) $data['creditor_name'],
+            'purchase_description' => $desc,
+            'total_amount' => $total,
+            'paid_amount' => $paid,
+            'remaining_amount' => $remaining,
+            'status' => $status,
+        ];
     }
 
     private function modules(): array
