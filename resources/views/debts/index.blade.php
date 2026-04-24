@@ -8,7 +8,7 @@
         ['label' => 'المتبقي', 'value' => number_format((float) $debts->sum('remaining_amount')) . ' ج.م'],
     ]" />
 
-    <div class="card">
+    <div class="card app-surface mb-4">
         <div class="card-header"><h5 class="mb-0">سجل المديونيات</h5></div>
         <div class="card-body">
             <div class="table-responsive">

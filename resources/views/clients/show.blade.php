@@ -10,23 +10,40 @@
         ['label' => 'متبقي على العقود', 'value' => number_format($stats['total_remaining_contracts'], 2) . ' ج.م'],
     ]" />
 
-    <div class="card mb-4">
+    <div class="card app-surface mb-4">
         <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <h5 class="mb-0">بيانات العميل</h5>
+            <div>
+                <div class="text-body-secondary small mb-1">عميل</div>
+                <h5 class="mb-0">{{ $client->name }}</h5>
+            </div>
             <a href="{{ route('clients.index') }}" class="btn btn-outline-secondary btn-sm">رجوع للقائمة</a>
         </div>
         <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6"><strong>الاسم:</strong> {{ $client->name }}</div>
-                <div class="col-md-6"><strong>الهاتف:</strong> {{ $client->phone ?: '—' }}</div>
-                <div class="col-md-6"><strong>البريد:</strong> {{ $client->email ?: '—' }}</div>
-                <div class="col-md-6"><strong>الرقم القومي:</strong> {{ $client->national_id ?: '—' }}</div>
-                <div class="col-md-6"><strong>تاريخ التسجيل:</strong> {{ $client->created_at?->format('Y-m-d H:i') ?? '—' }}</div>
+            <div class="rounded-3 border bg-body-tertiary bg-opacity-50 p-3">
+                <h6 class="small text-uppercase text-body-secondary fw-semibold mb-3 pb-2 border-bottom border-secondary-subtle">بيانات التواصل</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="text-muted small mb-1">الهاتف</div>
+                        <div class="fw-medium">{{ $client->phone ?: '—' }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small mb-1">البريد</div>
+                        <div class="fw-medium">{{ $client->email ?: '—' }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small mb-1">الرقم القومي</div>
+                        <div class="font-monospace">{{ $client->national_id ?: '—' }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small mb-1">تاريخ التسجيل</div>
+                        <div class="font-monospace">{{ $client->created_at?->format('Y-m-d H:i') ?? '—' }}</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="card">
+    <div class="card app-surface mb-4">
         <div class="card-header">
             <h5 class="mb-0">المبيعات والأقساط والعقود</h5>
         </div>
@@ -58,7 +75,7 @@
                     $revenues = $contract?->revenues ?? collect();
                     $paidFromRevenues = (float) $revenues->sum(fn ($r) => (float) $r->amount);
                 @endphp
-                <div class="border rounded mb-3 overflow-hidden">
+                <div class="rounded-3 border shadow-sm mb-3 overflow-hidden">
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 py-2 bg-body-secondary border-bottom">
                         <div>
                             <span class="fw-semibold">بيعة #{{ $sale->id }}</span>

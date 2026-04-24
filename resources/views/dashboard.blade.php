@@ -157,7 +157,7 @@
 
     <div class="row g-3">
         <div class="col-lg-6">
-            <div class="card shadow-sm">
+            <div class="card app-surface h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span class="fw-semibold">آخر المبيعات</span>
                     <a href="{{ route('sales.create') }}" class="btn btn-sm btn-primary">تسجيل بيعة</a>
@@ -194,7 +194,7 @@
             </div>
         </div>
         <div class="col-lg-6">
-            <div class="card shadow-sm">
+            <div class="card app-surface h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span class="fw-semibold">آخر التحصيلات</span>
                     <a href="{{ route('revenues.create') }}" class="btn btn-sm btn-success">تحصيل دفعة</a>

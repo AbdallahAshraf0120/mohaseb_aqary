@@ -9,7 +9,7 @@
         ['label' => 'الأرباح', 'value' => number_format((float) $shareholders->sum('profit_amount')) . ' ج.م'],
     ]" />
 
-    <div class="card">
+    <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">قائمة المساهمين</h5>
             <a href="{{ route('shareholders.create') }}" class="btn btn-primary btn-sm">إضافة مساهم</a>

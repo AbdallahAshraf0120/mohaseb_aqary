@@ -14,7 +14,7 @@
         ['label' => 'المتبقي', 'value' => number_format((float) $contracts->sum('remaining_amount')) . ' ج.م'],
     ]" />
 
-    <div class="card">
+    <div class="card app-surface mb-4">
         <div class="card-header">
             <h5 class="mb-0">قائمة العقود</h5>
         </div>

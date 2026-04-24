@@ -21,7 +21,7 @@
 
     <div class="row g-3 mb-3">
         <div class="col-lg-8">
-            <div class="card h-100">
+            <div class="card app-surface h-100">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">البيانات الأساسية</h5>
                     <div class="d-flex gap-2">
@@ -61,7 +61,7 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card h-100 border-secondary-subtle">
+            <div class="card app-surface h-100 border-secondary-subtle">
                 <div class="card-header"><h6 class="mb-0">ملحوظة</h6></div>
                 <div class="card-body small text-muted">
                     جدول «المشاريع» يعرض كل عقار يظهر فيه هذا المساهم ضمن <strong>توزيع المساهمين</strong> على العقار، مع النسبة المحفوظة لكل مشروع على حدة.
@@ -70,7 +70,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card app-surface mb-4">
         <div class="card-header">
             <h5 class="mb-0">المشاريع / العقارات التي يشارك فيها</h5>
         </div>
@@ -91,10 +91,7 @@
                     </thead>
                     <tbody>
                     @forelse ($participations as $item)
-                        @php
-                            /** @var \App\Models\Property $p */
-                            $p = $item->property;
-                        @endphp
+                        @php($p = $item->property)
                         <tr>
                             <td>{{ $loop->iteration }}</td>
                             <td class="fw-medium">{{ $p->name }}</td>

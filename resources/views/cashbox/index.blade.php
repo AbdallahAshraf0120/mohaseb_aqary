@@ -11,7 +11,7 @@
 
     <div class="row g-3">
         <div class="col-lg-8">
-            <div class="card">
+            <div class="card app-surface mb-4">
                 <div class="card-header"><h5 class="mb-0">حركات الصندوق</h5></div>
                 <div class="card-body">
                     @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
@@ -36,7 +36,7 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card">
+            <div class="card app-surface mb-4">
                 <div class="card-header"><h5 class="mb-0">حركة جديدة</h5></div>
                 <div class="card-body">
                     <form method="post" action="{{ route('cashbox.store') }}">

@@ -3,7 +3,7 @@
 @section('content')
     <div class="row justify-content-center">
         <div class="col-lg-6">
-            <div class="card">
+            <div class="card app-surface mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">تعديل المشروع</h5>
                     <a href="{{ route('projects.index') }}" class="btn btn-sm btn-outline-secondary">رجوع</a>

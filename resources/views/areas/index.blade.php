@@ -7,7 +7,7 @@
         ['label' => 'عقارات مرتبطة', 'value' => $areas->sum('properties_count')],
     ]" />
 
-    <div class="card">
+    <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">قائمة المناطق</h5>
             <a href="{{ route('areas.create') }}" class="btn btn-primary btn-sm">إضافة منطقة</a>

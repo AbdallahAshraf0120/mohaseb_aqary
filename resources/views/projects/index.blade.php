@@ -10,7 +10,7 @@
 
     <div class="row">
         <div class="col-lg-8">
-            <div class="card mb-4">
+            <div class="card app-surface mb-4">
                 <div class="card-header">
                     <h5 class="card-title mb-0">المشاريع المعروضة (تظهر في الشريط الجانبي)</h5>
                 </div>
@@ -54,7 +54,7 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card app-surface mb-4">
                 <div class="card-header">
                     <h5 class="card-title mb-0">مشاريع في المسودة</h5>
                 </div>
@@ -94,7 +94,7 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card">
+            <div class="card app-surface mb-4">
                 <div class="card-header">
                     <h5 class="card-title mb-0">مشروع جديد</h5>
                 </div>

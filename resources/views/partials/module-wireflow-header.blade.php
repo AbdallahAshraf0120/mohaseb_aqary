@@ -9,7 +9,7 @@
 
 <div class="row mb-3">
     <div class="col-12">
-        <div class="card">
+        <div class="card app-surface mb-4">
             <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
                     <h4 class="mb-1">{{ $label }}</h4>

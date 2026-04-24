@@ -8,7 +8,7 @@
         ['label' => 'متوسط التحصيل', 'value' => number_format((float) $revenues->avg('amount')) . ' ج.م'],
     ]" />
 
-    <div class="card">
+    <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">سجل التحصيل</h5>
             <a href="{{ route('revenues.create') }}" class="btn btn-primary btn-sm">تحصيل دفعة</a>

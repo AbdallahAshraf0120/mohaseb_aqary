@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="card">
+    <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">تعديل الأرض</h5>
             <a href="{{ route('lands.index') }}" class="btn btn-outline-secondary btn-sm">رجوع</a>

@@ -8,7 +8,7 @@
         ['label' => 'متوسط الحركة', 'value' => number_format((float) $expenses->avg('amount')) . ' ج.م'],
     ]" />
 
-    <div class="card">
+    <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">سجل المصروفات</h5>
             <a href="{{ route('expenses.create') }}" class="btn btn-primary btn-sm">إضافة مصروف</a>

@@ -9,7 +9,7 @@
 
     <div class="row mb-3">
         <div class="col-12">
-            <div class="card">
+            <div class="card app-surface mb-4">
                 <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <div>
                         <h4 class="mb-1">المبيعات</h4>
@@ -53,7 +53,7 @@
 
     <div class="row g-3">
         <div class="col-lg-8">
-            <div class="card h-100">
+            <div class="card app-surface h-100">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">بيانات المبيعات</h5>
                     <div class="d-flex flex-wrap gap-2">
@@ -109,7 +109,7 @@
         </div>
 
         <div class="col-lg-4">
-            <div class="card h-100">
+            <div class="card app-surface h-100">
                 <div class="card-header">
                     <h5 class="mb-0">اجراءات سريعة</h5>
                 </div>

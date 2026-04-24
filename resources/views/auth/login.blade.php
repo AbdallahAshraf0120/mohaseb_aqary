@@ -13,7 +13,7 @@
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-5 col-lg-4">
-            <div class="card shadow-sm mt-4">
+            <div class="card app-surface mt-4 mb-4">
                 <div class="card-body p-4">
                     <h1 class="h4 mb-3 text-center">Mohaseb Aqary</h1>
                     <p class="text-muted small text-center mb-4">تسجيل الدخول إلى النظام</p>

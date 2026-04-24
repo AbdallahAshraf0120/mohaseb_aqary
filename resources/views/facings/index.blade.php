@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="card">
+    <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="mb-0">الوجهات (لنماذج الشقق)</h5>
             <a href="{{ route('facings.create') }}" class="btn btn-primary btn-sm">إضافة وجهة</a>

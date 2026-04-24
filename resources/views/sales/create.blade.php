@@ -3,7 +3,7 @@
 @section('content')
     <div class="row mb-3">
         <div class="col-12">
-            <div class="card">
+            <div class="card app-surface mb-4">
                 <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <div>
                         <h4 class="mb-1">تسجيل بيع</h4>
@@ -20,7 +20,7 @@
 
     <div class="row g-3">
         <div class="col-lg-8">
-            <div class="card h-100">
+            <div class="card app-surface h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">بيانات البيعة</h5>
                     <a href="{{ route('sales.index') }}" class="btn btn-outline-secondary btn-sm">رجوع</a>
@@ -36,7 +36,7 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card h-100">
+            <div class="card app-surface h-100">
                 <div class="card-header">
                     <h5 class="mb-0">اجراءات سريعة</h5>
                 </div>

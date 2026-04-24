@@ -128,8 +128,8 @@
     </div>
 
     <div class="col-12">
-        <div class="card border">
-            <div class="card-header py-2"><strong>بيانات الأرض ومصاريف البناء</strong></div>
+        <div class="card border-secondary-subtle shadow-sm rounded-3 mb-3 overflow-hidden">
+            <div class="card-header py-2 bg-body-secondary border-0"><strong>بيانات الأرض ومصاريف البناء</strong></div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-4">
@@ -236,8 +236,8 @@
     </div>
 
     <div class="col-12">
-        <div class="card border">
-            <div class="card-header py-2"><strong>اختيار الأدوار المسجلة بالعقار</strong></div>
+        <div class="card border-secondary-subtle shadow-sm rounded-3 mb-3 overflow-hidden">
+            <div class="card-header py-2 bg-body-secondary border-0"><strong>اختيار الأدوار المسجلة بالعقار</strong></div>
             <div class="card-body">
                 <p class="text-muted small mb-2">حدد الأدوار التي تملكها/ستسجلها (مثال: من 12 دور تختار 6 أدوار فقط). إذا كان لنفس الرقم ميزان في الجدول أدناه، يُعرض هنا <strong>دور … (سكني)</strong> لتمييزه عن <strong>دور … (ميزان)</strong>؛ وإلا يظهر رقم الدور فقط (مثل الدور الأول العادي).</p>
                 <div class="d-flex flex-wrap gap-2" id="registered-floors-box"></div>
@@ -246,8 +246,8 @@
     </div>
 
     <div class="col-12">
-        <div class="card border">
-            <div class="card-header py-2"><strong>أدوار مشاعة في العقار</strong></div>
+        <div class="card border-secondary-subtle shadow-sm rounded-3 mb-3 overflow-hidden">
+            <div class="card-header py-2 bg-body-secondary border-0"><strong>أدوار مشاعة في العقار</strong></div>
             <div class="card-body">
                 <p class="text-muted small mb-2">
                     حدّد أي دور من أدوار البرج (1 … إجمالي الأدوار) يكون <strong>مشاعًا</strong>، سواء كان ضمن الأدوار المسجلة أو ضمن الميزان.
@@ -271,8 +271,8 @@
     </div>
 
     <div class="col-12">
-        <div class="card border">
-            <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <div class="card border-secondary-subtle shadow-sm rounded-3 mb-3 overflow-hidden">
+            <div class="card-header d-flex justify-content-between align-items-center py-2 bg-body-secondary border-0">
                 <strong>أدوار الميزان (أكثر من ميزان)</strong>
                 <button type="button" class="btn btn-outline-primary btn-sm" id="add-mezzanine-row">إضافة ميزان</button>
             </div>
@@ -309,8 +309,8 @@
     </div>
 
     <div class="col-12">
-        <div class="card border">
-            <div class="card-header py-2"><strong>نسبة كل مساهم في العقار</strong></div>
+        <div class="card border-secondary-subtle shadow-sm rounded-3 mb-3 overflow-hidden">
+            <div class="card-header py-2 bg-body-secondary border-0"><strong>نسبة كل مساهم في العقار</strong></div>
             <div class="card-body">
                 <p class="small text-muted border rounded px-2 py-2 bg-body-secondary mb-3">
                     النسب هنا تخص <strong>حصة المساهمين</strong> من العقار. للأدوار المشاعة <strong>مع شريك مذكور</strong>،
@@ -333,8 +333,8 @@
     </div>
 
     <div class="col-12">
-        <div class="card border">
-            <div class="card-header d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
+        <div class="card border-secondary-subtle shadow-sm rounded-3 mb-3 overflow-hidden">
+            <div class="card-header d-flex justify-content-between align-items-center py-2 flex-wrap gap-2 bg-body-secondary border-0">
                 <strong>نماذج الشقق (المساحة = نموذج)</strong>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <a href="{{ route('facings.index') }}" class="btn btn-outline-secondary btn-sm">إدارة الوجهات</a>

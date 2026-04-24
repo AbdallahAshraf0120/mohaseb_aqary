@@ -1,3 +1,32 @@
 @import 'bootstrap/dist/css/bootstrap.min.css';
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 @import 'admin-lte/dist/css/adminlte.min.css';
+
+/* Shell for list/form/detail pages — matches refined sales/revenues/contracts screens */
+.app-surface {
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: var(--bs-box-shadow-sm);
+    overflow: hidden;
+}
+
+.app-surface > .card-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    background-color: var(--bs-secondary-bg);
+    border-bottom: 0;
+    padding: 0.875rem 1.25rem;
+}
+
+.app-surface > .card-header h5,
+.app-surface > .card-header h6,
+.app-surface > .card-header .card-title {
+    font-weight: 600;
+}
+
+.app-surface > .card-body:not(.p-0) {
+    padding: 1.5rem;
+}

@@ -8,7 +8,7 @@
         ['label' => 'إجمالي عمليات البيع', 'value' => $clients->sum('sales_count')],
     ]" />
 
-    <div class="card">
+    <div class="card app-surface mb-4">
         <div class="card-header">
             <h5 class="mb-0">قائمة العملاء</h5>
         </div>

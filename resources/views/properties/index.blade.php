@@ -9,7 +9,7 @@
         ['label' => 'أنواع عقارات', 'value' => $properties->pluck('property_type')->filter()->unique()->count()],
     ]" />
 
-    <div class="card">
+    <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">قائمة العقارات</h5>
             <a href="{{ route('properties.create') }}" class="btn btn-primary btn-sm">إضافة عقار</a>
