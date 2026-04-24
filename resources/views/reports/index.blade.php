@@ -12,9 +12,11 @@
             <h2 class="h4 fw-semibold mb-1">تقارير المشروع</h2>
             <p class="text-body-secondary small mb-0">{{ $project->name }} — ملخص مالي وتشغيلي حسب الفترة والبحث.</p>
         </div>
-        <a href="{{ route('reports.export', request()->query()) }}" class="btn btn-success btn-sm">
-            <i class="fa-solid fa-file-csv ms-1"></i> تصدير CSV
-        </a>
+        @can('reports.export')
+            <a href="{{ route('reports.export', request()->query()) }}" class="btn btn-success btn-sm">
+                <i class="fa-solid fa-file-csv ms-1"></i> تصدير CSV
+            </a>
+        @endcan
     </div>
 
     <x-listing.filters

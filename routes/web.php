@@ -19,6 +19,8 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\ShareholderController;
+use App\Http\Controllers\UserController;
+use App\Http\Middleware\AuthorizeRoutePermission;
 use App\Http\Middleware\SyncProjectFromRoute;
 use App\Models\Project;
 use Illuminate\Support\Facades\Route;
@@ -48,28 +50,32 @@ Route::middleware('guest')->group(function (): void {
     Route::post('login', [LoginController::class, 'store']);
 });
 
-Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
-
 Route::middleware('auth')->group(function (): void {
-    Route::get('/', function () {
-        $pid = session('current_project_id') ?? Project::query()->listed()->orderBy('id')->value('id');
-        if ($pid === null) {
-            return redirect()->route('projects.index');
-        }
+    Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
 
-        return redirect()->route('properties.index', ['project' => $pid]);
-    })->name('home');
+    Route::middleware(AuthorizeRoutePermission::class)->group(function (): void {
+        Route::get('/', function () {
+            $pid = session('current_project_id') ?? Project::query()->listed()->orderBy('id')->value('id');
+            if ($pid === null) {
+                return redirect()->route('projects.index');
+            }
 
-    Route::get('projects', [ProjectController::class, 'index'])->name('projects.index');
-    Route::post('projects', [ProjectController::class, 'store'])->name('projects.store');
-    Route::get('projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
-    Route::put('projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
-    Route::delete('projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
-    Route::post('projects/{managedProject}/draft', [ProjectController::class, 'toDraft'])->name('projects.draft');
-    Route::post('projects/{draftProject}/restore', [ProjectController::class, 'restore'])->name('projects.restore');
+            return redirect()->route('properties.index', ['project' => $pid]);
+        })->name('home');
+
+        Route::get('projects', [ProjectController::class, 'index'])->name('projects.index');
+        Route::post('projects', [ProjectController::class, 'store'])->name('projects.store');
+        Route::get('projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
+        Route::put('projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
+        Route::delete('projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
+        Route::post('projects/{managedProject}/draft', [ProjectController::class, 'toDraft'])->name('projects.draft');
+        Route::post('projects/{draftProject}/restore', [ProjectController::class, 'restore'])->name('projects.restore');
+
+        Route::resource('users', UserController::class)->except(['show']);
+    });
 });
 
-Route::middleware(['auth', SyncProjectFromRoute::class])
+Route::middleware(['auth', AuthorizeRoutePermission::class, SyncProjectFromRoute::class])
     ->prefix('{project}')
     ->scopeBindings()
     ->group(function (): void {

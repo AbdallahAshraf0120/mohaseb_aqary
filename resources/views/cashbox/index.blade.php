@@ -65,7 +65,7 @@
     </div>
 
     <div class="row g-3 align-items-start">
-        <div class="col-lg-8">
+        <div class="@can('cashbox.manage') col-lg-8 @else col-12 @endcan">
             <div class="card app-surface mb-4">
                 <div class="card-header border-0 bg-transparent pt-4 px-4 pb-0">
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -136,53 +136,55 @@
             </div>
         </div>
 
-        <div class="col-lg-4">
-            <div class="card app-surface mb-4 sticky-lg-top" style="top: 5rem;">
-                <div class="card-header border-0 bg-transparent pt-4 px-4 pb-0">
-                    <h5 class="mb-0 fw-semibold">تسجيل حركة يدوية</h5>
-                    <p class="small text-body-secondary mb-0 mt-1">قبض أو صرف على صندوق المشروع</p>
-                </div>
-                <div class="card-body">
-                    <form method="post" action="{{ route('cashbox.store', [$project]) }}">
-                        @csrf
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">نوع الحركة</label>
-                            <select name="type" class="form-select @error('type') is-invalid @enderror" required>
-                                <option value="revenue" @selected(old('type', 'revenue') === 'revenue')>قبض (وارد للصندوق)</option>
-                                <option value="expense" @selected(old('type') === 'expense')>صرف (صادر من الصندوق)</option>
-                            </select>
-                            @error('type')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold" for="cashbox-amount">المبلغ</label>
-                            <div class="input-group">
-                                <input type="number" step="0.01" min="0.01" name="amount" id="cashbox-amount"
-                                       class="form-control font-monospace @error('amount') is-invalid @enderror"
-                                       value="{{ old('amount') }}" placeholder="0.00" required>
-                                <span class="input-group-text">{{ $currencyLabel }}</span>
+        @can('cashbox.manage')
+            <div class="col-lg-4">
+                <div class="card app-surface mb-4 sticky-lg-top" style="top: 5rem;">
+                    <div class="card-header border-0 bg-transparent pt-4 px-4 pb-0">
+                        <h5 class="mb-0 fw-semibold">تسجيل حركة يدوية</h5>
+                        <p class="small text-body-secondary mb-0 mt-1">قبض أو صرف على صندوق المشروع</p>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{{ route('cashbox.store', [$project]) }}">
+                            @csrf
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">نوع الحركة</label>
+                                <select name="type" class="form-select @error('type') is-invalid @enderror" required>
+                                    <option value="revenue" @selected(old('type', 'revenue') === 'revenue')>قبض (وارد للصندوق)</option>
+                                    <option value="expense" @selected(old('type') === 'expense')>صرف (صادر من الصندوق)</option>
+                                </select>
+                                @error('type')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
                             </div>
-                            @error('amount')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
-                            <div class="form-text">أقل قيمة مسموحة 0.01 {{ $currencyLabel }}</div>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold" for="cashbox-desc">الوصف <span class="text-muted fw-normal">(اختياري)</span></label>
-                            <textarea name="description" id="cashbox-desc" rows="3" maxlength="500"
-                                      class="form-control @error('description') is-invalid @enderror"
-                                      placeholder="مثال: سداد نقدي — توريد بنكي">{{ old('description') }}</textarea>
-                            @error('description')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 py-2">
-                            <i class="fa-solid fa-floppy-disk ms-1"></i> حفظ الحركة
-                        </button>
-                    </form>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold" for="cashbox-amount">المبلغ</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.01" min="0.01" name="amount" id="cashbox-amount"
+                                           class="form-control font-monospace @error('amount') is-invalid @enderror"
+                                           value="{{ old('amount') }}" placeholder="0.00" required>
+                                    <span class="input-group-text">{{ $currencyLabel }}</span>
+                                </div>
+                                @error('amount')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">أقل قيمة مسموحة 0.01 {{ $currencyLabel }}</div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold" for="cashbox-desc">الوصف <span class="text-muted fw-normal">(اختياري)</span></label>
+                                <textarea name="description" id="cashbox-desc" rows="3" maxlength="500"
+                                          class="form-control @error('description') is-invalid @enderror"
+                                          placeholder="مثال: سداد نقدي — توريد بنكي">{{ old('description') }}</textarea>
+                                @error('description')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 py-2">
+                                <i class="fa-solid fa-floppy-disk ms-1"></i> حفظ الحركة
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
-        </div>
+        @endcan
     </div>
 @endsection

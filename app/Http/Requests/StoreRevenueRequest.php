@@ -45,6 +45,38 @@ class StoreRevenueRequest extends FormRequest
             if ($amount > (float) $contract->remaining_amount) {
                 $validator->errors()->add('amount', 'قيمة التحصيل أكبر من المتبقي في العقد.');
             }
+
+            if ($validator->errors()->has('amount')) {
+                return;
+            }
+
+            $contract->loadMissing('sale');
+            $sale = $contract->sale;
+            if ($sale === null) {
+                return;
+            }
+
+            $down = round((float) ($sale->down_payment ?? 0), 2);
+            if ($down < 0.01) {
+                return;
+            }
+
+            $revenuesQuery = Revenue::query()->where('contract_id', $contract->id);
+            $routeRevenue = $this->route('revenue');
+            if ($routeRevenue instanceof Revenue) {
+                $revenuesQuery->where('id', '!=', (int) $routeRevenue->getKey());
+            }
+
+            if ($revenuesQuery->count() > 0) {
+                return;
+            }
+
+            if (abs($amount - $down) < 0.02) {
+                $validator->errors()->add(
+                    'amount',
+                    'المبلغ يطابق المقدم المسجّل من البيعة وهذا أوّل تحصيل على العقد؛ لا تُسجَّل المقدم مرة أخرى كتحصيل. سجّل الأقساط بعد المقدم فقط.'
+                );
+            }
         });
     }
 

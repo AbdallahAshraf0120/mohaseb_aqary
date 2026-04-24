@@ -9,7 +9,7 @@
     @endif
 
     <div class="row">
-        <div class="col-lg-8">
+        <div class="@can('projects.manage') col-lg-8 @else col-12 @endcan">
             <div class="card app-surface mb-4">
                 <div class="card-header">
                     <h5 class="card-title mb-0">المشاريع المعروضة (تظهر في الشريط الجانبي)</h5>
@@ -34,18 +34,20 @@
                                         @endif
                                         <a href="{{ route('properties.index', $p) }}" class="btn btn-sm btn-primary">فتح لوحة التحكم</a>
                                         <a href="{{ route('properties.index', $p) }}" class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener">تبويب جديد</a>
-                                        <a href="{{ route('projects.edit', $p) }}" class="btn btn-sm btn-outline-primary">تعديل</a>
-                                        <form method="post" action="{{ route('projects.draft', $p) }}" class="d-inline" data-swal-confirm="{{ e('نقل المشروع إلى المسودة؟ سيختفي من الشريط الجانبي إلى أن تستعيده.') }}">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-outline-warning">مسودة</button>
-                                        </form>
-                                        @if ($p->code !== 'default')
-                                            <form method="post" action="{{ route('projects.destroy', $p) }}" class="d-inline" data-swal-confirm="{{ e('حذف المشروع نهائيًا مع كل المناطق والعقارات والعقود والبيانات المرتبطة؟ لا يمكن التراجع.') }}">
+                                        @can('projects.manage')
+                                            <a href="{{ route('projects.edit', $p) }}" class="btn btn-sm btn-outline-primary">تعديل</a>
+                                            <form method="post" action="{{ route('projects.draft', $p) }}" class="d-inline" data-swal-confirm="{{ e('نقل المشروع إلى المسودة؟ سيختفي من الشريط الجانبي إلى أن تستعيده.') }}">
                                                 @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                                <button type="submit" class="btn btn-sm btn-outline-warning">مسودة</button>
                                             </form>
-                                        @endif
+                                            @if ($p->code !== 'default')
+                                                <form method="post" action="{{ route('projects.destroy', $p) }}" class="d-inline" data-swal-confirm="{{ e('حذف المشروع نهائيًا مع كل المناطق والعقارات والعقود والبيانات المرتبطة؟ لا يمكن التراجع.') }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                                </form>
+                                            @endif
+                                        @endcan
                                     </div>
                                 </li>
                             @endforeach
@@ -73,18 +75,20 @@
                                         <span class="badge text-bg-secondary ms-2">مسودة</span>
                                     </div>
                                     <div class="d-flex flex-wrap gap-1 align-items-center">
-                                        <a href="{{ route('projects.edit', $p) }}" class="btn btn-sm btn-outline-primary">تعديل</a>
-                                        <form method="post" action="{{ route('projects.restore', $p) }}" class="mb-0">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-success">إرجاع للقائمة</button>
-                                        </form>
-                                        @if ($p->code !== 'default')
-                                            <form method="post" action="{{ route('projects.destroy', $p) }}" class="mb-0 d-inline" data-swal-confirm="{{ e('حذف مشروع المسودة نهائيًا مع كل بياناته؟ لا يمكن التراجع.') }}">
+                                        @can('projects.manage')
+                                            <a href="{{ route('projects.edit', $p) }}" class="btn btn-sm btn-outline-primary">تعديل</a>
+                                            <form method="post" action="{{ route('projects.restore', $p) }}" class="mb-0">
                                                 @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                                <button type="submit" class="btn btn-sm btn-success">إرجاع للقائمة</button>
                                             </form>
-                                        @endif
+                                            @if ($p->code !== 'default')
+                                                <form method="post" action="{{ route('projects.destroy', $p) }}" class="mb-0 d-inline" data-swal-confirm="{{ e('حذف مشروع المسودة نهائيًا مع كل بياناته؟ لا يمكن التراجع.') }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                                </form>
+                                            @endif
+                                        @endcan
                                     </div>
                                 </li>
                             @endforeach
@@ -93,32 +97,34 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="card app-surface mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">مشروع جديد</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post" action="{{ route('projects.store') }}">
-                        @csrf
-                        <div class="mb-3">
-                            <label class="form-label" for="project-name">اسم المشروع</label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror" id="project-name" name="name" value="{{ old('name') }}" required>
-                            @error('name')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="project-code">رمز (اختياري)</label>
-                            <input type="text" class="form-control @error('code') is-invalid @enderror" id="project-code" name="code" value="{{ old('code') }}">
-                            @error('code')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">إنشاء</button>
-                    </form>
+        @can('projects.manage')
+            <div class="col-lg-4">
+                <div class="card app-surface mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">مشروع جديد</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{{ route('projects.store') }}">
+                            @csrf
+                            <div class="mb-3">
+                                <label class="form-label" for="project-name">اسم المشروع</label>
+                                <input type="text" class="form-control @error('name') is-invalid @enderror" id="project-name" name="name" value="{{ old('name') }}" required>
+                                @error('name')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="project-code">رمز (اختياري)</label>
+                                <input type="text" class="form-control @error('code') is-invalid @enderror" id="project-code" name="code" value="{{ old('code') }}">
+                                @error('code')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">إنشاء</button>
+                        </form>
+                    </div>
                 </div>
             </div>
-        </div>
+        @endcan
     </div>
 @endsection

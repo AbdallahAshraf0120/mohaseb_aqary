@@ -33,9 +33,16 @@
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto align-items-center gap-2">
-                    <li class="nav-item py-1 d-none d-md-block">
-                        <a href="{{ route('projects.index') }}" class="nav-link small">إدارة المشاريع</a>
-                    </li>
+                    @can('projects.view')
+                        <li class="nav-item py-1 d-none d-md-block">
+                            <a href="{{ route('projects.index') }}" class="nav-link small">إدارة المشاريع</a>
+                        </li>
+                    @endcan
+                    @can('users.view')
+                        <li class="nav-item py-1 d-none d-md-block">
+                            <a href="{{ route('users.index') }}" class="nav-link small">المستخدمون</a>
+                        </li>
+                    @endcan
                     <li class="nav-item py-1">
                         <form method="post" action="{{ route('logout') }}" class="mb-0">
                             @csrf
@@ -117,27 +124,31 @@
                         @php
                             $settingsMenuProject = $layoutProject ?? ($navCurrentProject ?? null) ?? (($navProjects ?? collect())->first());
                         @endphp
-                        <li class="nav-item">
-                            <a href="{{ route('projects.index') }}"
-                               class="nav-link {{ request()->routeIs('projects.*') ? 'active' : '' }}">
-                                <i class="nav-icon fa-solid fa-folder-plus"></i>
-                                <p>المسودة وإضافة مشروع</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            @if ($settingsMenuProject)
-                                <a href="{{ route('settings.edit', $settingsMenuProject) }}"
-                                   class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-gear"></i>
-                                    <p>الإعدادات</p>
+                        @can('projects.manage')
+                            <li class="nav-item">
+                                <a href="{{ route('projects.index') }}"
+                                   class="nav-link {{ request()->routeIs('projects.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-folder-plus"></i>
+                                    <p>المسودة وإضافة مشروع</p>
                                 </a>
-                            @else
-                                <span class="nav-link text-secondary">
-                                    <i class="nav-icon fa-solid fa-gear"></i>
-                                    <p>الإعدادات</p>
-                                </span>
-                            @endif
-                        </li>
+                            </li>
+                        @endcan
+                        @can('settings.manage')
+                            <li class="nav-item">
+                                @if ($settingsMenuProject)
+                                    <a href="{{ route('settings.edit', $settingsMenuProject) }}"
+                                       class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                                        <i class="nav-icon fa-solid fa-gear"></i>
+                                        <p>الإعدادات</p>
+                                    </a>
+                                @else
+                                    <span class="nav-link text-secondary">
+                                        <i class="nav-icon fa-solid fa-gear"></i>
+                                        <p>الإعدادات</p>
+                                    </span>
+                                @endif
+                            </li>
+                        @endcan
                     </ul>
                 </nav>
             </div>

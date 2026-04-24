@@ -9,7 +9,7 @@ class PropertyPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, ['admin', 'accountant', 'sales', 'viewer'], true);
+        return $user->hasPermission('properties.view');
     }
 
     public function view(User $user, Property $property): bool
@@ -19,16 +19,16 @@ class PropertyPolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role, ['admin', 'sales'], true);
+        return $user->hasPermission('properties.manage');
     }
 
     public function update(User $user, Property $property): bool
     {
-        return in_array($user->role, ['admin', 'sales'], true);
+        return $user->hasPermission('properties.manage');
     }
 
     public function delete(User $user, Property $property): bool
     {
-        return $user->role === 'admin';
+        return $user->isAdmin();
     }
 }
