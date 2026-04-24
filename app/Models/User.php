@@ -85,31 +85,53 @@ class User extends Authenticatable
             ->all();
     }
 
+    /**
+     * قائمة صلاحيات مخصصة: إن وُجدت (غير فارغة) تُستبدل بها صلاحيات الدور بالكامل.
+     *
+     * @return list<string>
+     */
+    public function customPermissionSlugs(): array
+    {
+        return array_values(array_unique(array_filter($this->extra_permissions ?? [])));
+    }
+
+    public function usesExclusiveCustomPermissions(): bool
+    {
+        return $this->customPermissionSlugs() !== [];
+    }
+
+    /**
+     * تحقق من صلاحية: إما المجموعة المخصصة فقط (إن وُجدت) أو صلاحيات الدور الافتراضية.
+     * امتلاك *.manage يمنح تلقائياً *.view المقابلة ضمن نفس المجموعة (مخصص أو دور).
+     */
     public function hasPermission(string $slug): bool
     {
         if ($this->isAdmin()) {
             return true;
         }
 
-        $extras = array_values(array_unique(array_filter($this->extra_permissions ?? [])));
-        if (in_array($slug, $extras, true)) {
-            return true;
-        }
-        if (str_ends_with($slug, '.view')) {
-            $manage = substr($slug, 0, -5).'.manage';
-            if (in_array($manage, $extras, true)) {
-                return true;
-            }
+        $custom = $this->customPermissionSlugs();
+        if ($custom !== []) {
+            return $this->slugAllowedBySet($slug, $custom);
         }
 
         $granted = $this->directPermissionSlugs();
-        if (in_array($slug, $granted, true)) {
+
+        return $this->slugAllowedBySet($slug, $granted);
+    }
+
+    /**
+     * @param  list<string>  $set
+     */
+    private function slugAllowedBySet(string $slug, array $set): bool
+    {
+        if (in_array($slug, $set, true)) {
             return true;
         }
         if (str_ends_with($slug, '.view')) {
             $manage = substr($slug, 0, -5).'.manage';
 
-            return in_array($manage, $granted, true);
+            return in_array($manage, $set, true);
         }
 
         return false;

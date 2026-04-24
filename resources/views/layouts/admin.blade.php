@@ -39,7 +39,7 @@
                         </li>
                     @endcan
                     @can('users.view')
-                        <li class="nav-item py-1 d-none d-md-block">
+                        <li class="nav-item py-1">
                             <a href="{{ route('users.index') }}" class="nav-link small">المستخدمون</a>
                         </li>
                     @endcan
@@ -147,6 +147,15 @@
                                         <p>الإعدادات</p>
                                     </span>
                                 @endif
+                            </li>
+                        @endcan
+                        @can('users.view')
+                            <li class="nav-item">
+                                <a href="{{ route('users.index') }}"
+                                   class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-users-gear"></i>
+                                    <p>المستخدمون والأدوار</p>
+                                </a>
                             </li>
                         @endcan
                     </ul>

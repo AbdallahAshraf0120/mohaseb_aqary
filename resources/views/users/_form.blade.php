@@ -32,10 +32,14 @@
             @endforeach
         </select>
         @error('role')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-        <div class="form-text">الدور يحدد مجموعة الصلاحيات الافتراضية. يمكنك إضافة صلاحيات فوق الدور من القائمة أدناه.</div>
+        <div class="form-text">الدور يحدد <strong>الصلاحيات الافتراضية</strong> للحساب عندما لا تُحدَّد أي صلاحية في القائمة أدناه.</div>
     </div>
     <div class="col-12">
-        <label class="form-label">صلاحيات إضافية (اختياري — تُضاف إلى صلاحيات الدور)</label>
+        <label class="form-label">صلاحيات مخصصة (اختياري)</label>
+        <p class="small text-muted mb-2 border-start border-3 border-primary ps-2">
+            <strong>إن حددت واحدة أو أكثر:</strong> تصبح <strong>هذه فقط</strong> صلاحيات الحساب (لا تُدمَج مع صلاحيات الدور).<br>
+            <strong>إن تركت الكل بدون تحديد:</strong> يُعتمد <strong>صلاحيات الدور الافتراضية</strong> فقط.
+        </p>
         <div class="border rounded p-3 bg-body-secondary bg-opacity-25" style="max-height: 280px; overflow-y: auto;">
             <div class="row g-2">
                 @foreach ($permissions as $perm)

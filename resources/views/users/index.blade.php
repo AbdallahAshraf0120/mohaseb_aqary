@@ -33,7 +33,7 @@
                         <th>الاسم</th>
                         <th>البريد</th>
                         <th>الدور</th>
-                        <th class="text-center">صلاحيات إضافية</th>
+                        <th class="text-center">وضع الصلاحيات</th>
                         <th class="text-end">إجراءات</th>
                     </tr>
                     </thead>
@@ -44,7 +44,13 @@
                             <td class="fw-medium">{{ $u->name }}</td>
                             <td class="small font-monospace">{{ $u->email }}</td>
                             <td><span class="badge text-bg-secondary">{{ $roles[$u->role] ?? $u->role }}</span></td>
-                            <td class="text-center">{{ count($u->extra_permissions ?? []) }}</td>
+                            <td class="text-center small">
+                                @if ($u->usesExclusiveCustomPermissions())
+                                    <span class="badge text-bg-warning text-dark">{{ count($u->customPermissionSlugs()) }} مخصصة</span>
+                                @else
+                                    <span class="badge text-bg-light border text-body-secondary">دور افتراضي</span>
+                                @endif
+                            </td>
                             <td class="text-end text-nowrap">
                                 @can('users.manage')
                                     <a href="{{ route('users.edit', $u) }}" class="btn btn-outline-warning btn-sm">تعديل</a>

@@ -65,7 +65,7 @@ class UserController extends Controller
             'extra_permissions' => $data['extra_permissions'] === [] ? null : $data['extra_permissions'],
         ]);
 
-        return redirect()->route('users.index')->with('success', 'تم إنشاء المستخدم وتعيين الدور والصلاحيات الإضافية.');
+        return redirect()->route('users.index')->with('success', 'تم إنشاء المستخدم. إن وُجدت صلاحيات مخصصة فهي الوحيدة المعتمدة؛ وإلا تُستخدم صلاحيات الدور.');
     }
 
     public function edit(User $user): View
