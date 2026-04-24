@@ -172,7 +172,7 @@
                     </a>
                 </div>
                 <div class="col-6 col-md-4">
-                    <a href="{{ route('shareholders.index') }}" class="dashboard-stat-tile text-decoration-none text-reset h-100">
+                    <a href="{{ route('shareholders.index', $project) }}" class="dashboard-stat-tile text-decoration-none text-reset h-100">
                         <span class="tile-icon bg-body-secondary text-body"><i class="fa-solid fa-people-group"></i></span>
                         <div class="min-w-0">
                             <div class="small text-body-secondary">مساهمين</div>

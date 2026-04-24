@@ -17,7 +17,6 @@ class StoreShareholderRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'share_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'total_investment' => ['required', 'numeric', 'min:0'],
-            'profit_amount' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

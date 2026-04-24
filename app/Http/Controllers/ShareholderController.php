@@ -6,6 +6,7 @@ use App\Http\Requests\StoreShareholderRequest;
 use App\Http\Requests\UpdateShareholderRequest;
 use App\Models\Project;
 use App\Models\Shareholder;
+use App\Services\ShareholderAttributedFlowService;
 use App\Services\ShareholderService;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
@@ -14,7 +15,10 @@ use Illuminate\Http\Request;
 
 class ShareholderController extends Controller
 {
-    public function __construct(private readonly ShareholderService $shareholderService) {}
+    public function __construct(
+        private readonly ShareholderService $shareholderService,
+        private readonly ShareholderAttributedFlowService $attributedFlowService,
+    ) {}
 
     public function index(Project $project, Request $request): View
     {
@@ -26,14 +30,28 @@ class ShareholderController extends Controller
         }
         $filters->applyWhereDate($query, 'created_at');
 
+        $propertyFinancials = $this->attributedFlowService->propertyFinancials($project);
+        $shareholdersForKpis = (clone $query)->get();
+        $attributedOperatingTotal = (float) $shareholdersForKpis->sum(
+            fn ($sh) => $this->attributedFlowService->attributedOperatingFlow($sh, $project, $propertyFinancials)
+        );
+
         $shareholderKpis = [
             'count' => (clone $query)->count(),
             'total_investment' => (float) (clone $query)->sum('total_investment'),
             'share_percentage' => (float) (clone $query)->sum('share_percentage'),
-            'profit_amount' => (float) (clone $query)->sum('profit_amount'),
+            'attributed_operating_total' => $attributedOperatingTotal,
         ];
 
         $shareholders = $query->latest()->paginate(10)->withQueryString();
+        $shareholders->getCollection()->transform(function (Shareholder $sh) use ($project, $propertyFinancials): Shareholder {
+            $sh->setAttribute(
+                'attributed_operating_flow',
+                $this->attributedFlowService->attributedOperatingFlow($sh, $project, $propertyFinancials)
+            );
+
+            return $sh;
+        });
 
         return view('shareholders.index', [
             'title' => 'المساهمين | Mohaseb Aqary',
@@ -45,32 +63,53 @@ class ShareholderController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Project $project): View
     {
         return view('shareholders.create', [
             'title' => 'إضافة مساهم | Mohaseb Aqary',
             'pageTitle' => 'إضافة مساهم',
+            'project' => $project,
             'modules' => $this->modules(),
         ]);
     }
 
-    public function store(StoreShareholderRequest $request): RedirectResponse
+    public function store(Project $project, StoreShareholderRequest $request): RedirectResponse
     {
         $this->shareholderService->create($request->validated());
 
-        return redirect()->route('shareholders.index')->with('success', 'تم إضافة المساهم بنجاح.');
+        return redirect()->route('shareholders.index', $project)->with('success', 'تم إضافة المساهم بنجاح.');
     }
 
     public function show(Project $project, Shareholder $shareholder): View
     {
         $shareholder = $this->shareholderService->findOrFail((int) $shareholder->id);
         $participations = $this->shareholderService->propertyParticipationsFor($shareholder);
+        $propertyFinancials = $this->attributedFlowService->propertyFinancials($project);
+        $attributedOperatingTotal = $this->attributedFlowService->attributedOperatingFlow(
+            $shareholder,
+            $project,
+            $propertyFinancials
+        );
+        $attributedSaleVolumeShare = $this->attributedFlowService->attributedSaleVolumeShare(
+            $shareholder,
+            $project,
+            $propertyFinancials
+        );
+        $participationFinancialBreakdown = $this->attributedFlowService->participationFinancialBreakdown(
+            $participations,
+            $propertyFinancials
+        );
 
         return view('shareholders.show', [
             'title' => 'بروفايل المساهم | Mohaseb Aqary',
             'pageTitle' => 'بروفايل المساهم',
+            'project' => $project,
             'shareholder' => $shareholder,
             'participations' => $participations,
+            'propertyFinancials' => $propertyFinancials,
+            'attributedOperatingTotal' => $attributedOperatingTotal,
+            'attributedSaleVolumeShare' => $attributedSaleVolumeShare,
+            'participationFinancialBreakdown' => $participationFinancialBreakdown,
             'modules' => $this->modules(),
         ]);
     }
@@ -80,6 +119,7 @@ class ShareholderController extends Controller
         return view('shareholders.edit', [
             'title' => 'تعديل المساهم | Mohaseb Aqary',
             'pageTitle' => 'تعديل المساهم',
+            'project' => $project,
             'shareholder' => $this->shareholderService->findOrFail((int) $shareholder->id),
             'modules' => $this->modules(),
         ]);
@@ -89,14 +129,14 @@ class ShareholderController extends Controller
     {
         $this->shareholderService->update($shareholder, $request->validated());
 
-        return redirect()->route('shareholders.show', $shareholder)->with('success', 'تم تحديث المساهم بنجاح.');
+        return redirect()->route('shareholders.show', [$project, $shareholder])->with('success', 'تم تحديث المساهم بنجاح.');
     }
 
     public function destroy(Project $project, Shareholder $shareholder): RedirectResponse
     {
         $this->shareholderService->delete($shareholder);
 
-        return redirect()->route('shareholders.index')->with('success', 'تم حذف المساهم بنجاح.');
+        return redirect()->route('shareholders.index', $project)->with('success', 'تم حذف المساهم بنجاح.');
     }
 
     private function modules(): array

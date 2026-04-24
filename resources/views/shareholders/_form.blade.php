@@ -15,10 +15,12 @@
         <input type="number" step="0.01" min="0" name="total_investment" class="form-control"
                value="{{ old('total_investment', $shareholder->total_investment ?? '') }}" required>
     </div>
-    <div class="col-md-4">
-        <label class="form-label">الأرباح المحققة</label>
-        <input type="number" step="0.01" min="0" name="profit_amount" class="form-control"
-               value="{{ old('profit_amount', $shareholder->profit_amount ?? 0) }}">
+    <div class="col-12">
+        <div class="alert alert-light border small mb-0">
+            <i class="fa-solid fa-calculator text-primary ms-1"></i>
+            <strong>المنسب والأرباح المحسوبة:</strong> تُعرض في قائمة المساهمين وبروفايل المساهم تلقائياً من
+            <strong>التحصيلات</strong> (عبر العقود على كل عقار) و<strong>مقدمات البيعات</strong> على نفس العقار، مضروبة في نسبة المساهم المحفوظة في توزيع المساهمين على العقار.
+        </div>
     </div>
 </div>
 

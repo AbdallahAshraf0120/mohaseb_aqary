@@ -6,7 +6,7 @@
         ['label' => 'عدد المساهمين', 'value' => (int) ($shareholderKpis['count'] ?? 0)],
         ['label' => 'رأس المال', 'value' => number_format((float) ($shareholderKpis['total_investment'] ?? 0), 2) . ' ج.م'],
         ['label' => 'إجمالي النسب', 'value' => number_format((float) ($shareholderKpis['share_percentage'] ?? 0), 2) . '%'],
-        ['label' => 'الأرباح', 'value' => number_format((float) ($shareholderKpis['profit_amount'] ?? 0), 2) . ' ج.م'],
+        ['label' => 'إجمالي المنسب (تحصيل + مقدم)', 'value' => number_format((float) ($shareholderKpis['attributed_operating_total'] ?? 0), 2) . ' ج.م'],
     ]" />
 
     <x-listing.filters
@@ -17,7 +17,7 @@
     <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">قائمة المساهمين</h5>
-            <a href="{{ route('shareholders.create') }}" class="btn btn-primary btn-sm">إضافة مساهم</a>
+            <a href="{{ route('shareholders.create', $project) }}" class="btn btn-primary btn-sm">إضافة مساهم</a>
         </div>
         <div class="card-body">
             @if (session('success'))
@@ -32,7 +32,7 @@
                         <th>اسم المساهم</th>
                         <th>نسبة المساهمة</th>
                         <th>رأس المال</th>
-                        <th>الأرباح</th>
+                        <th class="text-end">المنسب <span class="text-muted fw-normal small">(محسوب)</span></th>
                         <th class="text-end">العمليات</th>
                     </tr>
                     </thead>
@@ -43,7 +43,7 @@
                             <td>{{ $shareholder->name }}</td>
                             <td>{{ number_format((float) $shareholder->share_percentage, 2) }}%</td>
                             <td>{{ number_format((float) $shareholder->total_investment, 2) }}</td>
-                            <td>{{ number_format((float) $shareholder->profit_amount, 2) }}</td>
+                            <td class="text-end font-monospace">{{ number_format((float) ($shareholder->attributed_operating_flow ?? 0), 2) }}</td>
                             <td class="text-end">
                                 <a href="{{ route('shareholders.show', [$project, $shareholder]) }}" class="btn btn-outline-info btn-sm">بروفايل</a>
                                 <a href="{{ route('shareholders.edit', [$project, $shareholder]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
