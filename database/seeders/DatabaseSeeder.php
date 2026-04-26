@@ -40,22 +40,39 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $projectSpecs = [
-            ['code' => 'default', 'name' => 'المشروع الافتراضي'],
-            ['code' => 'palm-towers', 'name' => 'أبراج النخيل'],
-            ['code' => 'north-compound', 'name' => 'كمبوند الشمال'],
-            ['code' => 'capital-r2', 'name' => 'العاصمة الإدارية — المرحلة 2'],
-            ['code' => 'west-plaza', 'name' => 'ويست بلازا التجاري'],
-        ];
+        $heavyDemo = filter_var(env('APP_SEED_DEMO_HEAVY', false), FILTER_VALIDATE_BOOLEAN);
 
-        $counts = [
-            'areas' => 32,
-            'shareholders' => 42,
-            'properties' => 110,
-            'clients' => 480,
-            'sales' => 750,
-            'expenses' => 320,
-        ];
+        $projectSpecs = $heavyDemo
+            ? [
+                ['code' => 'default', 'name' => 'المشروع الافتراضي'],
+                ['code' => 'palm-towers', 'name' => 'أبراج النخيل'],
+                ['code' => 'north-compound', 'name' => 'كمبوند الشمال'],
+                ['code' => 'capital-r2', 'name' => 'العاصمة الإدارية — المرحلة 2'],
+                ['code' => 'west-plaza', 'name' => 'ويست بلازا التجاري'],
+            ]
+            : [
+                ['code' => 'default', 'name' => 'المشروع الافتراضي'],
+            ];
+
+        $counts = $heavyDemo
+            ? [
+                'areas' => 32,
+                'shareholders' => 42,
+                'properties' => 110,
+                'clients' => 480,
+                'sales' => 750,
+                'expenses' => 320,
+                'supplier_debts' => 8,
+            ]
+            : [
+                'areas' => 5,
+                'shareholders' => 8,
+                'properties' => 10,
+                'clients' => 30,
+                'sales' => 35,
+                'expenses' => 12,
+                'supplier_debts' => 3,
+            ];
 
         $areaNames = [
             'مدينة نصر',
@@ -90,7 +107,7 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * @param  array{areas: int, shareholders: int, properties: int, clients: int, sales: int, expenses: int}  $counts
+     * @param  array{areas: int, shareholders: int, properties: int, clients: int, sales: int, expenses: int, supplier_debts?: int}  $counts
      * @param  array<int, string>  $areaNames
      */
     private function seedHeavyDemoForProject(Project $project, User $admin, array $counts, array $areaNames): void
@@ -372,7 +389,9 @@ class DatabaseSeeder extends Seeder
             'شركة نقل ورفع',
         ];
 
-        collect(range(1, 8))->each(function (int $i) use ($pid, $slug, $carrierClientId, $suppliers): void {
+        $supplierDebtCount = (int) ($counts['supplier_debts'] ?? 8);
+
+        collect(range(1, $supplierDebtCount))->each(function (int $i) use ($pid, $slug, $carrierClientId, $suppliers): void {
             $total = (float) \fake()->numberBetween(80_000, 3_500_000);
             $paidRatio = \fake()->randomFloat(2, 0, 0.9);
             $paid = round($total * $paidRatio, 2);
