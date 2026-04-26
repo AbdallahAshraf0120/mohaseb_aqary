@@ -108,38 +108,38 @@ class DatabaseSeeder extends Seeder
         });
 
         $shareholders = collect(range(1, $counts['shareholders']))->map(function (int $i) use ($pid, $slug) {
-            $share = fake()->numberBetween(3, 22);
+            $share = \fake()->numberBetween(3, 22);
 
             return Shareholder::query()->firstOrCreate(
                 ['project_id' => $pid, 'name' => "مساهم {$slug}-{$i}"],
                 [
                     'share_percentage' => $share,
-                    'total_investment' => fake()->numberBetween(400_000, 12_000_000),
-                    'profit_amount' => fake()->numberBetween(40_000, 1_200_000),
+                    'total_investment' => \fake()->numberBetween(400_000, 12_000_000),
+                    'profit_amount' => \fake()->numberBetween(40_000, 1_200_000),
                 ]
             );
         });
 
         $properties = collect(range(1, $counts['properties']))->map(function (int $i) use ($areas, $shareholders, $admin, $pid, $project) {
-            $floors = fake()->numberBetween(6, 22);
-            $apartmentsPerFloor = fake()->numberBetween(2, 7);
-            $groundFloorShops = fake()->numberBetween(0, 8);
-            $hasMezzanine = fake()->boolean(60);
-            $mezzanineApartments = $hasMezzanine ? fake()->numberBetween(1, 6) : 0;
-            $modelsCount = fake()->numberBetween(2, 5);
+            $floors = \fake()->numberBetween(6, 22);
+            $apartmentsPerFloor = \fake()->numberBetween(2, 7);
+            $groundFloorShops = \fake()->numberBetween(0, 8);
+            $hasMezzanine = \fake()->boolean(60);
+            $mezzanineApartments = $hasMezzanine ? \fake()->numberBetween(1, 6) : 0;
+            $modelsCount = \fake()->numberBetween(2, 5);
 
             $models = collect(range(1, $modelsCount))->map(function (int $modelIndex) {
                 return [
                     'model_name' => chr(64 + $modelIndex),
-                    'area' => fake()->numberBetween(75, 240),
-                    'rooms_count' => fake()->numberBetween(1, 5),
-                    'bathrooms_count' => fake()->numberBetween(1, 3),
-                    'view_type' => fake()->randomElement(['normal', 'facade', 'corner']),
+                    'area' => \fake()->numberBetween(75, 240),
+                    'rooms_count' => \fake()->numberBetween(1, 5),
+                    'bathrooms_count' => \fake()->numberBetween(1, 3),
+                    'view_type' => \fake()->randomElement(['normal', 'facade', 'corner']),
                 ];
             })->values()->all();
 
-            $selectedShareholders = $shareholders->random(fake()->numberBetween(2, 5))->values();
-            $basePercentages = $selectedShareholders->map(fn () => fake()->numberBetween(8, 55));
+            $selectedShareholders = $shareholders->random(\fake()->numberBetween(2, 5))->values();
+            $basePercentages = $selectedShareholders->map(fn () => \fake()->numberBetween(8, 55));
             $total = max(1, $basePercentages->sum());
             $allocations = $selectedShareholders->map(function ($s, int $idx) use ($basePercentages, $total) {
                 return [
@@ -155,7 +155,7 @@ class DatabaseSeeder extends Seeder
                 ['project_id' => $pid, 'name' => "عقار {$i} — {$project->name}"],
                 [
                     'area_id' => $area->id,
-                    'property_type' => fake()->randomElement(['سكني', 'تجاري', 'إداري', 'مختلط']),
+                    'property_type' => \fake()->randomElement(['سكني', 'تجاري', 'إداري', 'مختلط']),
                     'floors_count' => $floors,
                     'apartments_per_floor' => $apartmentsPerFloor,
                     'ground_floor_shops_count' => $groundFloorShops,
@@ -166,7 +166,7 @@ class DatabaseSeeder extends Seeder
                     'apartment_models' => $models,
                     'location' => $area->name,
                     'price' => 0,
-                    'status' => fake()->randomElement(['available', 'available', 'available', 'sold']),
+                    'status' => \fake()->randomElement(['available', 'available', 'available', 'sold']),
                     'owner_id' => $admin->id,
                 ]
             );
@@ -178,7 +178,7 @@ class DatabaseSeeder extends Seeder
             return Client::query()->updateOrCreate(
                 ['project_id' => $pid, 'phone' => $phone],
                 [
-                    'name' => fake()->name(),
+                    'name' => \fake()->name(),
                     'email' => "c{$pid}_{$i}@demo.example.com",
                     'national_id' => str_pad((string) (200_000_000_000_00 + ($pid * 1_000_000) + $i), 14, '0', STR_PAD_LEFT),
                 ]
@@ -225,13 +225,13 @@ class DatabaseSeeder extends Seeder
 
         $sales = $unitSlots->map(function (array $slot, int $i) use ($clients, $pid) {
             $property = $slot['property'];
-            $salePrice = fake()->numberBetween(650_000, 6_500_000);
-            $paymentType = fake()->randomElement(['installment', 'installment', 'installment', 'cash']);
+            $salePrice = \fake()->numberBetween(650_000, 6_500_000);
+            $paymentType = \fake()->randomElement(['installment', 'installment', 'installment', 'cash']);
             $downPayment = $paymentType === 'cash'
                 ? $salePrice
-                : fake()->numberBetween((int) ($salePrice * 0.2), (int) ($salePrice * 0.72));
-            $months = $paymentType === 'cash' ? null : fake()->randomElement([12, 18, 24, 30, 36, 42, 48, 60]);
-            $scheduleType = $paymentType === 'cash' ? null : fake()->randomElement(['monthly', 'quarterly', 'semiannual']);
+                : \fake()->numberBetween((int) ($salePrice * 0.2), (int) ($salePrice * 0.72));
+            $months = $paymentType === 'cash' ? null : \fake()->randomElement([12, 18, 24, 30, 36, 42, 48, 60]);
+            $scheduleType = $paymentType === 'cash' ? null : \fake()->randomElement(['monthly', 'quarterly', 'semiannual']);
             $intervalMonths = match ($scheduleType) {
                 'quarterly' => 3,
                 'semiannual' => 6,
@@ -239,16 +239,16 @@ class DatabaseSeeder extends Seeder
             };
             $remaining = max(0, $salePrice - $downPayment);
             $installmentsCount = ($months && $paymentType !== 'cash') ? max(1, (int) ceil($months / $intervalMonths)) : 0;
-            $saleDate = Carbon::now()->subDays(fake()->numberBetween(1, 900))->toDateString();
+            $saleDate = Carbon::now()->subDays(\fake()->numberBetween(1, 900))->toDateString();
             $secondaryRows = [];
             $secondaryTotal = 0.0;
-            if ($paymentType !== 'cash' && fake()->boolean(25) && $remaining > 120_000) {
-                $amt = round(min($remaining * 0.12, (float) fake()->numberBetween(30_000, 150_000)), 2);
+            if ($paymentType !== 'cash' && \fake()->boolean(25) && $remaining > 120_000) {
+                $amt = round(min($remaining * 0.12, (float) \fake()->numberBetween(30_000, 150_000)), 2);
                 if ($amt >= 5000 && $amt < $remaining - 50_000) {
                     $secondaryRows[] = [
                         'label' => 'دفعة تشطيب',
                         'amount' => $amt,
-                        'due_date' => Carbon::parse($saleDate)->addMonths(fake()->numberBetween(2, 8))->toDateString(),
+                        'due_date' => Carbon::parse($saleDate)->addMonths(\fake()->numberBetween(2, 8))->toDateString(),
                     ];
                     $secondaryTotal = $amt;
                 }
@@ -287,7 +287,7 @@ class DatabaseSeeder extends Seeder
                         ],
                     'sale_date' => $saleDate,
                     'notes' => "بيع تجريبي {$pid}/".($i + 1),
-                    'broker_name' => fake()->name(),
+                    'broker_name' => \fake()->name(),
                 ]
             );
         });
@@ -314,13 +314,13 @@ class DatabaseSeeder extends Seeder
         });
 
         $contracts->each(function (Contract $contract) use ($pid): void {
-            $paymentsCount = fake()->numberBetween(1, 5);
+            $paymentsCount = \fake()->numberBetween(1, 5);
             $remaining = (float) $contract->remaining_amount;
 
             for ($i = 1; $i <= $paymentsCount && $remaining > 0; $i++) {
                 $amount = $i === $paymentsCount
                     ? $remaining
-                    : min($remaining, (float) fake()->numberBetween(15_000, 220_000));
+                    : min($remaining, (float) \fake()->numberBetween(15_000, 220_000));
                 $remaining -= $amount;
 
                 Revenue::query()->firstOrCreate(
@@ -335,7 +335,7 @@ class DatabaseSeeder extends Seeder
                         'client_id' => $contract->client_id,
                         'category' => 'قسط بيع',
                         'source' => "قسط {$i}",
-                        'payment_method' => fake()->randomElement(['cash', 'bank_transfer', 'wallet', 'check']),
+                        'payment_method' => \fake()->randomElement(['cash', 'bank_transfer', 'wallet', 'check']),
                         'notes' => 'تحصيل تلقائي — سيدر',
                     ]
                 );
@@ -354,8 +354,8 @@ class DatabaseSeeder extends Seeder
             Expense::query()->firstOrCreate(
                 ['project_id' => $pid, 'description' => "مصروف {$slug} — {$i}"],
                 [
-                    'amount' => fake()->numberBetween(3_000, 180_000),
-                    'category' => fake()->randomElement(['تشغيل', 'تسويق', 'رواتب', 'صيانة', 'مرافق', 'تصاريح', 'عمولات']),
+                    'amount' => \fake()->numberBetween(3_000, 180_000),
+                    'category' => \fake()->randomElement(['تشغيل', 'تسويق', 'رواتب', 'صيانة', 'مرافق', 'تصاريح', 'عمولات']),
                 ]
             );
         });
@@ -373,8 +373,8 @@ class DatabaseSeeder extends Seeder
         ];
 
         collect(range(1, 8))->each(function (int $i) use ($pid, $slug, $carrierClientId, $suppliers): void {
-            $total = (float) fake()->numberBetween(80_000, 3_500_000);
-            $paidRatio = fake()->randomFloat(2, 0, 0.9);
+            $total = (float) \fake()->numberBetween(80_000, 3_500_000);
+            $paidRatio = \fake()->randomFloat(2, 0, 0.9);
             $paid = round($total * $paidRatio, 2);
             $remaining = round(max(0, $total - $paid), 2);
             $creditor = $suppliers[($i - 1) % count($suppliers)];
