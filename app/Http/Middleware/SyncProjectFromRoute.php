@@ -19,6 +19,12 @@ class SyncProjectFromRoute
             abort(404);
         }
 
+        if ($project->is_draft) {
+            return redirect()
+                ->route('projects.index')
+                ->with('error', 'هذا المشروع في المسودة. من صفحة «المشاريع» اضغط «إرجاع للقائمة» ثم افتح لوحة التحكم من الشريط الجانبي.');
+        }
+
         session(['current_project_id' => (int) $project->id]);
         app(CurrentProject::class)->force((int) $project->id);
         URL::defaults(['project' => $project->getRouteKey()]);

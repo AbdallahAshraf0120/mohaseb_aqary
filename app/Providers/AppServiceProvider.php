@@ -70,7 +70,6 @@ class AppServiceProvider extends ServiceProvider
             return Project::query()
                 ->whereKey($value)
                 ->where('is_active', true)
-                ->where('is_draft', false)
                 ->firstOrFail();
         });
 

@@ -73,6 +73,14 @@ Route::middleware('auth')->group(function (): void {
         Route::post('projects/{managedProject}/draft', [ProjectController::class, 'toDraft'])->name('projects.draft');
         Route::post('projects/{draftProject}/restore', [ProjectController::class, 'restore'])->name('projects.restore');
 
+        Route::get('projects/{project}', function (Project $project) {
+            if ($project->is_draft) {
+                return redirect()->route('projects.edit', $project);
+            }
+
+            return redirect()->route('properties.index', $project);
+        })->name('projects.landing');
+
         Route::resource('users', UserController::class)->except(['show']);
 
         Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');

@@ -15,6 +15,8 @@ return [
     'projects.draft' => 'projects.manage',
     'projects.restore' => 'projects.manage',
 
+    'projects.landing' => 'projects.view',
+
     'dashboard' => 'dashboard.view',
 
     'properties.index' => 'properties.view',

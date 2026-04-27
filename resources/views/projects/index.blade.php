@@ -26,7 +26,10 @@
                                         @if ($p->code)
                                             <span class="text-body-secondary small ms-2">{{ $p->code }}</span>
                                         @endif
-                                        <div class="small text-body-secondary mt-1">مسار لوحة التحكم: <code class="user-select-all">/{{ $p->id }}/properties</code></div>
+                                        <div class="small text-body-secondary mt-1">
+                                            لوحة التحكم من جذر الموقع: <code class="user-select-all">/{{ $p->id }}/properties</code>
+                                            <span class="d-block mt-1">ليس <code>/projects/{{ $p->id }}</code> — استخدم «فتح لوحة التحكم».</span>
+                                        </div>
                                     </div>
                                     <div class="d-flex flex-wrap gap-1 align-items-center">
                                         @if ((int) session('current_project_id') === (int) $p->id)
