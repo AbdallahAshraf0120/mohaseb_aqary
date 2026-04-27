@@ -63,4 +63,28 @@ class AuthorizationTest extends TestCase
             ->get(route('properties.create', $project))
             ->assertOk();
     }
+
+    public function test_viewer_cannot_open_activity_log(): void
+    {
+        $viewer = User::factory()->create([
+            'email' => 'viewer-act@test.local',
+            'role' => 'viewer',
+        ]);
+
+        $this->actingAs($viewer)
+            ->get(route('activity-log.index'))
+            ->assertForbidden();
+    }
+
+    public function test_accountant_can_open_activity_log(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'acct-act@test.local',
+            'role' => 'accountant',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('activity-log.index'))
+            ->assertOk();
+    }
 }

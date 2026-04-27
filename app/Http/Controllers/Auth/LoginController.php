@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class LoginController extends Controller
@@ -32,11 +33,34 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
+        $user = Auth::user();
+        \activity()
+            ->useLog('auth')
+            ->causedBy($user)
+            ->performedOn($user)
+            ->withProperties([
+                'ip' => $request->ip(),
+                'user_agent' => Str::limit((string) $request->userAgent(), 500, ''),
+            ])
+            ->log('تسجيل دخول');
+
         return redirect()->intended(route('projects.index'));
     }
 
     public function destroy(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+        if ($user) {
+            \activity()
+                ->useLog('auth')
+                ->causedBy($user)
+                ->performedOn($user)
+                ->withProperties([
+                    'ip' => $request->ip(),
+                ])
+                ->log('تسجيل خروج');
+        }
+
         Auth::logout();
 
         $request->session()->invalidate();

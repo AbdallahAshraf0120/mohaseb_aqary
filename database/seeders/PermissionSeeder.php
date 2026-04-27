@@ -40,6 +40,7 @@ class PermissionSeeder extends Seeder
             'settings.manage' => 'إعدادات المشروع',
             'users.view' => 'عرض قائمة المستخدمين',
             'users.manage' => 'إدارة المستخدمين (إنشاء، تعديل، حذف، أدوار وصلاحيات إضافية)',
+            'activity_log.view' => 'عرض سجل النشاط (تدقيق)',
         ];
 
         foreach ($labels as $slug => $label) {
@@ -74,6 +75,7 @@ class PermissionSeeder extends Seeder
         ]);
 
         $accountant = array_merge($viewer, [
+            'activity_log.view',
             'properties.manage',
             'areas.manage',
             'facings.manage',

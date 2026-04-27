@@ -5,9 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Project extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'name',
         'code',
@@ -36,6 +40,21 @@ class Project extends Model
         $path = $this->contract_template_path;
 
         return is_string($path) && $path !== '' && Storage::disk('local')->exists($path);
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'code', 'is_active', 'is_draft'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('projects')
+            ->setDescriptionForEvent(fn (string $eventName): string => match ($eventName) {
+                'created' => 'إنشاء مشروع',
+                'updated' => 'تعديل مشروع',
+                'deleted' => 'حذف مشروع',
+                default => $eventName,
+            });
     }
 
     /** مسار التخزين النسبي لقرص local (مثل ‎project-contract-templates/1/template.docx‎). */

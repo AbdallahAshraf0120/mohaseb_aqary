@@ -7,11 +7,13 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, LogsActivity, Notifiable;
 
     /** @var list<string>|null */
     protected ?array $permissionSlugCache = null;
@@ -68,6 +70,21 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return ($this->role ?? '') === 'admin';
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'email', 'role', 'extra_permissions'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('users')
+            ->setDescriptionForEvent(fn (string $eventName): string => match ($eventName) {
+                'created' => 'إنشاء مستخدم',
+                'updated' => 'تعديل مستخدم',
+                'deleted' => 'حذف مستخدم',
+                default => $eventName,
+            });
     }
 
     /**

@@ -109,4 +109,6 @@ return [
     'users.edit' => 'users.manage',
     'users.update' => 'users.manage',
     'users.destroy' => 'users.manage',
+
+    'activity-log.index' => 'activity_log.view',
 ];

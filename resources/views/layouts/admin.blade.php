@@ -43,6 +43,11 @@
                             <a href="{{ route('users.index') }}" class="nav-link small">المستخدمون</a>
                         </li>
                     @endcan
+                    @can('activity_log.view')
+                        <li class="nav-item py-1">
+                            <a href="{{ route('activity-log.index') }}" class="nav-link small">سجل النشاط</a>
+                        </li>
+                    @endcan
                     <li class="nav-item py-1">
                         <form method="post" action="{{ route('logout') }}" class="mb-0">
                             @csrf
@@ -155,6 +160,15 @@
                                    class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
                                     <i class="nav-icon fa-solid fa-users-gear"></i>
                                     <p>المستخدمون والأدوار</p>
+                                </a>
+                            </li>
+                        @endcan
+                        @can('activity_log.view')
+                            <li class="nav-item">
+                                <a href="{{ route('activity-log.index') }}"
+                                   class="nav-link {{ request()->routeIs('activity-log.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-clipboard-list"></i>
+                                    <p>سجل النشاط</p>
                                 </a>
                             </li>
                         @endcan

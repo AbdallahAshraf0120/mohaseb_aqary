@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CashboxController;
@@ -73,6 +74,8 @@ Route::middleware('auth')->group(function (): void {
         Route::post('projects/{draftProject}/restore', [ProjectController::class, 'restore'])->name('projects.restore');
 
         Route::resource('users', UserController::class)->except(['show']);
+
+        Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
     });
 });
 
