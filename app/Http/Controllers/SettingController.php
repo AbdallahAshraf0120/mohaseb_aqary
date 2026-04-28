@@ -8,6 +8,7 @@ use App\Support\CurrentProject;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 
 class SettingController extends Controller
 {
@@ -64,6 +65,21 @@ class SettingController extends Controller
         $setting->update(array_merge($data, ['meta' => $meta]));
 
         return redirect()->route('settings.edit')->with('success', 'تم تحديث الإعدادات بنجاح.');
+    }
+
+    public function sendAvailableUnitsReportNow(Request $request): RedirectResponse
+    {
+        $projectId = app(CurrentProject::class)->id();
+        if ($projectId === null) {
+            return redirect()->route('settings.edit')->with('error', 'تعذّر تحديد المشروع الحالي.');
+        }
+
+        Artisan::call('reports:daily-available-units', [
+            '--project' => (int) $projectId,
+            '--force' => true,
+        ]);
+
+        return redirect()->route('settings.edit')->with('success', 'تم إرسال التقرير الآن (إن وُجد مستلمون).');
     }
 
     private function modules(): array

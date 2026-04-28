@@ -111,6 +111,7 @@ return [
 
     'settings.edit' => 'settings.edit',
     'settings.update' => 'settings.update',
+    'settings.send-available-units-report' => 'settings.send-available-units-report',
 
     'users.index' => 'users.index',
     'users.create' => 'users.create',

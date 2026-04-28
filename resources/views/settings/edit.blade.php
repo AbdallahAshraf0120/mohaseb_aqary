@@ -94,6 +94,14 @@
                                 <div class="form-text">بعد وقت الإرسال المحدد أعلاه، سيُعاد الإرسال حسب التكرار. (يمنع التكرار قبل انتهاء المدة)</div>
                                 @error('daily_available_units_report_repeat_minutes')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
                             </div>
+                            <div class="col-md-6 d-flex align-items-end justify-content-md-end">
+                                <form method="post" action="{{ route('settings.send-available-units-report', [$setting->project_id ?? request()->route('project')]) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                                        <i class="fa-solid fa-paper-plane ms-1"></i> إرسال التقرير الآن
+                                    </button>
+                                </form>
+                            </div>
                         </div>
 
                         <div class="rounded-3 border bg-body-tertiary bg-opacity-50 p-3 mb-3">

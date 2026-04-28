@@ -119,4 +119,5 @@ Route::middleware(['auth', AuthorizeRoutePermission::class, SyncProjectFromRoute
         Route::get('reports/export', [ReportController::class, 'exportCsv'])->name('reports.export');
         Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+        Route::post('settings/send-available-units-report', [SettingController::class, 'sendAvailableUnitsReportNow'])->name('settings.send-available-units-report');
     });
