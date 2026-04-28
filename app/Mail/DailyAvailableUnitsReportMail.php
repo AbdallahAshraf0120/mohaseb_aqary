@@ -33,6 +33,11 @@ class DailyAvailableUnitsReportMail extends Mailable
     {
         return new Content(
             view: 'emails.daily-available-units-report',
+            with: [
+                'project' => $this->project,
+                'reportDate' => $this->reportDate,
+                'rows' => $this->rows,
+            ],
         );
     }
 }

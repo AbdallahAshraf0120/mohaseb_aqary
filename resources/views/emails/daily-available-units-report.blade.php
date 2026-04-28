@@ -1,15 +1,10 @@
-@php
-    /** @var \App\Mail\DailyAvailableUnitsReportMail $mail */
-    $mail = $this;
-@endphp
-
 <div style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
     <h2 style="margin:0 0 8px;">تقرير الوحدات المتاحة (غير مباعة)</h2>
     <div style="color:#666; margin-bottom:16px;">
-        المشروع: <strong>{{ $mail->project->name }}</strong> — التاريخ: <strong>{{ $mail->reportDate }}</strong>
+        المشروع: <strong>{{ $project->name }}</strong> — التاريخ: <strong>{{ $reportDate }}</strong>
     </div>
 
-    @if (empty($mail->rows))
+    @if (empty($rows))
         <p>لا توجد وحدات متاحة اليوم.</p>
     @else
         <table cellpadding="8" cellspacing="0" border="1" style="border-collapse: collapse; width: 100%;">
@@ -22,7 +17,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($mail->rows as $r)
+                @foreach ($rows as $r)
                     <tr>
                         <td>{{ $r['property_name'] }}</td>
                         <td align="center">{{ $r['total_units'] }}</td>
