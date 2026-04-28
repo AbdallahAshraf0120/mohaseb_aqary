@@ -9,10 +9,12 @@ use App\Models\Revenue;
 use App\Models\Sale;
 use App\Models\Setting;
 use App\Models\TreasuryTransaction;
+use App\Services\ProjectReportsExcelExporter;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
@@ -22,6 +24,141 @@ class ReportController extends Controller
         $setting = Setting::query()->first();
         $currencyLabel = strtoupper((string) ($setting?->currency ?? 'EGP')) === 'EGP' ? 'ج.م' : (string) ($setting?->currency ?? '');
 
+        $w = $this->buildFilteredQueries($request);
+
+        $snap = $this->financialSnapshots($w);
+
+        $revenueRows = (clone $w['revenuesQ'])->with(['client:id,name'])->latest('paid_at')->latest('id')->limit(15)->get();
+        $expenseRows = (clone $w['expensesQ'])->latest()->limit(15)->get();
+        $saleRows = (clone $w['salesQ'])->with(['client:id,name', 'property:id,name'])->latest('sale_date')->latest('id')->limit(15)->get();
+
+        return view('reports.index', [
+            'title' => 'التقارير | Mohaseb Aqary',
+            'pageTitle' => 'التقارير',
+            'project' => $project,
+            'currencyLabel' => $currencyLabel,
+            'filters' => $w['filters'],
+            'periodFrom' => $w['periodFrom'],
+            'periodTo' => $w['periodTo'],
+            'periodStats' => $snap['periodStats'],
+            'allTime' => $snap['allTime'],
+            'contractsRemaining' => $snap['contractsRemaining'],
+            'contractsOpenCount' => $snap['contractsOpenCount'],
+            'revenueRows' => $revenueRows,
+            'expenseRows' => $expenseRows,
+            'saleRows' => $saleRows,
+            'modules' => $this->modules(),
+        ]);
+    }
+
+    public function exportCsv(Project $project, Request $request): StreamedResponse
+    {
+        $setting = Setting::query()->first();
+        $currencyLabel = strtoupper((string) ($setting?->currency ?? 'EGP')) === 'EGP' ? 'ج.م' : (string) ($setting?->currency ?? '');
+
+        $w = $this->buildFilteredQueries($request);
+        $fromStr = $w['fromStr'];
+        $toStr = $w['toStr'];
+        $filters = $w['filters'];
+
+        $filename = 'report-'.$project->id.'-'.$fromStr.'-'.$toStr.'.csv';
+        $self = $this;
+
+        return response()->streamDownload(function () use ($project, $fromStr, $toStr, $currencyLabel, $w): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Mohaseb Aqary — ملخص تقرير', $project->name]);
+            fputcsv($out, ['من', $fromStr, 'إلى', $toStr, 'العملة', $currencyLabel]);
+            fputcsv($out, []);
+
+            $revenuesQ = clone $w['revenuesQ'];
+            $expensesQ = clone $w['expensesQ'];
+
+            fputcsv($out, ['إجمالي التحصيلات', (string) (float) (clone $revenuesQ)->sum('amount'), 'عدد السجلات', (string) (clone $revenuesQ)->count()]);
+            fputcsv($out, ['إجمالي المصروفات', (string) (float) (clone $expensesQ)->sum('amount'), 'عدد السجلات', (string) (clone $expensesQ)->count()]);
+            fputcsv($out, ['المتبقي على العقود', (string) (float) Contract::query()->sum('remaining_amount')]);
+            fputcsv($out, []);
+            fputcsv($out, ['تحصيلات — التفاصيل']);
+            fputcsv($out, ['id', 'paid_at', 'amount', 'client', 'category', 'notes']);
+            foreach ((clone $revenuesQ)->with(['client:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->cursor() as $r) {
+                fputcsv($out, [
+                    $r->id,
+                    optional($r->paid_at)->format('Y-m-d'),
+                    (string) (float) $r->amount,
+                    $r->client?->name,
+                    (string) ($r->category ?? ''),
+                    (string) ($r->notes ?? ''),
+                ]);
+            }
+            fputcsv($out, []);
+            fputcsv($out, ['مصروفات — التفاصيل']);
+            fputcsv($out, ['id', 'created_at', 'amount', 'category', 'description']);
+            foreach ((clone $expensesQ)->orderByDesc('id')->cursor() as $e) {
+                fputcsv($out, [
+                    $e->id,
+                    $e->created_at?->format('Y-m-d H:i'),
+                    (string) (float) $e->amount,
+                    (string) ($e->category ?? ''),
+                    (string) ($e->description ?? ''),
+                ]);
+            }
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function exportExcel(Project $project, Request $request): StreamedResponse
+    {
+        $setting = Setting::query()->first();
+        $currencyLabel = strtoupper((string) ($setting?->currency ?? 'EGP')) === 'EGP' ? 'ج.م' : (string) ($setting?->currency ?? '');
+
+        $w = $this->buildFilteredQueries($request);
+        $snap = $this->financialSnapshots($w);
+
+        $contractsQ = Contract::query();
+
+        $exporter = new ProjectReportsExcelExporter(
+            project: $project,
+            currencyLabel: $currencyLabel,
+            fromStr: $w['fromStr'],
+            toStr: $w['toStr'],
+            filters: $w['filters'],
+            periodStats: $snap['periodStats'],
+            allTime: $snap['allTime'],
+            contractsRemaining: $snap['contractsRemaining'],
+            contractsOpenCount: $snap['contractsOpenCount'],
+            revenuesQuery: $w['revenuesQ'],
+            expensesQuery: $w['expensesQ'],
+            salesQuery: $w['salesQ'],
+            treasuryInQuery: $w['treasuryInQ'],
+            treasuryOutQuery: $w['treasuryOutQ'],
+            contractsQuery: $contractsQ,
+        );
+
+        return response()->streamDownload(function () use ($exporter): void {
+            $exporter->stream();
+        }, $exporter->downloadFilename(), [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
+     * @return array{
+     *     filters: ListingFilters,
+     *     periodFrom: Carbon,
+     *     periodTo: Carbon,
+     *     fromStr: string,
+     *     toStr: string,
+     *     revenuesQ: Builder,
+     *     expensesQ: Builder,
+     *     salesQ: Builder,
+     *     treasuryInQ: Builder,
+     *     treasuryOutQ: Builder
+     * }
+     */
+    private function buildFilteredQueries(Request $request): array
+    {
         $filters = ListingFilters::fromRequest($request);
 
         $periodFrom = $filters->dateFrom ?? now()->startOfMonth()->startOfDay();
@@ -63,6 +200,37 @@ class ReportController extends Controller
             ->where('approval_status', 'approved');
         $this->applyTreasurySearch($treasuryOutQ, $filters);
 
+        return [
+            'filters' => $filters,
+            'periodFrom' => $periodFrom,
+            'periodTo' => $periodTo,
+            'fromStr' => $fromStr,
+            'toStr' => $toStr,
+            'revenuesQ' => $revenuesQ,
+            'expensesQ' => $expensesQ,
+            'salesQ' => $salesQ,
+            'treasuryInQ' => $treasuryInQ,
+            'treasuryOutQ' => $treasuryOutQ,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $w
+     * @return array{periodStats: array<string, float|int>, allTime: array<string, float>, contractsRemaining: float, contractsOpenCount: int}
+     */
+    private function financialSnapshots(array $w): array
+    {
+        /** @var Builder $revenuesQ */
+        $revenuesQ = $w['revenuesQ'];
+        /** @var Builder $expensesQ */
+        $expensesQ = $w['expensesQ'];
+        /** @var Builder $salesQ */
+        $salesQ = $w['salesQ'];
+        /** @var Builder $treasuryInQ */
+        $treasuryInQ = $w['treasuryInQ'];
+        /** @var Builder $treasuryOutQ */
+        $treasuryOutQ = $w['treasuryOutQ'];
+
         $periodStats = [
             'revenues_sum' => (float) (clone $revenuesQ)->sum('amount'),
             'revenues_count' => (clone $revenuesQ)->count(),
@@ -86,99 +254,12 @@ class ReportController extends Controller
         ];
         $allTime['treasury_net'] = $allTime['treasury_in'] - $allTime['treasury_out'];
 
-        $contractsRemaining = (float) Contract::query()->sum('remaining_amount');
-        $contractsOpenCount = (int) Contract::query()->where('remaining_amount', '>', 0)->count();
-
-        $revenueRows = (clone $revenuesQ)->with(['client:id,name'])->latest('paid_at')->latest('id')->limit(15)->get();
-        $expenseRows = (clone $expensesQ)->latest()->limit(15)->get();
-        $saleRows = (clone $salesQ)->with(['client:id,name', 'property:id,name'])->latest('sale_date')->latest('id')->limit(15)->get();
-
-        return view('reports.index', [
-            'title' => 'التقارير | Mohaseb Aqary',
-            'pageTitle' => 'التقارير',
-            'project' => $project,
-            'currencyLabel' => $currencyLabel,
-            'filters' => $filters,
-            'periodFrom' => $periodFrom,
-            'periodTo' => $periodTo,
+        return [
             'periodStats' => $periodStats,
             'allTime' => $allTime,
-            'contractsRemaining' => $contractsRemaining,
-            'contractsOpenCount' => $contractsOpenCount,
-            'revenueRows' => $revenueRows,
-            'expenseRows' => $expenseRows,
-            'saleRows' => $saleRows,
-            'modules' => $this->modules(),
-        ]);
-    }
-
-    public function exportCsv(Project $project, Request $request): StreamedResponse
-    {
-        $setting = Setting::query()->first();
-        $currencyLabel = strtoupper((string) ($setting?->currency ?? 'EGP')) === 'EGP' ? 'ج.م' : (string) ($setting?->currency ?? '');
-
-        $filters = ListingFilters::fromRequest($request);
-        $periodFrom = $filters->dateFrom ?? now()->startOfMonth()->startOfDay();
-        $periodTo = $filters->dateTo ?? now()->endOfDay();
-        if ($periodFrom->gt($periodTo)) {
-            $periodTo = $periodFrom->copy()->endOfDay();
-        }
-        $fromStr = $periodFrom->toDateString();
-        $toStr = $periodTo->toDateString();
-
-        $filename = 'report-'.$project->id.'-'.$fromStr.'-'.$toStr.'.csv';
-        $self = $this;
-
-        return response()->streamDownload(function () use ($self, $project, $fromStr, $toStr, $currencyLabel, $filters): void {
-            $out = fopen('php://output', 'w');
-            fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['Mohaseb Aqary — ملخص تقرير', $project->name]);
-            fputcsv($out, ['من', $fromStr, 'إلى', $toStr, 'العملة', $currencyLabel]);
-            fputcsv($out, []);
-
-            $revenuesQ = Revenue::query()
-                ->whereDate('paid_at', '>=', $fromStr)
-                ->whereDate('paid_at', '<=', $toStr)
-                ->where('approval_status', 'approved');
-            $self->applyRevenueSearch($revenuesQ, $filters);
-            $expensesQ = Expense::query()
-                ->whereDate('created_at', '>=', $fromStr)
-                ->whereDate('created_at', '<=', $toStr)
-                ->where('approval_status', 'approved');
-            $self->applyExpenseSearch($expensesQ, $filters);
-
-            fputcsv($out, ['إجمالي التحصيلات', (string) (float) (clone $revenuesQ)->sum('amount'), 'عدد السجلات', (string) (clone $revenuesQ)->count()]);
-            fputcsv($out, ['إجمالي المصروفات', (string) (float) (clone $expensesQ)->sum('amount'), 'عدد السجلات', (string) (clone $expensesQ)->count()]);
-            fputcsv($out, ['المتبقي على العقود', (string) (float) Contract::query()->sum('remaining_amount')]);
-            fputcsv($out, []);
-            fputcsv($out, ['تحصيلات — التفاصيل']);
-            fputcsv($out, ['id', 'paid_at', 'amount', 'client', 'category', 'notes']);
-            foreach ((clone $revenuesQ)->with(['client:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->cursor() as $r) {
-                fputcsv($out, [
-                    $r->id,
-                    optional($r->paid_at)->format('Y-m-d'),
-                    (string) (float) $r->amount,
-                    $r->client?->name,
-                    (string) ($r->category ?? ''),
-                    (string) ($r->notes ?? ''),
-                ]);
-            }
-            fputcsv($out, []);
-            fputcsv($out, ['مصروفات — التفاصيل']);
-            fputcsv($out, ['id', 'created_at', 'amount', 'category', 'description']);
-            foreach ((clone $expensesQ)->orderByDesc('id')->cursor() as $e) {
-                fputcsv($out, [
-                    $e->id,
-                    $e->created_at?->format('Y-m-d H:i'),
-                    (string) (float) $e->amount,
-                    (string) ($e->category ?? ''),
-                    (string) ($e->description ?? ''),
-                ]);
-            }
-            fclose($out);
-        }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-        ]);
+            'contractsRemaining' => (float) Contract::query()->sum('remaining_amount'),
+            'contractsOpenCount' => (int) Contract::query()->where('remaining_amount', '>', 0)->count(),
+        ];
     }
 
     private function applyRevenueSearch(Builder $q, ListingFilters $filters): void

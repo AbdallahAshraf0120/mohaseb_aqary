@@ -11,9 +11,14 @@
             <p class="text-body-secondary small mb-0">{{ $project->name }} — ملخص مالي وتشغيلي حسب الفترة والبحث.</p>
         </div>
         @can('reports.export')
-            <a href="{{ route('reports.export', request()->query()) }}" class="btn btn-success btn-sm">
-                <i class="fa-solid fa-file-csv ms-1"></i> تصدير CSV
-            </a>
+            <div class="btn-group" role="group" aria-label="تصدير التقارير">
+                <a href="{{ route('reports.export', ['project' => $project] + request()->query()) }}" class="btn btn-outline-success btn-sm">
+                    <i class="fa-solid fa-file-csv ms-1"></i> CSV
+                </a>
+                <a href="{{ route('reports.export-excel', ['project' => $project] + request()->query()) }}" class="btn btn-success btn-sm">
+                    <i class="fa-solid fa-file-excel ms-1"></i> Excel (أوراق منفصلة)
+                </a>
+            </div>
         @endcan
     </div>
 

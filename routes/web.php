@@ -1,8 +1,8 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
-use App\Http\Controllers\AreaController;
 use App\Http\Controllers\ApprovalsController;
+use App\Http\Controllers\AreaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CashboxController;
 use App\Http\Controllers\ClientController;
@@ -117,6 +117,7 @@ Route::middleware(['auth', AuthorizeRoutePermission::class, SyncProjectFromRoute
         Route::get('settlements', [SettlementController::class, 'index'])->name('settlements.index');
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('reports/export', [ReportController::class, 'exportCsv'])->name('reports.export');
+        Route::get('reports/export-excel', [ReportController::class, 'exportExcel'])->name('reports.export-excel');
         Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
         Route::post('settings/send-available-units-report', [SettingController::class, 'sendAvailableUnitsReportNow'])->name('settings.send-available-units-report');
