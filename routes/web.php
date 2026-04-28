@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\ApprovalsController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CashboxController;
 use App\Http\Controllers\ClientController;
@@ -107,6 +108,9 @@ Route::middleware(['auth', AuthorizeRoutePermission::class, SyncProjectFromRoute
 
         Route::get('cashbox', [CashboxController::class, 'index'])->name('cashbox.index');
         Route::post('cashbox', [CashboxController::class, 'store'])->name('cashbox.store');
+        Route::get('approvals', [ApprovalsController::class, 'index'])->name('approvals.index');
+        Route::post('approvals/{type}/{id}/approve', [ApprovalsController::class, 'approve'])->whereNumber('id')->name('approvals.approve');
+        Route::post('approvals/{type}/{id}/reject', [ApprovalsController::class, 'reject'])->whereNumber('id')->name('approvals.reject');
         Route::post('debts/{debt}/pay-from-cashbox', [DebtController::class, 'payFromCashbox'])->name('debts.pay-from-cashbox');
         Route::resource('debts', DebtController::class)->except(['show']);
         Route::get('remaining', [RemainingController::class, 'index'])->name('remaining.index');

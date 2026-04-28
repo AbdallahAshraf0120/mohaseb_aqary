@@ -131,6 +131,7 @@ class PermissionSeeder extends Seeder
             'revenues' => 'التحصيلات',
             'expenses' => 'المصروفات',
             'cashbox' => 'الصندوق',
+            'approvals' => 'طلبات الاعتماد',
             'debts' => 'الذمم الدائنة',
             'remaining' => 'المتبقي',
             'settlements' => 'التصفيات',
@@ -158,6 +159,8 @@ class PermissionSeeder extends Seeder
             'pay-from-cashbox' => 'سداد من الصندوق',
             'local' => 'عرض ملف',
             'local.upload' => 'رفع ملف',
+            'approve' => 'اعتماد',
+            'reject' => 'رفض',
         ];
 
         // حالات بدون نقطة (home/login/logout/dashboard)

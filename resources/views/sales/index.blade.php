@@ -63,6 +63,7 @@
                                 <th>البروكر</th>
                                 <th>قيمة البيع</th>
                                 <th>المقدم</th>
+                                <th>الحالة</th>
                                 <th class="text-end">العمليات</th>
                             </tr>
                             </thead>
@@ -75,6 +76,15 @@
                                     <td>{{ $sale->broker_name ?: '—' }}</td>
                                     <td>{{ number_format((float) $sale->sale_price, 2) }} ج.م</td>
                                     <td>{{ number_format((float) $sale->down_payment, 2) }} ج.م</td>
+                                    <td>
+                                        @if (($sale->approval_status ?? 'approved') === 'approved')
+                                            <span class="badge text-bg-success">معتمد</span>
+                                        @elseif (($sale->approval_status ?? '') === 'pending')
+                                            <span class="badge text-bg-warning">معلق</span>
+                                        @else
+                                            <span class="badge text-bg-secondary">مرفوض</span>
+                                        @endif
+                                    </td>
                                     <td class="text-end">
                                         <a href="{{ route('sales.show', [$project, $sale]) }}" class="btn btn-outline-info btn-sm">عرض</a>
                                         <a href="{{ route('sales.edit', [$project, $sale]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
@@ -82,7 +92,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted">لا توجد مبيعات مسجلة حتى الآن.</td>
+                                    <td colspan="8" class="text-center text-muted">لا توجد مبيعات مسجلة حتى الآن.</td>
                                 </tr>
                             @endforelse
                             </tbody>

@@ -42,8 +42,13 @@ class StoreRevenueRequest extends FormRequest
             }
 
             $amount = (float) $this->input('amount', 0);
-            if ($amount > (float) $contract->remaining_amount) {
-                $validator->errors()->add('amount', 'قيمة التحصيل أكبر من المتبقي في العقد.');
+            $pendingRequested = (float) Revenue::query()
+                ->where('contract_id', $contract->id)
+                ->where('approval_status', 'pending')
+                ->sum('amount');
+            $available = max(0.0, (float) $contract->remaining_amount - $pendingRequested);
+            if ($amount - $available > 0.009) {
+                $validator->errors()->add('amount', 'قيمة التحصيل أكبر من المتبقي في العقد بعد احتساب العمليات المعلّقة.');
             }
 
             if ($validator->errors()->has('amount')) {
@@ -56,12 +61,14 @@ class StoreRevenueRequest extends FormRequest
                 return;
             }
 
-            $down = round((float) ($sale->down_payment ?? 0), 2);
+            $down = $sale->approval_status === 'approved' ? round((float) ($sale->down_payment ?? 0), 2) : 0.0;
             if ($down < 0.01) {
                 return;
             }
 
-            $revenuesQuery = Revenue::query()->where('contract_id', $contract->id);
+            $revenuesQuery = Revenue::query()
+                ->where('contract_id', $contract->id)
+                ->where('approval_status', 'approved');
             $routeRevenue = $this->route('revenue');
             if ($routeRevenue instanceof Revenue) {
                 $revenuesQuery->where('id', '!=', (int) $routeRevenue->getKey());

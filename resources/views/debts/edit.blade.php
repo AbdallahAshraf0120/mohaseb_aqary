@@ -8,19 +8,22 @@
     <div class="card app-surface mb-4" id="pay-from-cashbox">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">سداد من الصندوق</h5>
-            <span class="text-muted small">المتبقي: <span class="font-monospace">{{ number_format($debt->remaining_amount, 2) }}</span> ج.م</span>
+            <span class="text-muted small">المتاح: <span class="font-monospace">{{ number_format((float) ($remainingAvailable ?? $debt->remaining_amount), 2) }}</span> ج.م</span>
         </div>
         <div class="card-body">
-            @if ($debt->remaining_amount > 0.009)
+            @php
+                $avail = (float) ($remainingAvailable ?? $debt->remaining_amount);
+            @endphp
+            @if ($avail > 0.009)
                 <form method="post" action="{{ route('debts.pay-from-cashbox', [$project, $debt]) }}" class="mb-0">
                     @csrf
                     <div class="row g-3 align-items-end">
                         <div class="col-md-4">
                             <label class="form-label" for="pay-amount">المبلغ (ج.م)</label>
                             <input id="pay-amount" type="number" name="amount" step="0.01" min="0.01"
-                                   max="{{ number_format((float) $debt->remaining_amount, 2, '.', '') }}"
+                                   max="{{ number_format($avail, 2, '.', '') }}"
                                    class="form-control font-monospace @error('amount') is-invalid @enderror @error('pay_amount') is-invalid @enderror"
-                                   value="{{ old('amount', number_format((float) $debt->remaining_amount, 2, '.', '')) }}" required>
+                                   value="{{ old('amount', number_format($avail, 2, '.', '')) }}" required>
                             @error('amount')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -39,7 +42,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="form-text mb-0 mt-2">يُسجَّل كحركة مصروف في الصندوق ويُحدَّث المسدَّد في الذمة.</p>
+                    <p class="form-text mb-0 mt-2">يُسجَّل كحركة مصروف معلّقة في الصندوق حتى اعتماد الأدمن.</p>
                 </form>
             @else
                 <p class="text-muted mb-0">لا يوجد متبقي للسداد من الصندوق لهذه الذمة.</p>
@@ -60,6 +63,7 @@
                             <th>التاريخ</th>
                             <th class="text-end">المبلغ (ج.م)</th>
                             <th>ملاحظة</th>
+                            <th>الحالة</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -69,6 +73,15 @@
                                 <td>{{ $p->created_at?->timezone(config('app.timezone'))->format('Y-m-d H:i') }}</td>
                                 <td class="text-end font-monospace">{{ number_format((float) $p->amount, 2) }}</td>
                                 <td>{{ $p->note ?: '—' }}</td>
+                                <td>
+                                    @if (($p->approval_status ?? 'approved') === 'approved')
+                                        <span class="badge text-bg-success">معتمد</span>
+                                    @elseif (($p->approval_status ?? '') === 'pending')
+                                        <span class="badge text-bg-warning">معلق</span>
+                                    @else
+                                        <span class="badge text-bg-secondary">مرفوض</span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

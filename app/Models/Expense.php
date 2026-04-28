@@ -10,7 +10,18 @@ class Expense extends Model
 {
     use BelongsToProject;
 
-    protected $fillable = ['project_id', 'amount', 'category', 'description'];
+    protected $fillable = [
+        'project_id',
+        'amount',
+        'category',
+        'description',
+        'approval_status',
+        'approved_at',
+        'approved_by',
+        'rejected_at',
+        'rejected_by',
+        'rejection_reason',
+    ];
 
     public function project(): BelongsTo
     {

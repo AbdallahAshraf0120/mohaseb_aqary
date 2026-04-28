@@ -39,6 +39,7 @@
                                     <span class="small text-body-secondary fw-semibold">إجمالي القبض</span>
                                 </div>
                                 <div class="fs-5 fw-bold font-monospace text-success-emphasis">{{ $fmt((float) $revenuesTotal) }}</div>
+                                <div class="small text-body-secondary mt-2">معلق: <span class="font-monospace fw-semibold">{{ $fmt((float) $pendingIn) }}</span></div>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -48,6 +49,7 @@
                                     <span class="small text-body-secondary fw-semibold">إجمالي الصرف</span>
                                 </div>
                                 <div class="fs-5 fw-bold font-monospace text-danger-emphasis">{{ $fmt((float) $expensesTotal) }}</div>
+                                <div class="small text-body-secondary mt-2">معلق: <span class="font-monospace fw-semibold">{{ $fmt((float) $pendingOut) }}</span></div>
                             </div>
                         </div>
                     </div>
@@ -93,6 +95,7 @@
                                 <th class="text-body-secondary fw-semibold">النوع</th>
                                 <th class="text-body-secondary fw-semibold text-end">المبلغ</th>
                                 <th class="text-body-secondary fw-semibold">الوصف</th>
+                                <th class="text-body-secondary fw-semibold">الحالة</th>
                                 <th class="text-body-secondary fw-semibold text-end">التاريخ والوقت</th>
                             </tr>
                             </thead>
@@ -111,11 +114,20 @@
                                         {{ $tx->type === 'revenue' ? '+' : '−' }}{{ $fmt((float) $tx->amount) }}
                                     </td>
                                     <td class="small">{{ $tx->description ? \Illuminate\Support\Str::limit($tx->description, 80) : '—' }}</td>
+                                    <td class="small">
+                                        @if (($tx->approval_status ?? 'approved') === 'approved')
+                                            <span class="badge text-bg-success">معتمد</span>
+                                        @elseif (($tx->approval_status ?? '') === 'pending')
+                                            <span class="badge text-bg-warning">معلق</span>
+                                        @else
+                                            <span class="badge text-bg-secondary">مرفوض</span>
+                                        @endif
+                                    </td>
                                     <td class="text-end small font-monospace text-body-secondary">{{ $tx->created_at?->format('Y-m-d H:i') ?? '—' }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-5">
+                                    <td colspan="6" class="text-center py-5">
                                         <div class="text-body-secondary mb-2"><i class="fa-solid fa-receipt fa-2x opacity-50"></i></div>
                                         <p class="mb-1 fw-semibold">لا توجد حركات مسجّلة بعد</p>
                                         <p class="small text-muted mb-0">سجّل أول حركة قبض أو صرف من النموذج على اليمين.</p>

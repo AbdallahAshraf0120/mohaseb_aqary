@@ -17,6 +17,12 @@ class TreasuryTransaction extends Model
         'reference_type',
         'reference_id',
         'description',
+        'approval_status',
+        'approved_at',
+        'approved_by',
+        'rejected_at',
+        'rejected_by',
+        'rejection_reason',
     ];
 
     public function project(): BelongsTo

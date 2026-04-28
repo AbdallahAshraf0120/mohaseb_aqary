@@ -22,8 +22,8 @@ class DashboardController extends Controller
         $setting = Setting::query()->first();
         $currency = $setting?->currency ?? 'EGP';
 
-        $treasuryIn = (float) TreasuryTransaction::query()->where('type', 'revenue')->sum('amount');
-        $treasuryOut = (float) TreasuryTransaction::query()->where('type', 'expense')->sum('amount');
+        $treasuryIn = (float) TreasuryTransaction::query()->where('type', 'revenue')->where('approval_status', 'approved')->sum('amount');
+        $treasuryOut = (float) TreasuryTransaction::query()->where('type', 'expense')->where('approval_status', 'approved')->sum('amount');
         $balance = $treasuryIn - $treasuryOut;
 
         $stats = [
@@ -39,6 +39,7 @@ class DashboardController extends Controller
             'revenues_this_month' => (float) Revenue::query()
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
+                ->where('approval_status', 'approved')
                 ->sum('amount'),
         ];
 

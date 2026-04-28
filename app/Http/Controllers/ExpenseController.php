@@ -62,10 +62,11 @@ class ExpenseController extends Controller
             'description' => ['nullable', 'string'],
         ]);
 
+        $data['approval_status'] = 'pending';
         $expense = Expense::query()->create($data);
         $this->cashboxLedger->syncFromExpense($expense);
 
-        return redirect()->route('expenses.index')->with('success', 'تم إضافة المصروف بنجاح.');
+        return redirect()->route('expenses.index')->with('success', 'تم تسجيل المصروف كعملية معلقة حتى اعتماد الأدمن.');
     }
 
     public function destroy(Project $project, Expense $expense): RedirectResponse

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreDebtRequest;
 use App\Http\Requests\UpdateDebtRequest;
 use App\Models\Client;
 use App\Models\Debt;
+use App\Models\DebtPayment;
 use App\Models\Project;
 use App\Services\CashboxLedgerService;
 use App\Support\ListingFilters;
@@ -73,12 +74,14 @@ class DebtController extends Controller
     public function edit(Project $project, Debt $debt): View
     {
         $debt->load(['debtPayments' => static fn ($q) => $q->latest()]);
+        $remainingAvailable = $this->debtRemainingApproved($debt);
 
         return view('debts.edit', [
             'title' => 'تعديل ذمة دائنة | Mohaseb Aqary',
             'pageTitle' => 'تعديل ذمة دائنة',
             'project' => $project,
             'debt' => $debt,
+            'remainingAvailable' => $remainingAvailable,
             'modules' => $this->modules(),
         ]);
     }
@@ -91,7 +94,7 @@ class DebtController extends Controller
         ]);
 
         $amount = round((float) $validated['amount'], 2);
-        $remaining = round((float) $debt->remaining_amount, 2);
+        $remaining = round($this->debtRemainingApproved($debt), 2);
         if ($amount - $remaining > 0.009) {
             return redirect()
                 ->route('debts.edit', [$project, $debt])
@@ -103,23 +106,29 @@ class DebtController extends Controller
             $payment = $debt->debtPayments()->create([
                 'amount' => $amount,
                 'note' => $validated['note'] ?? null,
+                'approval_status' => 'pending',
             ]);
             $this->cashboxLedger->syncFromDebtPayment($payment->fresh(['debt']));
-
-            $debt->refresh();
-            $total = round((float) $debt->total_amount, 2);
-            $newPaid = round(min((float) $debt->paid_amount + $amount, $total), 2);
-            $newRemaining = round(max(0.0, $total - $newPaid), 2);
-            $debt->update([
-                'paid_amount' => $newPaid,
-                'remaining_amount' => $newRemaining,
-                'status' => $newRemaining > 0.01 ? 'open' : 'closed',
-            ]);
         });
 
         return redirect()
             ->route('debts.edit', [$project, $debt])
-            ->with('success', 'تم تسجيل السداد من الصندوق وإضافة حركة مصروف مرتبطة بالذمة.');
+            ->with('success', 'تم تسجيل طلب السداد كعملية معلقة حتى اعتماد الأدمن.');
+    }
+
+    private function debtRemainingApproved(Debt $debt): float
+    {
+        $total = round((float) $debt->total_amount, 2);
+        $paid = round((float) DebtPayment::query()
+            ->where('debt_id', $debt->id)
+            ->where('approval_status', 'approved')
+            ->sum('amount'), 2);
+        $pending = round((float) DebtPayment::query()
+            ->where('debt_id', $debt->id)
+            ->where('approval_status', 'pending')
+            ->sum('amount'), 2);
+
+        return max(0.0, $total - $paid - $pending);
     }
 
     public function update(Project $project, Debt $debt, UpdateDebtRequest $request): RedirectResponse

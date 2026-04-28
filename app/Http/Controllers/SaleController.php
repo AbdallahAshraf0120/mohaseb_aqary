@@ -10,6 +10,7 @@ use App\Models\Project;
 use App\Models\Property;
 use App\Models\Revenue;
 use App\Models\Sale;
+use App\Models\TreasuryTransaction;
 use App\Services\CashboxLedgerService;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
@@ -101,12 +102,13 @@ class SaleController extends Controller
             'sale_date' => $validated['sale_date'],
             'broker_name' => $validated['broker_name'],
             'notes' => $validated['notes'] ?? null,
+            'approval_status' => 'pending',
         ]);
 
         $this->syncContractForSale($sale);
         $this->cashboxLedger->syncSaleDownPayment($sale->refresh());
 
-        return redirect()->route('sales.index')->with('success', 'تم تسجيل البيعة بنجاح وإضافة العميل وإنشاء العقد.');
+        return redirect()->route('sales.index')->with('success', 'تم تسجيل البيعة كعملية معلقة حتى اعتماد الأدمن.');
     }
 
     public function show(Project $project, Sale $sale): View
@@ -240,9 +242,18 @@ class SaleController extends Controller
             : $sale->sale_date->copy()->addYear();
         $existingContract = Contract::query()->where('sale_id', $sale->id)->first();
         $revenuesPaid = $existingContract
-            ? (float) Revenue::query()->where('contract_id', $existingContract->id)->sum('amount')
+            ? (float) Revenue::query()
+                ->where('contract_id', $existingContract->id)
+                ->where('approval_status', 'approved')
+                ->sum('amount')
             : 0.0;
-        $totalPaid = (float) $sale->down_payment + $revenuesPaid;
+        $downPaymentApproved = (float) TreasuryTransaction::query()
+            ->withoutProjectScope()
+            ->where('reference_type', Sale::class)
+            ->where('reference_id', $sale->id)
+            ->where('approval_status', 'approved')
+            ->sum('amount');
+        $totalPaid = $downPaymentApproved + $revenuesPaid;
         $remaining = max(0, (float) $sale->sale_price - $totalPaid);
 
         Contract::query()->updateOrCreate(

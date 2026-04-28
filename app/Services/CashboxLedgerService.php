@@ -22,6 +22,7 @@ class CashboxLedgerService
                 'type' => 'revenue',
                 'amount' => $revenue->amount,
                 'description' => $this->revenueDescription($revenue),
+                'approval_status' => (string) ($revenue->approval_status ?? 'approved'),
             ]
         );
     }
@@ -51,6 +52,7 @@ class CashboxLedgerService
                 'type' => 'expense',
                 'amount' => $expense->amount,
                 'description' => $desc !== '' ? $desc : 'مصروف',
+                'approval_status' => (string) ($expense->approval_status ?? 'approved'),
             ]
         );
     }
@@ -89,6 +91,7 @@ class CashboxLedgerService
                 'type' => 'revenue',
                 'amount' => $amount,
                 'description' => $label,
+                'approval_status' => (string) ($sale->approval_status ?? 'approved'),
             ]
         );
     }
@@ -127,6 +130,7 @@ class CashboxLedgerService
                 'type' => 'expense',
                 'amount' => $payment->amount,
                 'description' => implode(' — ', $parts),
+                'approval_status' => (string) ($payment->approval_status ?? 'approved'),
             ]
         );
     }
@@ -146,12 +150,17 @@ class CashboxLedgerService
     {
         TreasuryTransaction::query()
             ->whereIn('reference_type', [Revenue::class, Expense::class, Sale::class, DebtPayment::class])
+            ->where('approval_status', 'approved')
             ->delete();
 
-        Revenue::query()->orderBy('id')->each(fn (Revenue $r) => $this->syncFromRevenue($r));
-        Expense::query()->orderBy('id')->each(fn (Expense $e) => $this->syncFromExpense($e));
-        Sale::query()->orderBy('id')->each(fn (Sale $s) => $this->syncSaleDownPayment($s));
-        DebtPayment::query()->with(['debt' => static fn ($q) => $q->withoutGlobalScopes()])->orderBy('id')->each(fn (DebtPayment $p) => $this->syncFromDebtPayment($p));
+        Revenue::query()->where('approval_status', 'approved')->orderBy('id')->each(fn (Revenue $r) => $this->syncFromRevenue($r));
+        Expense::query()->where('approval_status', 'approved')->orderBy('id')->each(fn (Expense $e) => $this->syncFromExpense($e));
+        Sale::query()->where('approval_status', 'approved')->orderBy('id')->each(fn (Sale $s) => $this->syncSaleDownPayment($s));
+        DebtPayment::query()
+            ->where('approval_status', 'approved')
+            ->with(['debt' => static fn ($q) => $q->withoutGlobalScopes()])
+            ->orderBy('id')
+            ->each(fn (DebtPayment $p) => $this->syncFromDebtPayment($p));
     }
 
     private function revenueDescription(Revenue $revenue): string

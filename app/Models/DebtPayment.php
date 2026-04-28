@@ -12,6 +12,12 @@ class DebtPayment extends Model
         'debt_id',
         'amount',
         'note',
+        'approval_status',
+        'approved_at',
+        'approved_by',
+        'rejected_at',
+        'rejected_by',
+        'rejection_reason',
     ];
 
     protected static function booted(): void

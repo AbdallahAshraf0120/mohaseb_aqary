@@ -31,6 +31,7 @@
                         <th>مرجع العقد</th>
                         <th>القيمة</th>
                         <th>التاريخ</th>
+                        <th>الحالة</th>
                         <th class="text-end">العمليات</th>
                     </tr>
                     </thead>
@@ -43,6 +44,15 @@
                             <td>{{ $revenue->contract_id ? 'CT-' . now()->format('Y') . '-' . str_pad((string) $revenue->contract_id, 3, '0', STR_PAD_LEFT) : '-' }}</td>
                             <td>{{ number_format((float) $revenue->amount, 2) }}</td>
                             <td>{{ $revenue->paid_at?->format('Y-m-d') ?? '-' }}</td>
+                            <td>
+                                @if (($revenue->approval_status ?? 'approved') === 'approved')
+                                    <span class="badge text-bg-success">معتمد</span>
+                                @elseif (($revenue->approval_status ?? '') === 'pending')
+                                    <span class="badge text-bg-warning">معلق</span>
+                                @else
+                                    <span class="badge text-bg-secondary">مرفوض</span>
+                                @endif
+                            </td>
                             <td class="text-end">
                                 <a href="{{ route('revenues.show', [$project, $revenue]) }}" class="btn btn-outline-info btn-sm">عرض</a>
                                 <a href="{{ route('revenues.edit', [$project, $revenue]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
@@ -55,7 +65,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center text-muted">لا توجد عمليات تحصيل حتى الآن.</td>
+                            <td colspan="8" class="text-center text-muted">لا توجد عمليات تحصيل حتى الآن.</td>
                         </tr>
                     @endforelse
                     </tbody>

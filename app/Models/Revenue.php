@@ -21,6 +21,12 @@ class Revenue extends Model
         'paid_at',
         'payment_method',
         'notes',
+        'approval_status',
+        'approved_at',
+        'approved_by',
+        'rejected_at',
+        'rejected_by',
+        'rejection_reason',
     ];
 
     protected $casts = [

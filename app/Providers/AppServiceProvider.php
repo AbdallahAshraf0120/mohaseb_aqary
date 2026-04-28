@@ -145,6 +145,7 @@ class AppServiceProvider extends ServiceProvider
                 'create_permission' => 'revenues.manage',
             ],
             ['route' => 'cashbox.index', 'label' => 'الصندوق', 'icon' => 'fa-vault', 'active' => ['cashbox.*'], 'permission' => 'cashbox.view'],
+            ['route' => 'approvals.index', 'label' => 'طلبات الاعتماد', 'icon' => 'fa-user-check', 'active' => ['approvals.*'], 'permission' => 'approvals.index'],
             [
                 'route' => 'expenses.index',
                 'label' => 'المصروفات',

@@ -35,27 +35,32 @@ class ReportController extends Controller
 
         $revenuesQ = Revenue::query()
             ->whereDate('paid_at', '>=', $fromStr)
-            ->whereDate('paid_at', '<=', $toStr);
+            ->whereDate('paid_at', '<=', $toStr)
+            ->where('approval_status', 'approved');
         $this->applyRevenueSearch($revenuesQ, $filters);
 
         $expensesQ = Expense::query()
             ->whereDate('created_at', '>=', $fromStr)
-            ->whereDate('created_at', '<=', $toStr);
+            ->whereDate('created_at', '<=', $toStr)
+            ->where('approval_status', 'approved');
         $this->applyExpenseSearch($expensesQ, $filters);
 
         $salesQ = Sale::query()
             ->whereDate('sale_date', '>=', $fromStr)
-            ->whereDate('sale_date', '<=', $toStr);
+            ->whereDate('sale_date', '<=', $toStr)
+            ->where('approval_status', 'approved');
         $this->applySaleSearch($salesQ, $filters);
 
         $treasuryInQ = TreasuryTransaction::query()->where('type', 'revenue')
             ->whereDate('created_at', '>=', $fromStr)
-            ->whereDate('created_at', '<=', $toStr);
+            ->whereDate('created_at', '<=', $toStr)
+            ->where('approval_status', 'approved');
         $this->applyTreasurySearch($treasuryInQ, $filters);
 
         $treasuryOutQ = TreasuryTransaction::query()->where('type', 'expense')
             ->whereDate('created_at', '>=', $fromStr)
-            ->whereDate('created_at', '<=', $toStr);
+            ->whereDate('created_at', '<=', $toStr)
+            ->where('approval_status', 'approved');
         $this->applyTreasurySearch($treasuryOutQ, $filters);
 
         $periodStats = [
@@ -74,10 +79,10 @@ class ReportController extends Controller
         $periodStats['net_revenue_expense'] = $periodStats['revenues_sum'] - $periodStats['expenses_sum'];
 
         $allTime = [
-            'treasury_in' => (float) TreasuryTransaction::query()->where('type', 'revenue')->sum('amount'),
-            'treasury_out' => (float) TreasuryTransaction::query()->where('type', 'expense')->sum('amount'),
-            'revenues_sum' => (float) Revenue::query()->sum('amount'),
-            'expenses_sum' => (float) Expense::query()->sum('amount'),
+            'treasury_in' => (float) TreasuryTransaction::query()->where('type', 'revenue')->where('approval_status', 'approved')->sum('amount'),
+            'treasury_out' => (float) TreasuryTransaction::query()->where('type', 'expense')->where('approval_status', 'approved')->sum('amount'),
+            'revenues_sum' => (float) Revenue::query()->where('approval_status', 'approved')->sum('amount'),
+            'expenses_sum' => (float) Expense::query()->where('approval_status', 'approved')->sum('amount'),
         ];
         $allTime['treasury_net'] = $allTime['treasury_in'] - $allTime['treasury_out'];
 
@@ -133,11 +138,13 @@ class ReportController extends Controller
 
             $revenuesQ = Revenue::query()
                 ->whereDate('paid_at', '>=', $fromStr)
-                ->whereDate('paid_at', '<=', $toStr);
+                ->whereDate('paid_at', '<=', $toStr)
+                ->where('approval_status', 'approved');
             $self->applyRevenueSearch($revenuesQ, $filters);
             $expensesQ = Expense::query()
                 ->whereDate('created_at', '>=', $fromStr)
-                ->whereDate('created_at', '<=', $toStr);
+                ->whereDate('created_at', '<=', $toStr)
+                ->where('approval_status', 'approved');
             $self->applyExpenseSearch($expensesQ, $filters);
 
             fputcsv($out, ['إجمالي التحصيلات', (string) (float) (clone $revenuesQ)->sum('amount'), 'عدد السجلات', (string) (clone $revenuesQ)->count()]);

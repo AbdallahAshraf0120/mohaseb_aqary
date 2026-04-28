@@ -89,11 +89,12 @@ class RevenueController extends Controller
     public function store(StoreRevenueRequest $request): RedirectResponse
     {
         $validated = $request->validated();
+        $validated['approval_status'] = 'pending';
         $revenue = Revenue::query()->create($validated);
         $this->cashboxLedger->syncFromRevenue($revenue);
         $this->recalculateContract((int) $revenue->contract_id);
 
-        return redirect()->route('revenues.index')->with('success', 'تم تسجيل التحصيل وتحديث العقد بنجاح.');
+        return redirect()->route('revenues.index')->with('success', 'تم تسجيل التحصيل كعملية معلقة حتى اعتماد الأدمن.');
     }
 
     public function show(Project $project, Revenue $revenue): View
@@ -161,13 +162,16 @@ class RevenueController extends Controller
 
     private function recalculateContract(int $contractId): void
     {
-        $contract = Contract::query()->with('sale:id,down_payment')->find($contractId);
+        $contract = Contract::query()->with('sale:id,down_payment,approval_status')->find($contractId);
         if (! $contract) {
             return;
         }
 
-        $paidFromRevenues = (float) Revenue::query()->where('contract_id', $contractId)->sum('amount');
-        $downPayment = (float) ($contract->sale?->down_payment ?? 0);
+        $paidFromRevenues = (float) Revenue::query()
+            ->where('contract_id', $contractId)
+            ->where('approval_status', 'approved')
+            ->sum('amount');
+        $downPayment = (float) (($contract->sale?->approval_status ?? 'approved') === 'approved' ? ($contract->sale?->down_payment ?? 0) : 0);
         $paid = $downPayment + $paidFromRevenues;
         $contract->update([
             'paid_amount' => $paid,

@@ -90,6 +90,10 @@ return [
     'cashbox.index' => 'cashbox.index',
     'cashbox.store' => 'cashbox.store',
 
+    'approvals.index' => 'approvals.index',
+    'approvals.approve' => 'approvals.approve',
+    'approvals.reject' => 'approvals.reject',
+
     'debts.index' => 'debts.index',
     'debts.create' => 'debts.create',
     'debts.store' => 'debts.store',

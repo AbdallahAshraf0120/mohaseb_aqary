@@ -27,6 +27,12 @@ class Sale extends Model
         'sale_date',
         'broker_name',
         'notes',
+        'approval_status',
+        'approved_at',
+        'approved_by',
+        'rejected_at',
+        'rejected_by',
+        'rejection_reason',
     ];
 
     protected $casts = [

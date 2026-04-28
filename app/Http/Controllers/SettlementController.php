@@ -14,8 +14,8 @@ class SettlementController extends Controller
     public function index(Project $project, Request $request): View
     {
         $filters = ListingFilters::fromRequest($request);
-        $revQ = Revenue::query();
-        $expQ = Expense::query();
+        $revQ = Revenue::query()->where('approval_status', 'approved');
+        $expQ = Expense::query()->where('approval_status', 'approved');
         $filters->applyWhereDate($revQ, 'paid_at');
         $filters->applyWhereDate($expQ, 'created_at');
         if ($filters->q !== '') {

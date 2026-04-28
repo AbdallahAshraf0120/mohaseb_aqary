@@ -23,7 +23,7 @@
             @endif
             <div class="table-responsive">
                 <table class="table table-striped align-middle">
-                    <thead><tr><th>#</th><th>الفئة</th><th>القيمة</th><th>الوصف</th><th class="text-end">حذف</th></tr></thead>
+                    <thead><tr><th>#</th><th>الفئة</th><th>القيمة</th><th>الوصف</th><th>الحالة</th><th class="text-end">حذف</th></tr></thead>
                     <tbody>
                     @forelse ($expenses as $expense)
                         <tr>
@@ -31,6 +31,15 @@
                             <td>{{ $expense->category }}</td>
                             <td>{{ number_format((float) $expense->amount, 2) }}</td>
                             <td>{{ $expense->description ?: '-' }}</td>
+                            <td>
+                                @if (($expense->approval_status ?? 'approved') === 'approved')
+                                    <span class="badge text-bg-success">معتمد</span>
+                                @elseif (($expense->approval_status ?? '') === 'pending')
+                                    <span class="badge text-bg-warning">معلق</span>
+                                @else
+                                    <span class="badge text-bg-secondary">مرفوض</span>
+                                @endif
+                            </td>
                             <td class="text-end">
                                 <form method="post" action="{{ route('expenses.destroy', [$project, $expense]) }}" data-swal-confirm="{{ e('حذف المصروف؟') }}">
                                     @csrf @method('DELETE')
@@ -39,7 +48,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="text-center text-muted">لا توجد مصروفات حتى الآن.</td></tr>
+                        <tr><td colspan="6" class="text-center text-muted">لا توجد مصروفات حتى الآن.</td></tr>
                     @endforelse
                     </tbody>
                 </table>

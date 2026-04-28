@@ -17,18 +17,27 @@ class CashboxController extends Controller
         $filters = ListingFilters::fromRequest($request);
         $opening = 0.0;
 
-        $inQuery = TreasuryTransaction::query()->where('type', 'revenue');
-        $outQuery = TreasuryTransaction::query()->where('type', 'expense');
-        $filters->applyWhereDate($inQuery, 'created_at');
-        $filters->applyWhereDate($outQuery, 'created_at');
+        $approvedInQuery = TreasuryTransaction::query()->where('type', 'revenue')->where('approval_status', 'approved');
+        $approvedOutQuery = TreasuryTransaction::query()->where('type', 'expense')->where('approval_status', 'approved');
+        $pendingInQuery = TreasuryTransaction::query()->where('type', 'revenue')->where('approval_status', 'pending');
+        $pendingOutQuery = TreasuryTransaction::query()->where('type', 'expense')->where('approval_status', 'pending');
         if ($filters->q !== '') {
             $like = '%'.$filters->likeTerm().'%';
-            $inQuery->where('description', 'like', $like);
-            $outQuery->where('description', 'like', $like);
+            $approvedInQuery->where('description', 'like', $like);
+            $approvedOutQuery->where('description', 'like', $like);
+            $pendingInQuery->where('description', 'like', $like);
+            $pendingOutQuery->where('description', 'like', $like);
         }
 
-        $treasuryIn = (float) (clone $inQuery)->sum('amount');
-        $treasuryOut = (float) (clone $outQuery)->sum('amount');
+        $filters->applyWhereDate($approvedInQuery, 'created_at');
+        $filters->applyWhereDate($approvedOutQuery, 'created_at');
+        $filters->applyWhereDate($pendingInQuery, 'created_at');
+        $filters->applyWhereDate($pendingOutQuery, 'created_at');
+
+        $treasuryIn = (float) (clone $approvedInQuery)->sum('amount');
+        $treasuryOut = (float) (clone $approvedOutQuery)->sum('amount');
+        $pendingIn = (float) (clone $pendingInQuery)->sum('amount');
+        $pendingOut = (float) (clone $pendingOutQuery)->sum('amount');
         $currentBalance = $opening + $treasuryIn - $treasuryOut;
 
         $txQuery = TreasuryTransaction::query()->latest();
@@ -49,6 +58,8 @@ class CashboxController extends Controller
             'openingBalance' => $opening,
             'revenuesTotal' => $treasuryIn,
             'expensesTotal' => $treasuryOut,
+            'pendingIn' => $pendingIn,
+            'pendingOut' => $pendingOut,
             'currentBalance' => $currentBalance,
             'transactions' => $txQuery->paginate(15)->withQueryString(),
             'modules' => $this->modules(),
@@ -67,11 +78,12 @@ class CashboxController extends Controller
             'type' => $data['type'],
             'amount' => $data['amount'],
             'description' => $data['description'] ?? null,
+            'approval_status' => 'pending',
         ]);
 
         return redirect()
             ->route('cashbox.index', [$project])
-            ->with('success', 'تم تسجيل حركة الصندوق بنجاح.');
+            ->with('success', 'تم تسجيل حركة الصندوق كعملية معلقة حتى اعتماد الأدمن.');
     }
 
     private function modules(): array
