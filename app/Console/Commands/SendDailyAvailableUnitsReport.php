@@ -9,8 +9,8 @@ use App\Models\Sale;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 
 class SendDailyAvailableUnitsReport extends Command
 {
@@ -28,7 +28,7 @@ class SendDailyAvailableUnitsReport extends Command
         }
 
         $reportDate = now()->toDateString();
-        $nowTime = now()->format('H:i');
+        $tz = config('app.timezone');
         $sent = 0;
 
         foreach ($projects->get() as $project) {
@@ -44,8 +44,14 @@ class SendDailyAvailableUnitsReport extends Command
                 if (! $enabled) {
                     continue;
                 }
-                // مرونة: أرسل مرة واحدة يوميًا عند تجاوز/مساواة الوقت المحدد (بدل الاعتماد على تطابق الدقيقة).
-                if ($nowTime < $at) {
+
+                // وقت بدء الإرسال اليومي: مقارنة زمنية حقيقية (بدون مقارنة سلاسل "H:i" التي تخطئ بين الصباح والمساء).
+                try {
+                    $scheduledStart = Carbon::parse($reportDate.' '.$at, $tz);
+                } catch (\Throwable) {
+                    continue;
+                }
+                if (now()->lt($scheduledStart)) {
                     continue;
                 }
 
@@ -57,11 +63,16 @@ class SendDailyAvailableUnitsReport extends Command
                     if ($lastSentDate === $reportDate) {
                         continue;
                     }
-                } else {
-                    // تكرار: لا نرسل إلا إذا مرّت مدة التكرار منذ آخر إرسال (أو لم يرسل اليوم)
-                    if ($lastSentAtRaw !== '' && Str::startsWith($lastSentAtRaw, $reportDate)) {
-                        $last = \Illuminate\Support\Carbon::parse($lastSentAtRaw);
-                        if (now()->diffInMinutes($last) < $repeatMinutes) {
+                } elseif ($lastSentAtRaw !== '') {
+                    // تكرار: لا نرسل قبل انتهاء مدة التهدئة منذ آخر إرسال (نفس اليوم فقط لحساب التهدئة).
+                    try {
+                        $last = Carbon::parse($lastSentAtRaw, $tz);
+                    } catch (\Throwable) {
+                        $last = null;
+                    }
+                    if ($last instanceof Carbon && $last->isSameDay(now())) {
+                        $nextAllowedAt = $last->copy()->addMinutes($repeatMinutes);
+                        if (now()->lt($nextAllowedAt)) {
                             continue;
                         }
                     }
@@ -165,4 +176,3 @@ class SendDailyAvailableUnitsReport extends Command
         return $rows;
     }
 }
-
