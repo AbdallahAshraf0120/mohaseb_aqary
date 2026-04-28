@@ -42,7 +42,13 @@ class SendDailyAvailableUnitsReport extends Command
                 if (! $enabled) {
                     continue;
                 }
-                if ($nowTime !== $at) {
+                // مرونة: أرسل مرة واحدة يوميًا عند تجاوز/مساواة الوقت المحدد (بدل الاعتماد على تطابق الدقيقة).
+                if ($nowTime < $at) {
+                    continue;
+                }
+
+                $lastSent = (string) data_get($setting?->meta, 'daily_available_units_report_last_sent_date', '');
+                if ($lastSent === $reportDate) {
                     continue;
                 }
             }
@@ -78,6 +84,13 @@ class SendDailyAvailableUnitsReport extends Command
                 reportDate: $reportDate,
                 rows: $rows,
             ));
+
+            if ($setting) {
+                $meta = $setting->meta ?? [];
+                $meta['daily_available_units_report_last_sent_date'] = $reportDate;
+                $meta['daily_available_units_report_last_sent_at'] = now()->toDateTimeString();
+                $setting->update(['meta' => $meta]);
+            }
 
             $sent++;
         }
