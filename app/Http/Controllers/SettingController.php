@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Project;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\CurrentProject;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,8 +14,10 @@ use Illuminate\Support\Facades\Artisan;
 
 class SettingController extends Controller
 {
-    public function edit(): View
+    public function edit(Request $request): View
     {
+        /** @var Project $project */
+        $project = $request->route('project');
         $projectId = app(CurrentProject::class)->id();
         $setting = Setting::query()->firstOrCreate(
             ['project_id' => $projectId],
@@ -24,12 +28,29 @@ class SettingController extends Controller
             ]
         );
 
+        $lastSentDisplay = null;
+        $lastSentRelative = null;
+        $lastSentRaw = (string) data_get($setting->meta, 'daily_available_units_report_last_sent_at', '');
+        if ($lastSentRaw !== '') {
+            try {
+                $dt = Carbon::parse($lastSentRaw)->timezone(config('app.timezone'));
+                $lastSentDisplay = $dt->format('Y-m-d H:i');
+                $lastSentRelative = $dt->locale(app()->getLocale())->diffForHumans();
+            } catch (\Throwable) {
+                //
+            }
+        }
+
         return view('settings.edit', [
             'title' => 'الإعدادات | Mohaseb Aqary',
             'pageTitle' => 'الإعدادات',
+            'project' => $project,
             'setting' => $setting,
             'users' => User::query()->select('id', 'name', 'email', 'role')->orderBy('name')->get(),
             'modules' => $this->modules(),
+            'appTimezone' => config('app.timezone'),
+            'lastSentDisplay' => $lastSentDisplay,
+            'lastSentRelative' => $lastSentRelative,
         ]);
     }
 
@@ -64,27 +85,28 @@ class SettingController extends Controller
         unset($data['daily_available_units_report_repeat_minutes']);
         $setting->update(array_merge($data, ['meta' => $meta]));
 
-        return redirect()->route('settings.edit')->with('success', 'تم تحديث الإعدادات بنجاح.');
+        /** @var Project $project */
+        $project = $request->route('project');
+
+        return redirect()->route('settings.edit', $project)->with('success', 'تم تحديث الإعدادات بنجاح.');
     }
 
     public function sendAvailableUnitsReportNow(Request $request): RedirectResponse
     {
-        $projectId = app(CurrentProject::class)->id();
-        if ($projectId === null) {
-            return redirect()->route('settings.edit')->with('error', 'تعذّر تحديد المشروع الحالي.');
-        }
+        /** @var Project $project */
+        $project = $request->route('project');
 
         $code = Artisan::call('reports:daily-available-units', [
-            '--project' => (int) $projectId,
+            '--project' => (int) $project->id,
             '--force' => true,
         ]);
 
         $output = trim((string) Artisan::output());
         if ($code !== 0) {
-            return redirect()->route('settings.edit')->with('error', $output !== '' ? $output : 'تعذّر إرسال التقرير.');
+            return redirect()->route('settings.edit', $project)->with('error', $output !== '' ? $output : 'تعذّر إرسال التقرير.');
         }
 
-        return redirect()->route('settings.edit')->with('success', $output !== '' ? $output : 'تم إرسال التقرير الآن (إن وُجد مستلمون).');
+        return redirect()->route('settings.edit', $project)->with('success', $output !== '' ? $output : 'تم إرسال التقرير الآن (إن وُجد مستلمون).');
     }
 
     private function modules(): array
