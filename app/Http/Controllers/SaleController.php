@@ -85,6 +85,8 @@ class SaleController extends Controller
     public function store(StoreSaleRequest $request): RedirectResponse
     {
         $validated = $request->validated();
+        $user = $request->user();
+        $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
         $client = $this->createClientForNewSale($validated);
 
         $sale = Sale::query()->create([
@@ -102,13 +104,15 @@ class SaleController extends Controller
             'sale_date' => $validated['sale_date'],
             'broker_name' => $validated['broker_name'],
             'notes' => $validated['notes'] ?? null,
-            'approval_status' => 'pending',
+            'approval_status' => $isAdmin ? 'approved' : 'pending',
+            'approved_at' => $isAdmin ? now() : null,
+            'approved_by' => $isAdmin ? (int) $user->id : null,
         ]);
 
         $this->syncContractForSale($sale);
         $this->cashboxLedger->syncSaleDownPayment($sale->refresh());
 
-        return redirect()->route('sales.index')->with('success', 'تم تسجيل البيعة كعملية معلقة حتى اعتماد الأدمن.');
+        return redirect()->route('sales.index')->with('success', $isAdmin ? 'تم تسجيل البيعة واعتمادها تلقائيًا.' : 'تم تسجيل البيعة كعملية معلقة حتى اعتماد الأدمن.');
     }
 
     public function show(Project $project, Sale $sale): View

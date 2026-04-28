@@ -89,12 +89,18 @@ class RevenueController extends Controller
     public function store(StoreRevenueRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        $validated['approval_status'] = 'pending';
+        $user = $request->user();
+        $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
+        $validated['approval_status'] = $isAdmin ? 'approved' : 'pending';
+        if ($isAdmin) {
+            $validated['approved_at'] = now();
+            $validated['approved_by'] = (int) $user->id;
+        }
         $revenue = Revenue::query()->create($validated);
         $this->cashboxLedger->syncFromRevenue($revenue);
         $this->recalculateContract((int) $revenue->contract_id);
 
-        return redirect()->route('revenues.index')->with('success', 'تم تسجيل التحصيل كعملية معلقة حتى اعتماد الأدمن.');
+        return redirect()->route('revenues.index')->with('success', $isAdmin ? 'تم تسجيل التحصيل واعتماده تلقائيًا.' : 'تم تسجيل التحصيل كعملية معلقة حتى اعتماد الأدمن.');
     }
 
     public function show(Project $project, Revenue $revenue): View
@@ -140,7 +146,18 @@ class RevenueController extends Controller
     public function update(UpdateRevenueRequest $request, Project $project, Revenue $revenue): RedirectResponse
     {
         $oldContractId = (int) $revenue->contract_id;
-        $revenue->update($request->validated());
+        $payload = $request->validated();
+        $user = $request->user();
+        $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
+        if ($isAdmin) {
+            $payload['approval_status'] = 'approved';
+            $payload['approved_at'] = $revenue->approved_at ?? now();
+            $payload['approved_by'] = $revenue->approved_by ?? (int) $user->id;
+            $payload['rejected_at'] = null;
+            $payload['rejected_by'] = null;
+            $payload['rejection_reason'] = null;
+        }
+        $revenue->update($payload);
         $revenue->refresh();
         $this->cashboxLedger->syncFromRevenue($revenue);
         $this->recalculateContract($oldContractId);

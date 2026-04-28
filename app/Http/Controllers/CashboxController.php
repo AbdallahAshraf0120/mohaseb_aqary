@@ -74,16 +74,21 @@ class CashboxController extends Controller
             'description' => ['nullable', 'string'],
         ]);
 
+        $user = $request->user();
+        $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
+
         TreasuryTransaction::query()->create([
             'type' => $data['type'],
             'amount' => $data['amount'],
             'description' => $data['description'] ?? null,
-            'approval_status' => 'pending',
+            'approval_status' => $isAdmin ? 'approved' : 'pending',
+            'approved_at' => $isAdmin ? now() : null,
+            'approved_by' => $isAdmin ? (int) $user->id : null,
         ]);
 
         return redirect()
             ->route('cashbox.index', [$project])
-            ->with('success', 'تم تسجيل حركة الصندوق كعملية معلقة حتى اعتماد الأدمن.');
+            ->with('success', $isAdmin ? 'تم تسجيل حركة الصندوق واعتمادها تلقائيًا.' : 'تم تسجيل حركة الصندوق كعملية معلقة حتى اعتماد الأدمن.');
     }
 
     private function modules(): array

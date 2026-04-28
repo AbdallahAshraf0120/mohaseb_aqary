@@ -93,6 +93,9 @@ class DebtController extends Controller
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
+        $user = $request->user();
+        $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
+
         $amount = round((float) $validated['amount'], 2);
         $remaining = round($this->debtRemainingApproved($debt), 2);
         if ($amount - $remaining > 0.009) {
@@ -102,18 +105,24 @@ class DebtController extends Controller
                 ->withInput();
         }
 
-        DB::transaction(function () use ($debt, $amount, $validated): void {
+        DB::transaction(function () use ($debt, $amount, $validated, $isAdmin, $user): void {
             $payment = $debt->debtPayments()->create([
                 'amount' => $amount,
                 'note' => $validated['note'] ?? null,
-                'approval_status' => 'pending',
+                'approval_status' => $isAdmin ? 'approved' : 'pending',
+                'approved_at' => $isAdmin ? now() : null,
+                'approved_by' => $isAdmin ? (int) $user->id : null,
             ]);
             $this->cashboxLedger->syncFromDebtPayment($payment->fresh(['debt']));
+
+            if ($isAdmin) {
+                $this->recalculateDebtInline($debt);
+            }
         });
 
         return redirect()
             ->route('debts.edit', [$project, $debt])
-            ->with('success', 'تم تسجيل طلب السداد كعملية معلقة حتى اعتماد الأدمن.');
+            ->with('success', $isAdmin ? 'تم تسجيل السداد واعتماده تلقائيًا.' : 'تم تسجيل طلب السداد كعملية معلقة حتى اعتماد الأدمن.');
     }
 
     private function debtRemainingApproved(Debt $debt): float
@@ -129,6 +138,23 @@ class DebtController extends Controller
             ->sum('amount'), 2);
 
         return max(0.0, $total - $paid - $pending);
+    }
+
+    private function recalculateDebtInline(Debt $debt): void
+    {
+        $debt->refresh();
+        $total = round((float) $debt->total_amount, 2);
+        $paid = round((float) DebtPayment::query()
+            ->where('debt_id', $debt->id)
+            ->where('approval_status', 'approved')
+            ->sum('amount'), 2);
+        $paid = min($paid, $total);
+        $remaining = round(max(0.0, $total - $paid), 2);
+        $debt->update([
+            'paid_amount' => $paid,
+            'remaining_amount' => $remaining,
+            'status' => $remaining > 0.01 ? 'open' : 'closed',
+        ]);
     }
 
     public function update(Project $project, Debt $debt, UpdateDebtRequest $request): RedirectResponse

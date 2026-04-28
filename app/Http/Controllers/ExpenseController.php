@@ -62,11 +62,17 @@ class ExpenseController extends Controller
             'description' => ['nullable', 'string'],
         ]);
 
-        $data['approval_status'] = 'pending';
+        $user = $request->user();
+        $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
+        $data['approval_status'] = $isAdmin ? 'approved' : 'pending';
+        if ($isAdmin) {
+            $data['approved_at'] = now();
+            $data['approved_by'] = (int) $user->id;
+        }
         $expense = Expense::query()->create($data);
         $this->cashboxLedger->syncFromExpense($expense);
 
-        return redirect()->route('expenses.index')->with('success', 'تم تسجيل المصروف كعملية معلقة حتى اعتماد الأدمن.');
+        return redirect()->route('expenses.index')->with('success', $isAdmin ? 'تم تسجيل المصروف واعتماده تلقائيًا.' : 'تم تسجيل المصروف كعملية معلقة حتى اعتماد الأدمن.');
     }
 
     public function destroy(Project $project, Expense $expense): RedirectResponse
