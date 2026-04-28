@@ -10,6 +10,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class SendDailyAvailableUnitsReport extends Command
 {
@@ -38,6 +39,7 @@ class SendDailyAvailableUnitsReport extends Command
 
             $enabled = (bool) data_get($setting?->meta, 'daily_available_units_report_enabled', false);
             $at = (string) data_get($setting?->meta, 'daily_available_units_report_time', '08:00');
+            $repeatMinutes = (int) data_get($setting?->meta, 'daily_available_units_report_repeat_minutes', 0);
             if (! $force) {
                 if (! $enabled) {
                     continue;
@@ -47,9 +49,22 @@ class SendDailyAvailableUnitsReport extends Command
                     continue;
                 }
 
-                $lastSent = (string) data_get($setting?->meta, 'daily_available_units_report_last_sent_date', '');
-                if ($lastSent === $reportDate) {
-                    continue;
+                $lastSentAtRaw = (string) data_get($setting?->meta, 'daily_available_units_report_last_sent_at', '');
+                $lastSentDate = (string) data_get($setting?->meta, 'daily_available_units_report_last_sent_date', '');
+
+                // repeatMinutes=0 => مرة واحدة يوميًا
+                if ($repeatMinutes <= 0) {
+                    if ($lastSentDate === $reportDate) {
+                        continue;
+                    }
+                } else {
+                    // تكرار: لا نرسل إلا إذا مرّت مدة التكرار منذ آخر إرسال (أو لم يرسل اليوم)
+                    if ($lastSentAtRaw !== '' && Str::startsWith($lastSentAtRaw, $reportDate)) {
+                        $last = \Illuminate\Support\Carbon::parse($lastSentAtRaw);
+                        if (now()->diffInMinutes($last) < $repeatMinutes) {
+                            continue;
+                        }
+                    }
                 }
             }
 

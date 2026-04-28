@@ -39,6 +39,7 @@ class SettingController extends Controller
             'currency' => ['required', 'string', 'max:20'],
             'daily_available_units_report_enabled' => ['nullable', 'in:0,1'],
             'daily_available_units_report_time' => ['nullable', 'date_format:H:i'],
+            'daily_available_units_report_repeat_minutes' => ['nullable', 'integer', 'min:0', 'max:1440'],
             'daily_available_units_report_recipients' => ['nullable', 'array'],
             'daily_available_units_report_recipients.*' => ['integer', 'exists:users,id'],
         ]);
@@ -53,11 +54,13 @@ class SettingController extends Controller
         $meta = $setting->meta ?? [];
         $meta['daily_available_units_report_enabled'] = $request->boolean('daily_available_units_report_enabled');
         $meta['daily_available_units_report_time'] = $data['daily_available_units_report_time'] ?? data_get($meta, 'daily_available_units_report_time', '08:00');
+        $meta['daily_available_units_report_repeat_minutes'] = (int) ($data['daily_available_units_report_repeat_minutes'] ?? data_get($meta, 'daily_available_units_report_repeat_minutes', 0));
         $meta['daily_available_units_report_recipients'] = $recipients;
 
         unset($data['daily_available_units_report_recipients']);
         unset($data['daily_available_units_report_enabled']);
         unset($data['daily_available_units_report_time']);
+        unset($data['daily_available_units_report_repeat_minutes']);
         $setting->update(array_merge($data, ['meta' => $meta]));
 
         return redirect()->route('settings.edit')->with('success', 'تم تحديث الإعدادات بنجاح.');

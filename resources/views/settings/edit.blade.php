@@ -7,6 +7,7 @@
             ->all();
         $reportEnabled = (bool) old('daily_available_units_report_enabled', data_get($setting->meta, 'daily_available_units_report_enabled', false));
         $reportTime = (string) old('daily_available_units_report_time', data_get($setting->meta, 'daily_available_units_report_time', '08:00'));
+        $repeatMinutes = (int) old('daily_available_units_report_repeat_minutes', data_get($setting->meta, 'daily_available_units_report_repeat_minutes', 0));
         $selectedCount = count($selected);
     @endphp
 
@@ -76,6 +77,22 @@
                                 <label class="small text-body-secondary" for="report-time">وقت الإرسال</label>
                                 <input type="time" class="form-control form-control-sm" style="width: 8rem" id="report-time"
                                        name="daily_available_units_report_time" value="{{ $reportTime }}">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small text-body-secondary mb-1" for="report-repeat">تكرار الإرسال</label>
+                                <select class="form-select form-select-sm" id="report-repeat" name="daily_available_units_report_repeat_minutes">
+                                    <option value="0" @selected($repeatMinutes === 0)>مرة واحدة يوميًا</option>
+                                    <option value="30" @selected($repeatMinutes === 30)>كل 30 دقيقة</option>
+                                    <option value="60" @selected($repeatMinutes === 60)>كل ساعة</option>
+                                    <option value="180" @selected($repeatMinutes === 180)>كل 3 ساعات</option>
+                                    <option value="360" @selected($repeatMinutes === 360)>كل 6 ساعات</option>
+                                    <option value="720" @selected($repeatMinutes === 720)>كل 12 ساعة</option>
+                                </select>
+                                <div class="form-text">بعد وقت الإرسال المحدد أعلاه، سيُعاد الإرسال حسب التكرار. (يمنع التكرار قبل انتهاء المدة)</div>
+                                @error('daily_available_units_report_repeat_minutes')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
                             </div>
                         </div>
 
