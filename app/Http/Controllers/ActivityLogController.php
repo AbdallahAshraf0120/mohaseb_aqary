@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Spatie\Activitylog\Models\Activity;
@@ -19,7 +20,11 @@ class ActivityLogController extends Controller
             $query->where(function ($q) use ($term): void {
                 $q->where('description', 'like', $term)
                     ->orWhere('log_name', 'like', $term)
-                    ->orWhere('event', 'like', $term);
+                    ->orWhere('event', 'like', $term)
+                    ->orWhere('properties->route', 'like', $term)
+                    ->orWhere('properties->path', 'like', $term)
+                    ->orWhere('properties->method', 'like', $term)
+                    ->orWhere('properties', 'like', $term);
             });
         }
 
@@ -27,7 +32,7 @@ class ActivityLogController extends Controller
             $query->where('log_name', $request->string('log_name'));
         }
 
-        $activities = $query->paginate(40)->withQueryString();
+        $activities = $query->paginate(75)->withQueryString();
 
         $logNames = Activity::query()
             ->whereNotNull('log_name')
@@ -37,6 +42,13 @@ class ActivityLogController extends Controller
             ->filter()
             ->values();
 
+        $todayStart = Carbon::now()->startOfDay();
+        $stats = [
+            'today_total' => Activity::query()->where('created_at', '>=', $todayStart)->count(),
+            'today_http' => Activity::query()->where('created_at', '>=', $todayStart)->where('log_name', 'http')->count(),
+            'today_auth' => Activity::query()->where('created_at', '>=', $todayStart)->where('log_name', 'auth')->count(),
+        ];
+
         return view('activity-log.index', [
             'title' => 'سجل النشاط | Mohaseb Aqary',
             'pageTitle' => 'سجل النشاط',
@@ -44,6 +56,7 @@ class ActivityLogController extends Controller
             'logNames' => $logNames,
             'q' => $request->string('q')->toString(),
             'filterLogName' => $request->string('log_name')->toString(),
+            'stats' => $stats,
         ]);
     }
 }

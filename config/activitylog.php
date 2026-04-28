@@ -10,6 +10,12 @@ return [
     'enabled' => env('ACTIVITY_LOGGER_ENABLED', true),
 
     /*
+     * تسجيل كل طلب HTTP للمستخدم المسجّل (سجل log_name = http) مع استثناء محاولات تسجيل الدخول المكررة.
+     * عطّله لتقليل الحجم على الخوادم ضعيفة: ACTIVITY_LOG_HTTP_REQUESTS=false
+     */
+    'log_http_requests' => env('ACTIVITY_LOG_HTTP_REQUESTS', true),
+
+    /*
      * When the clean-command is executed, all recording activities older than
      * the number of days specified here will be deleted.
      */
