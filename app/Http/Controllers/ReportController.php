@@ -14,7 +14,9 @@ use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
+use Mpdf\Mpdf;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
@@ -140,6 +142,87 @@ class ReportController extends Controller
             $exporter->stream();
         }, $exporter->downloadFilename(), [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function exportPdf(Project $project, Request $request): Response
+    {
+        @ini_set('memory_limit', '512M');
+
+        $setting = Setting::query()->first();
+        $currencyLabel = strtoupper((string) ($setting?->currency ?? 'EGP')) === 'EGP' ? 'ج.م' : (string) ($setting?->currency ?? '');
+
+        $w = $this->buildFilteredQueries($request);
+        $snap = $this->financialSnapshots($w);
+
+        $revenues = (clone $w['revenuesQ'])->with(['client:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->get();
+        $expenses = (clone $w['expensesQ'])->orderByDesc('id')->get();
+        $sales = (clone $w['salesQ'])->with(['client:id,name', 'property:id,name'])->orderByDesc('sale_date')->orderByDesc('id')->get();
+        $treasuryIn = (clone $w['treasuryInQ'])->orderByDesc('created_at')->orderByDesc('id')->get();
+        $treasuryOut = (clone $w['treasuryOutQ'])->orderByDesc('created_at')->orderByDesc('id')->get();
+        $contracts = Contract::query()->with(['client:id,name', 'property:id,name'])->orderBy('id')->get();
+
+        $ps = $snap['periodStats'];
+        $at = $snap['allTime'];
+
+        $summaryPeriod = [
+            'تحصيلات الفترة (إجمالي)' => $ps['revenues_sum'],
+            'عدد إيصالات التحصيل' => $ps['revenues_count'],
+            'مصروفات الفترة (إجمالي)' => $ps['expenses_sum'],
+            'عدد سجلات المصروفات' => $ps['expenses_count'],
+            'صافي (تحصيل − مصروف)' => $ps['net_revenue_expense'],
+            'مبيعات الفترة (إجمالي)' => $ps['sales_sum'],
+            'مجموع المقدمات' => $ps['sales_down'],
+            'عدد المبيعات' => $ps['sales_count'],
+            'صندوق الفترة — وارد' => $ps['treasury_in'],
+            'صندوق الفترة — صادر' => $ps['treasury_out'],
+            'صندوق الفترة — صافي' => $ps['net_treasury'],
+        ];
+
+        $summaryAllTime = [
+            'تحصيلات متراكمة (كل الفترات)' => $at['revenues_sum'],
+            'مصروفات متراكمة' => $at['expenses_sum'],
+            'وارد الصندوق اليدوي' => $at['treasury_in'],
+            'صادر الصندوق اليدوي' => $at['treasury_out'],
+            'صافي الصندوق' => $at['treasury_net'],
+            'المتبقي على العقود' => $snap['contractsRemaining'],
+            'عدد العقود ذات متبقٍ' => $snap['contractsOpenCount'],
+        ];
+
+        $html = view('reports.export-pdf', [
+            'project' => $project,
+            'currencyLabel' => $currencyLabel,
+            'filters' => $w['filters'],
+            'fromStr' => $w['fromStr'],
+            'toStr' => $w['toStr'],
+            'summaryPeriod' => $summaryPeriod,
+            'summaryAllTime' => $summaryAllTime,
+            'revenues' => $revenues,
+            'expenses' => $expenses,
+            'sales' => $sales,
+            'treasuryIn' => $treasuryIn,
+            'treasuryOut' => $treasuryOut,
+            'contracts' => $contracts,
+        ])->render();
+
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4-L',
+            'margin_left' => 8,
+            'margin_right' => 8,
+            'margin_top' => 12,
+            'margin_bottom' => 14,
+        ]);
+        $mpdf->SetDirectionality('rtl');
+        $mpdf->autoScriptToLang = true;
+        $mpdf->autoLangToFont = true;
+        $mpdf->WriteHTML($html);
+
+        $filename = 'report-'.$project->id.'-'.$w['fromStr'].'-'.$w['toStr'].'.pdf';
+
+        return response($mpdf->Output('', 'S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 

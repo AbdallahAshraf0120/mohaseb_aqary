@@ -118,6 +118,7 @@ Route::middleware(['auth', AuthorizeRoutePermission::class, SyncProjectFromRoute
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('reports/export', [ReportController::class, 'exportCsv'])->name('reports.export');
         Route::get('reports/export-excel', [ReportController::class, 'exportExcel'])->name('reports.export-excel');
+        Route::get('reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
         Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
         Route::post('settings/send-available-units-report', [SettingController::class, 'sendAvailableUnitsReportNow'])->name('settings.send-available-units-report');

@@ -109,6 +109,7 @@ return [
     'reports.index' => 'reports.index',
     'reports.export' => 'reports.export',
     'reports.export-excel' => 'reports.export',
+    'reports.export-pdf' => 'reports.export',
 
     'settings.edit' => 'settings.edit',
     'settings.update' => 'settings.update',
