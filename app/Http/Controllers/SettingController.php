@@ -74,12 +74,17 @@ class SettingController extends Controller
             return redirect()->route('settings.edit')->with('error', 'تعذّر تحديد المشروع الحالي.');
         }
 
-        Artisan::call('reports:daily-available-units', [
+        $code = Artisan::call('reports:daily-available-units', [
             '--project' => (int) $projectId,
             '--force' => true,
         ]);
 
-        return redirect()->route('settings.edit')->with('success', 'تم إرسال التقرير الآن (إن وُجد مستلمون).');
+        $output = trim((string) Artisan::output());
+        if ($code !== 0) {
+            return redirect()->route('settings.edit')->with('error', $output !== '' ? $output : 'تعذّر إرسال التقرير.');
+        }
+
+        return redirect()->route('settings.edit')->with('success', $output !== '' ? $output : 'تم إرسال التقرير الآن (إن وُجد مستلمون).');
     }
 
     private function modules(): array

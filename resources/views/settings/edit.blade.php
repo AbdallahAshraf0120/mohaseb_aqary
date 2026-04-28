@@ -95,12 +95,9 @@
                                 @error('daily_available_units_report_repeat_minutes')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
                             </div>
                             <div class="col-md-6 d-flex align-items-end justify-content-md-end">
-                                <form method="post" action="{{ route('settings.send-available-units-report', [$setting->project_id ?? request()->route('project')]) }}">
-                                    @csrf
-                                    <button type="submit" class="btn btn-outline-primary btn-sm">
-                                        <i class="fa-solid fa-paper-plane ms-1"></i> إرسال التقرير الآن
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="send-report-now-btn">
+                                    <i class="fa-solid fa-paper-plane ms-1"></i> إرسال التقرير الآن
+                                </button>
                             </div>
                         </div>
 
@@ -159,5 +156,18 @@
                 boxes.forEach(b => b.checked = false);
             });
         })();
+
+        (function () {
+            const btn = document.getElementById('send-report-now-btn');
+            const form = document.getElementById('send-report-now-form');
+            if (!btn || !form) return;
+            btn.addEventListener('click', function () {
+                form.submit();
+            });
+        })();
     </script>
+
+    <form id="send-report-now-form" method="post" action="{{ route('settings.send-available-units-report', [$setting->project_id ?? request()->route('project')]) }}" class="d-none">
+        @csrf
+    </form>
 @endsection
