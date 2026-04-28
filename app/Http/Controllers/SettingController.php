@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Models\User;
 use App\Support\CurrentProject;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +27,7 @@ class SettingController extends Controller
             'title' => 'الإعدادات | Mohaseb Aqary',
             'pageTitle' => 'الإعدادات',
             'setting' => $setting,
+            'users' => User::query()->select('id', 'name', 'email', 'role')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
     }
@@ -35,10 +37,28 @@ class SettingController extends Controller
         $data = $request->validate([
             'company_name' => ['required', 'string', 'max:255'],
             'currency' => ['required', 'string', 'max:20'],
+            'daily_available_units_report_enabled' => ['nullable', 'in:0,1'],
+            'daily_available_units_report_time' => ['nullable', 'date_format:H:i'],
+            'daily_available_units_report_recipients' => ['nullable', 'array'],
+            'daily_available_units_report_recipients.*' => ['integer', 'exists:users,id'],
         ]);
 
         $setting = Setting::query()->firstOrFail();
-        $setting->update($data);
+        $recipients = collect($data['daily_available_units_report_recipients'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $meta = $setting->meta ?? [];
+        $meta['daily_available_units_report_enabled'] = $request->boolean('daily_available_units_report_enabled');
+        $meta['daily_available_units_report_time'] = $data['daily_available_units_report_time'] ?? data_get($meta, 'daily_available_units_report_time', '08:00');
+        $meta['daily_available_units_report_recipients'] = $recipients;
+
+        unset($data['daily_available_units_report_recipients']);
+        unset($data['daily_available_units_report_enabled']);
+        unset($data['daily_available_units_report_time']);
+        $setting->update(array_merge($data, ['meta' => $meta]));
 
         return redirect()->route('settings.edit')->with('success', 'تم تحديث الإعدادات بنجاح.');
     }
