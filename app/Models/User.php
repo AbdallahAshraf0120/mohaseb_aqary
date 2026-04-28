@@ -119,7 +119,10 @@ class User extends Authenticatable
 
     /**
      * تحقق من صلاحية: إما المجموعة المخصصة فقط (إن وُجدت) أو صلاحيات الدور الافتراضية.
-     * امتلاك *.manage يمنح تلقائياً *.view المقابلة ضمن نفس المجموعة (مخصص أو دور).
+     * قواعد التوافق:
+     * - امتلاك `<module>.manage` يمنح تلقائياً كل صلاحيات `<module>.*`.
+     * - امتلاك `<module>.view` يمنح تلقائياً صلاحيات العرض فقط (index/show) لنفس `<module>.*`.
+     * - امتلاك `*.manage` يمنح تلقائياً `*.view` المقابلة عند طلبها صراحةً.
      */
     public function hasPermission(string $slug): bool
     {
@@ -142,9 +145,29 @@ class User extends Authenticatable
      */
     private function slugAllowedBySet(string $slug, array $set): bool
     {
+        if (in_array('*', $set, true)) {
+            return true;
+        }
         if (in_array($slug, $set, true)) {
             return true;
         }
+
+        $pos = strrpos($slug, '.');
+        if ($pos !== false) {
+            $module = substr($slug, 0, $pos);
+            $action = substr($slug, $pos + 1);
+
+            $moduleManage = $module.'.manage';
+            if (in_array($moduleManage, $set, true)) {
+                return true;
+            }
+
+            $moduleView = $module.'.view';
+            if (in_array($moduleView, $set, true) && in_array($action, ['index', 'show', 'word'], true)) {
+                return true;
+            }
+        }
+
         if (str_ends_with($slug, '.view')) {
             $manage = substr($slug, 0, -5).'.manage';
 

@@ -17,13 +17,29 @@ class AuthorizeRoutePermission
 
         $name = $request->route()?->getName();
         if ($name === null) {
-            return $next($request);
+            if (! config('permissions.enforce_route_map', false)) {
+                return $next($request);
+            }
+
+            if (app()->isLocal()) {
+                throw new \RuntimeException('Route has no name; cannot authorize permission.');
+            }
+
+            abort(403, 'تعذّر التحقق من الصلاحيات لهذا المسار.');
         }
 
         /** @var array<string, string> $map */
         $map = config('route-permissions', []);
         if (! array_key_exists($name, $map)) {
-            return $next($request);
+            if (! config('permissions.enforce_route_map', false)) {
+                return $next($request);
+            }
+
+            if (app()->isLocal()) {
+                throw new \RuntimeException("Missing route permission mapping for route: {$name}");
+            }
+
+            abort(403, 'صلاحية هذا المسار غير مُعرّفة.');
         }
 
         $slug = $map[$name];

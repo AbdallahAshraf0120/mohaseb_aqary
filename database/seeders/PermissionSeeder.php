@@ -43,6 +43,18 @@ class PermissionSeeder extends Seeder
             'activity_log.view' => 'عرض سجل النشاط (تدقيق)',
         ];
 
+        // صلاحيات دقيقة لكل Route/Action (متوافقة مع الصلاحيات القديمة view/manage).
+        /** @var array<string, string> $routeMap */
+        $routeMap = config('route-permissions', []);
+        foreach (array_values($routeMap) as $slug) {
+            if (! is_string($slug) || $slug === '') {
+                continue;
+            }
+            if (! array_key_exists($slug, $labels)) {
+                $labels[$slug] = 'صلاحية: '.$slug;
+            }
+        }
+
         foreach ($labels as $slug => $label) {
             Permission::query()->updateOrCreate(
                 ['slug' => $slug],
