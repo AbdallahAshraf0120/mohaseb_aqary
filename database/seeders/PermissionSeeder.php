@@ -51,7 +51,7 @@ class PermissionSeeder extends Seeder
                 continue;
             }
             if (! array_key_exists($slug, $labels)) {
-                $labels[$slug] = 'صلاحية: '.$slug;
+                $labels[$slug] = self::labelForFineGrainedSlug($slug);
             }
         }
 
@@ -110,5 +110,77 @@ class PermissionSeeder extends Seeder
                 ]);
             }
         }
+    }
+
+    private static function labelForFineGrainedSlug(string $slug): string
+    {
+        $moduleLabels = [
+            'home' => 'الصفحة الرئيسية',
+            'login' => 'تسجيل الدخول',
+            'logout' => 'تسجيل الخروج',
+            'dashboard' => 'لوحة التحكم',
+            'projects' => 'المشاريع',
+            'properties' => 'العقارات',
+            'areas' => 'المناطق',
+            'facings' => 'الوجهات',
+            'lands' => 'الأراضي',
+            'shareholders' => 'المساهمين',
+            'sales' => 'المبيعات',
+            'clients' => 'العملاء',
+            'contracts' => 'العقود',
+            'revenues' => 'التحصيلات',
+            'expenses' => 'المصروفات',
+            'cashbox' => 'الصندوق',
+            'debts' => 'الذمم الدائنة',
+            'remaining' => 'المتبقي',
+            'settlements' => 'التصفيات',
+            'reports' => 'التقارير',
+            'settings' => 'الإعدادات',
+            'users' => 'المستخدمين',
+            'activity-log' => 'سجل النشاط',
+            'storage' => 'الملفات',
+        ];
+
+        $actionLabels = [
+            'index' => 'عرض القائمة',
+            'show' => 'عرض التفاصيل',
+            'create' => 'فتح صفحة الإنشاء',
+            'store' => 'حفظ جديد',
+            'edit' => 'فتح صفحة التعديل',
+            'update' => 'حفظ التعديل',
+            'destroy' => 'حذف',
+            'export' => 'تصدير',
+            'word' => 'تصدير Word',
+            'draft' => 'تحويل إلى مسودة',
+            'restore' => 'استرجاع من مسودة',
+            'landing' => 'فتح المشروع',
+            'contract-template' => 'تنزيل قالب العقد',
+            'pay-from-cashbox' => 'سداد من الصندوق',
+            'local' => 'عرض ملف',
+            'local.upload' => 'رفع ملف',
+        ];
+
+        // حالات بدون نقطة (home/login/logout/dashboard)
+        if (! str_contains($slug, '.')) {
+            return $moduleLabels[$slug] ?? ('صلاحية: '.$slug);
+        }
+
+        $parts = explode('.', $slug);
+        $module = array_shift($parts) ?? '';
+        $action = implode('.', $parts);
+
+        $moduleAr = $moduleLabels[$module] ?? $module;
+        $actionAr = $actionLabels[$action] ?? null;
+
+        if ($actionAr === null && count($parts) === 1) {
+            $actionAr = $actionLabels[$parts[0]] ?? null;
+        }
+
+        if ($actionAr === null) {
+            return 'صلاحية: '.$slug;
+        }
+
+        // صياغة مختصرة وواضحة في شاشة الصلاحيات
+        return $actionAr.' - '.$moduleAr;
     }
 }
