@@ -18,6 +18,13 @@
         </div>
     @endif
 
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+        </div>
+    @endif
+
     @if ($errors->any())
         <div class="alert alert-danger">
             <div class="fw-semibold mb-2">تحقق من الحقول التالية:</div>
@@ -95,7 +102,7 @@
                                 @error('daily_available_units_report_repeat_minutes')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
                             </div>
                             <div class="col-md-6 d-flex align-items-end justify-content-md-end">
-                                <button type="button" class="btn btn-outline-primary btn-sm" id="send-report-now-btn">
+                                <button type="submit" class="btn btn-outline-primary btn-sm" form="send-report-now-form">
                                     <i class="fa-solid fa-paper-plane ms-1"></i> إرسال التقرير الآن
                                 </button>
                             </div>
@@ -157,14 +164,6 @@
             });
         })();
 
-        (function () {
-            const btn = document.getElementById('send-report-now-btn');
-            const form = document.getElementById('send-report-now-form');
-            if (!btn || !form) return;
-            btn.addEventListener('click', function () {
-                form.submit();
-            });
-        })();
     </script>
 
     <form id="send-report-now-form" method="post" action="{{ route('settings.send-available-units-report', [$setting->project_id ?? request()->route('project')]) }}" class="d-none">
