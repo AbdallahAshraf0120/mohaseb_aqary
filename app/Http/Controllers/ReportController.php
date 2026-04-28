@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\File;
 use Mpdf\Mpdf;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -205,6 +206,11 @@ class ReportController extends Controller
             'contracts' => $contracts,
         ])->render();
 
+        $tempDir = storage_path('app/mpdf-tmp');
+        if (! File::isDirectory($tempDir)) {
+            File::makeDirectory($tempDir, 0755, true);
+        }
+
         $mpdf = new Mpdf([
             'mode' => 'utf-8',
             'format' => 'A4-L',
@@ -212,10 +218,11 @@ class ReportController extends Controller
             'margin_right' => 8,
             'margin_top' => 12,
             'margin_bottom' => 14,
+            'tempDir' => $tempDir,
+            'autoScriptToLang' => true,
+            'autoLangToFont' => true,
         ]);
         $mpdf->SetDirectionality('rtl');
-        $mpdf->autoScriptToLang = true;
-        $mpdf->autoLangToFont = true;
         $mpdf->WriteHTML($html);
 
         $filename = 'report-'.$project->id.'-'.$w['fromStr'].'-'.$w['toStr'].'.pdf';
