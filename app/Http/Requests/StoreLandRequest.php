@@ -46,21 +46,29 @@ class StoreLandRequest extends FormRequest
     {
         $name = trim((string) $this->input('name', ''));
 
+        $asNullableNonNegativeFloat = function (string $key): ?float {
+            if (! filled($this->input($key))) {
+                return null;
+            }
+
+            return max(0, (float) $this->input($key));
+        };
+
         $this->merge([
             'name' => $name,
-            'land_cost' => max(0, (float) $this->input('land_cost', 0)),
-            'building_license_cost' => max(0, (float) $this->input('building_license_cost', 0)),
-            'piles_cost' => max(0, (float) $this->input('piles_cost', 0)),
-            'excavation_cost' => max(0, (float) $this->input('excavation_cost', 0)),
-            'gravel_cost' => max(0, (float) $this->input('gravel_cost', 0)),
-            'sand_cost' => max(0, (float) $this->input('sand_cost', 0)),
-            'cement_cost' => max(0, (float) $this->input('cement_cost', 0)),
-            'steel_cost' => max(0, (float) $this->input('steel_cost', 0)),
-            'carpentry_labor_cost' => max(0, (float) $this->input('carpentry_labor_cost', 0)),
-            'blacksmith_labor_cost' => max(0, (float) $this->input('blacksmith_labor_cost', 0)),
-            'mason_labor_cost' => max(0, (float) $this->input('mason_labor_cost', 0)),
-            'electrician_labor_cost' => max(0, (float) $this->input('electrician_labor_cost', 0)),
-            'tips_cost' => max(0, (float) $this->input('tips_cost', 0)),
+            'land_cost' => $asNullableNonNegativeFloat('land_cost'),
+            'building_license_cost' => $asNullableNonNegativeFloat('building_license_cost'),
+            'piles_cost' => $asNullableNonNegativeFloat('piles_cost'),
+            'excavation_cost' => $asNullableNonNegativeFloat('excavation_cost'),
+            'gravel_cost' => $asNullableNonNegativeFloat('gravel_cost'),
+            'sand_cost' => $asNullableNonNegativeFloat('sand_cost'),
+            'cement_cost' => $asNullableNonNegativeFloat('cement_cost'),
+            'steel_cost' => $asNullableNonNegativeFloat('steel_cost'),
+            'carpentry_labor_cost' => $asNullableNonNegativeFloat('carpentry_labor_cost'),
+            'blacksmith_labor_cost' => $asNullableNonNegativeFloat('blacksmith_labor_cost'),
+            'mason_labor_cost' => $asNullableNonNegativeFloat('mason_labor_cost'),
+            'electrician_labor_cost' => $asNullableNonNegativeFloat('electrician_labor_cost'),
+            'tips_cost' => $asNullableNonNegativeFloat('tips_cost'),
             'notes' => filled($this->input('notes')) ? trim((string) $this->input('notes')) : null,
         ]);
     }
