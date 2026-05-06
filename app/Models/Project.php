@@ -124,4 +124,9 @@ class Project extends Model
     {
         return $this->hasMany(Debt::class);
     }
+
+    public function leads(): HasMany
+    {
+        return $this->hasMany(CrmLead::class, 'project_id');
+    }
 }

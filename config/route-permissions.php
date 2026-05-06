@@ -117,6 +117,15 @@ return [
     'settings.update' => 'settings.update',
     'settings.send-available-units-report' => 'settings.send-available-units-report',
 
+    'crm-leads.index' => 'crm-leads.index',
+    'crm-leads.create' => 'crm-leads.create',
+    'crm-leads.store' => 'crm-leads.store',
+    'crm-leads.show' => 'crm-leads.show',
+    'crm-leads.edit' => 'crm-leads.edit',
+    'crm-leads.update' => 'crm-leads.update',
+    'crm-leads.destroy' => 'crm-leads.destroy',
+    'crm-leads.activities.store' => 'crm-leads.activities.store',
+
     'users.index' => 'users.index',
     'users.create' => 'users.create',
     'users.store' => 'users.store',

@@ -22,6 +22,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\ShareholderController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CrmLeadController;
 use App\Http\Middleware\AuthorizeRoutePermission;
 use App\Http\Middleware\SyncProjectFromRoute;
 use App\Models\Project;
@@ -85,6 +86,19 @@ Route::middleware('auth')->group(function (): void {
         Route::resource('users', UserController::class)->except(['show']);
 
         Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
+
+        // CRM (برا المشاريع) - يعتمد على المشروع الحالي من السيشن
+        Route::prefix('crm')->group(function (): void {
+            Route::get('leads', [CrmLeadController::class, 'index'])->name('crm-leads.index');
+            Route::get('leads/create', [CrmLeadController::class, 'create'])->name('crm-leads.create');
+            Route::post('leads', [CrmLeadController::class, 'store'])->name('crm-leads.store');
+            Route::get('leads/{lead}', [CrmLeadController::class, 'show'])->whereNumber('lead')->name('crm-leads.show');
+            Route::get('leads/{lead}/edit', [CrmLeadController::class, 'edit'])->whereNumber('lead')->name('crm-leads.edit');
+            Route::put('leads/{lead}', [CrmLeadController::class, 'update'])->whereNumber('lead')->name('crm-leads.update');
+            Route::delete('leads/{lead}', [CrmLeadController::class, 'destroy'])->whereNumber('lead')->name('crm-leads.destroy');
+
+            Route::post('leads/{lead}/activities', [CrmLeadController::class, 'storeActivity'])->whereNumber('lead')->name('crm-leads.activities.store');
+        });
     });
 });
 

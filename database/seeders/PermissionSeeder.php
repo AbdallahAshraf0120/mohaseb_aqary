@@ -41,6 +41,10 @@ class PermissionSeeder extends Seeder
             'users.view' => 'عرض قائمة المستخدمين',
             'users.manage' => 'إدارة المستخدمين (إنشاء، تعديل، حذف، أدوار وصلاحيات إضافية)',
             'activity_log.view' => 'عرض سجل النشاط (تدقيق)',
+
+            'crm.view' => 'عرض CRM (متابعة العملاء)',
+            'crm.manage' => 'إدارة CRM (إضافة/تعديل/حذف/متابعة العملاء)',
+            'crm-leads.activities.store' => 'تسجيل متابعة - CRM العملاء المحتملين',
         ];
 
         // صلاحيات دقيقة لكل Route/Action (متوافقة مع الصلاحيات القديمة view/manage).
@@ -79,11 +83,13 @@ class PermissionSeeder extends Seeder
             'remaining.view',
             'settlements.view',
             'reports.view',
+            'crm.view',
         ];
 
         $sales = array_merge($viewer, [
             'sales.manage',
             'revenues.manage',
+            'crm.manage',
         ]);
 
         $accountant = array_merge($viewer, [
@@ -140,6 +146,7 @@ class PermissionSeeder extends Seeder
             'users' => 'المستخدمين',
             'activity-log' => 'سجل النشاط',
             'storage' => 'الملفات',
+            'crm-leads' => 'CRM - العملاء المحتملين',
         ];
 
         $actionLabels = [

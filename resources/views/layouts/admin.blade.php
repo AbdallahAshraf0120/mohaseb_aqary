@@ -154,6 +154,15 @@
                                 @endif
                             </li>
                         @endcan
+                        @can('crm.view')
+                            <li class="nav-item">
+                                <a href="{{ route('crm-leads.index') }}"
+                                   class="nav-link {{ request()->routeIs('crm-leads.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-address-book"></i>
+                                    <p>CRM - متابعة العملاء</p>
+                                </a>
+                            </li>
+                        @endcan
                         @can('users.view')
                             <li class="nav-item">
                                 <a href="{{ route('users.index') }}"
