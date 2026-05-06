@@ -126,6 +126,14 @@ return [
     'crm-leads.destroy' => 'crm-leads.destroy',
     'crm-leads.activities.store' => 'crm-leads.activities.store',
 
+    'tasks.index' => 'tasks.index',
+    'tasks.create' => 'tasks.create',
+    'tasks.store' => 'tasks.store',
+    'tasks.show' => 'tasks.show',
+    'tasks.update' => 'tasks.update',
+    'tasks.destroy' => 'tasks.destroy',
+    'tasks.updates.store' => 'tasks.updates.store',
+
     'users.index' => 'users.index',
     'users.create' => 'users.create',
     'users.store' => 'users.store',

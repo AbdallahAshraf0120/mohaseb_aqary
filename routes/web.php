@@ -23,6 +23,7 @@ use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\ShareholderController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CrmLeadController;
+use App\Http\Controllers\TaskController;
 use App\Http\Middleware\AuthorizeRoutePermission;
 use App\Http\Middleware\SyncProjectFromRoute;
 use App\Models\Project;
@@ -98,6 +99,18 @@ Route::middleware('auth')->group(function (): void {
             Route::delete('leads/{lead}', [CrmLeadController::class, 'destroy'])->whereNumber('lead')->name('crm-leads.destroy');
 
             Route::post('leads/{lead}/activities', [CrmLeadController::class, 'storeActivity'])->whereNumber('lead')->name('crm-leads.activities.store');
+        });
+
+        // Tasks (برا المشاريع)
+        Route::prefix('tasks')->group(function (): void {
+            Route::get('/', [TaskController::class, 'index'])->name('tasks.index');
+            Route::get('create', [TaskController::class, 'create'])->name('tasks.create');
+            Route::post('/', [TaskController::class, 'store'])->name('tasks.store');
+            Route::get('{task}', [TaskController::class, 'show'])->whereNumber('task')->name('tasks.show');
+            Route::put('{task}', [TaskController::class, 'update'])->whereNumber('task')->name('tasks.update');
+            Route::delete('{task}', [TaskController::class, 'destroy'])->whereNumber('task')->name('tasks.destroy');
+
+            Route::post('{task}/updates', [TaskController::class, 'storeUpdate'])->whereNumber('task')->name('tasks.updates.store');
         });
     });
 });

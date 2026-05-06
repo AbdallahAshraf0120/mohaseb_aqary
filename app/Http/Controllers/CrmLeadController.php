@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\CrmLead;
 use App\Models\CrmLeadActivity;
-use App\Support\CurrentProject;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -15,16 +14,10 @@ class CrmLeadController extends Controller
 {
     public function index(Request $request): View|RedirectResponse
     {
-        $projectId = app(CurrentProject::class)->id();
-        if (! $projectId) {
-            return redirect()->route('projects.index')->with('error', 'اختر مشروع أولاً لفتح CRM.');
-        }
-
         $filters = ListingFilters::fromRequest($request);
         $status = trim((string) $request->query('status', ''));
 
         $query = CrmLead::query()
-            ->where('project_id', $projectId)
             ->with([
                 'creator:id,name',
                 'assignee:id,name',
@@ -81,11 +74,6 @@ class CrmLeadController extends Controller
 
     public function create(): View|RedirectResponse
     {
-        $projectId = app(CurrentProject::class)->id();
-        if (! $projectId) {
-            return redirect()->route('projects.index')->with('error', 'اختر مشروع أولاً لإضافة عميل محتمل.');
-        }
-
         return view('crm.leads.create', [
             'title' => 'إضافة عميل محتمل | Mohaseb Aqary',
             'pageTitle' => 'إضافة عميل محتمل',
@@ -95,11 +83,6 @@ class CrmLeadController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $projectId = app(CurrentProject::class)->id();
-        if (! $projectId) {
-            return redirect()->route('projects.index')->with('error', 'اختر مشروع أولاً لإضافة عميل محتمل.');
-        }
-
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
@@ -110,7 +93,7 @@ class CrmLeadController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $data['project_id'] = $projectId;
+        $data['project_id'] = null;
         $data['created_by'] = $request->user()?->id;
         $data['assigned_to'] = $request->user()?->id;
 
@@ -123,7 +106,6 @@ class CrmLeadController extends Controller
 
     public function show(CrmLead $lead, Request $request): View
     {
-        $this->ensureLeadInCurrentProject($lead);
         $this->ensureLeadAccessible($lead, $request);
 
         $lead->load([
@@ -141,7 +123,6 @@ class CrmLeadController extends Controller
 
     public function edit(CrmLead $lead, Request $request): View
     {
-        $this->ensureLeadInCurrentProject($lead);
         $this->ensureLeadAccessible($lead, $request);
 
         return view('crm.leads.edit', [
@@ -153,7 +134,6 @@ class CrmLeadController extends Controller
 
     public function update(CrmLead $lead, Request $request): RedirectResponse
     {
-        $this->ensureLeadInCurrentProject($lead);
         $this->ensureLeadAccessible($lead, $request);
 
         $data = $request->validate([
@@ -175,7 +155,6 @@ class CrmLeadController extends Controller
 
     public function destroy(CrmLead $lead, Request $request): RedirectResponse
     {
-        $this->ensureLeadInCurrentProject($lead);
         $this->ensureLeadAccessible($lead, $request);
 
         $lead->delete();
@@ -187,7 +166,6 @@ class CrmLeadController extends Controller
 
     public function storeActivity(CrmLead $lead, Request $request): RedirectResponse
     {
-        $this->ensureLeadInCurrentProject($lead);
         $this->ensureLeadAccessible($lead, $request);
 
         $data = $request->validate([
@@ -209,17 +187,6 @@ class CrmLeadController extends Controller
         return redirect()
             ->route('crm-leads.show', $lead)
             ->with('success', 'تم تسجيل المتابعة.');
-    }
-
-    private function ensureLeadInCurrentProject(CrmLead $lead): void
-    {
-        $projectId = app(CurrentProject::class)->id();
-        if (! $projectId) {
-            abort(403, 'لا يوجد مشروع محدد حاليًا.');
-        }
-        if ((int) $lead->project_id !== (int) $projectId) {
-            abort(404);
-        }
     }
 
     private function ensureLeadAccessible(CrmLead $lead, Request $request): void

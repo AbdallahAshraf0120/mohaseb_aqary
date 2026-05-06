@@ -45,6 +45,9 @@ class PermissionSeeder extends Seeder
             'crm.view' => 'عرض CRM (متابعة العملاء)',
             'crm.manage' => 'إدارة CRM (إضافة/تعديل/حذف/متابعة العملاء)',
             'crm-leads.activities.store' => 'تسجيل متابعة - CRM العملاء المحتملين',
+
+            'tasks.view' => 'عرض المهام',
+            'tasks.manage' => 'إدارة المهام (إنشاء/تعديل/حذف/إسناد)',
         ];
 
         // صلاحيات دقيقة لكل Route/Action (متوافقة مع الصلاحيات القديمة view/manage).
@@ -84,6 +87,7 @@ class PermissionSeeder extends Seeder
             'settlements.view',
             'reports.view',
             'crm.view',
+            'tasks.view',
         ];
 
         $sales = array_merge($viewer, [
@@ -147,6 +151,7 @@ class PermissionSeeder extends Seeder
             'activity-log' => 'سجل النشاط',
             'storage' => 'الملفات',
             'crm-leads' => 'CRM - العملاء المحتملين',
+            'tasks' => 'المهام',
         ];
 
         $actionLabels = [
@@ -168,6 +173,7 @@ class PermissionSeeder extends Seeder
             'local.upload' => 'رفع ملف',
             'approve' => 'اعتماد',
             'reject' => 'رفض',
+            'updates.store' => 'إضافة تحديث',
         ];
 
         // حالات بدون نقطة (home/login/logout/dashboard)

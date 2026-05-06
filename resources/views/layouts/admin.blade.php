@@ -163,6 +163,15 @@
                                 </a>
                             </li>
                         @endcan
+                        @can('tasks.view')
+                            <li class="nav-item">
+                                <a href="{{ route('tasks.index') }}"
+                                   class="nav-link {{ request()->routeIs('tasks.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-list-check"></i>
+                                    <p>المهام</p>
+                                </a>
+                            </li>
+                        @endcan
                         @can('users.view')
                             <li class="nav-item">
                                 <a href="{{ route('users.index') }}"
