@@ -127,13 +127,14 @@ return [
     'crm-leads.activities.store' => 'crm-leads.activities.store',
 
     'tasks.index' => 'tasks.index',
-    'tasks.mine' => 'tasks.mine',
+    'tasks.mine' => 'tasks.view',
     'tasks.create' => 'tasks.create',
     'tasks.store' => 'tasks.store',
     'tasks.show' => 'tasks.show',
     'tasks.update' => 'tasks.update',
     'tasks.destroy' => 'tasks.destroy',
     'tasks.updates.store' => 'tasks.updates.store',
+    'tasks.updates.attachment' => 'tasks.view',
 
     'users.index' => 'users.index',
     'users.create' => 'users.create',

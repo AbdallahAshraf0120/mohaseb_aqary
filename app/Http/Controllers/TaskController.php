@@ -9,6 +9,7 @@ use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -213,6 +214,31 @@ class TaskController extends Controller
         }
 
         return redirect()->route('tasks.show', $task)->with('success', 'تم إضافة تحديث على المهمة.');
+    }
+
+    public function downloadUpdateAttachment(Task $task, TaskUpdate $update, Request $request): BinaryFileResponse
+    {
+        $this->ensureTaskAccessible($task, $request);
+
+        if ((int) $update->task_id !== (int) $task->id) {
+            abort(404);
+        }
+
+        $path = (string) ($update->attachment_path ?? '');
+        if ($path === '') {
+            abort(404);
+        }
+
+        if (! Storage::disk('public')->exists($path)) {
+            abort(404);
+        }
+
+        $downloadName = $update->attachment_name ?: basename($path);
+
+        return response()->download(
+            Storage::disk('public')->path($path),
+            $downloadName
+        );
     }
 
     private function ensureTaskAccessible(Task $task, Request $request): void

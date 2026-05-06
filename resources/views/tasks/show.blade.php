@@ -125,7 +125,7 @@
                                     <td class="text-end">
                                         @if ($u->attachment_path)
                                             <a class="btn btn-outline-secondary btn-sm"
-                                               href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($u->attachment_path) }}"
+                                               href="{{ route('tasks.updates.attachment', [$task, $u]) }}"
                                                target="_blank" rel="noopener">
                                                 فتح
                                             </a>

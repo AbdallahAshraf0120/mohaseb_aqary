@@ -112,6 +112,10 @@ Route::middleware('auth')->group(function (): void {
             Route::delete('{task}', [TaskController::class, 'destroy'])->whereNumber('task')->name('tasks.destroy');
 
             Route::post('{task}/updates', [TaskController::class, 'storeUpdate'])->whereNumber('task')->name('tasks.updates.store');
+            Route::get('{task}/updates/{update}/attachment', [TaskController::class, 'downloadUpdateAttachment'])
+                ->whereNumber('task')
+                ->whereNumber('update')
+                ->name('tasks.updates.attachment');
         });
     });
 });
