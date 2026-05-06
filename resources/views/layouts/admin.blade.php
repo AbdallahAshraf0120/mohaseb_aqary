@@ -27,7 +27,7 @@
 </head>
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
     <div class="app-wrapper">
-        <nav class="app-header navbar navbar-expand bg-body">
+        <nav class="app-header navbar navbar-expand bg-body border-bottom border-secondary-subtle">
             <div class="container-fluid">
                 <ul class="navbar-nav">
                     <li class="nav-item">
@@ -45,25 +45,56 @@
                 </ul>
                 <ul class="navbar-nav ms-auto align-items-center gap-2">
                     <li class="nav-item py-1">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="themeToggle" title="تبديل الوضع الليلي">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                                id="themeToggle"
+                                title="تبديل الوضع الليلي">
                             <i class="fa-solid fa-moon"></i>
+                            <span class="d-none d-lg-inline">المظهر</span>
                         </button>
                     </li>
-                    @can('projects.view')
-                        <li class="nav-item py-1 d-none d-md-block">
-                            <a href="{{ route('projects.index') }}" class="nav-link small">إدارة المشاريع</a>
+
+                    @php
+                        $hasQuickLinks = auth()->user()?->can('projects.view')
+                            || auth()->user()?->can('users.view')
+                            || auth()->user()?->can('activity_log.view');
+                    @endphp
+                    @if ($hasQuickLinks)
+                        <li class="nav-item dropdown py-1">
+                            <a class="nav-link d-inline-flex align-items-center gap-2"
+                               href="#"
+                               role="button"
+                               data-bs-toggle="dropdown"
+                               aria-expanded="false">
+                                <i class="fa-solid fa-grid-2"></i>
+                                <span class="small d-none d-lg-inline">اختصارات</span>
+                                <i class="fa-solid fa-angle-down small opacity-75"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                @can('projects.view')
+                                    <li>
+                                        <a class="dropdown-item" href="{{ route('projects.index') }}">
+                                            <i class="fa-solid fa-diagram-project ms-2"></i> إدارة المشاريع
+                                        </a>
+                                    </li>
+                                @endcan
+                                @can('users.view')
+                                    <li>
+                                        <a class="dropdown-item" href="{{ route('users.index') }}">
+                                            <i class="fa-solid fa-users-gear ms-2"></i> المستخدمون
+                                        </a>
+                                    </li>
+                                @endcan
+                                @can('activity_log.view')
+                                    <li>
+                                        <a class="dropdown-item" href="{{ route('activity-log.index') }}">
+                                            <i class="fa-solid fa-clipboard-list ms-2"></i> سجل النشاط
+                                        </a>
+                                    </li>
+                                @endcan
+                            </ul>
                         </li>
-                    @endcan
-                    @can('users.view')
-                        <li class="nav-item py-1">
-                            <a href="{{ route('users.index') }}" class="nav-link small">المستخدمون</a>
-                        </li>
-                    @endcan
-                    @can('activity_log.view')
-                        <li class="nav-item py-1">
-                            <a href="{{ route('activity-log.index') }}" class="nav-link small">سجل النشاط</a>
-                        </li>
-                    @endcan
+                    @endif
                     @php
                         $navUser = auth()->user();
                         $navUserName = (string) ($navUser?->name ?? '');
@@ -78,7 +109,7 @@
                                   style="width: 32px; height: 32px; font-weight: 700;">
                                 {{ $navInitials }}
                             </span>
-                            <span class="small d-none d-md-inline">{{ $navUserName ?: 'المستخدم' }}</span>
+                            <span class="small d-none d-lg-inline">{{ $navUserName ?: 'المستخدم' }}</span>
                             <i class="fa-solid fa-angle-down small opacity-75"></i>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
