@@ -54,6 +54,44 @@ class TaskController extends Controller
         ]);
     }
 
+    public function mine(Request $request): View
+    {
+        $filters = ListingFilters::fromRequest($request);
+        $status = trim((string) $request->query('status', ''));
+
+        $query = Task::query()
+            ->with(['creator:id,name', 'assignee:id,name'])
+            ->where('assigned_to', $request->user()?->id);
+
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where(function ($q) use ($like): void {
+                $q->where('title', 'like', $like)
+                    ->orWhere('description', 'like', $like);
+            });
+        }
+
+        if ($status !== '') {
+            $query->where('status', $status);
+        }
+
+        $filters->applyWhereDate($query, 'created_at');
+
+        $tasks = $query
+            ->orderByRaw("case status when 'open' then 0 when 'in_progress' then 1 when 'done' then 2 else 3 end")
+            ->orderByRaw('due_at is null, due_at asc')
+            ->latest('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('tasks.index', [
+            'title' => 'مهامي | Mohaseb Aqary',
+            'pageTitle' => 'مهامي',
+            'tasks' => $tasks,
+            'status' => $status,
+        ]);
+    }
+
     public function create(Request $request): View
     {
         abort_unless($request->user()?->can('tasks.manage'), 403);

@@ -104,6 +104,7 @@ Route::middleware('auth')->group(function (): void {
         // Tasks (برا المشاريع)
         Route::prefix('tasks')->group(function (): void {
             Route::get('/', [TaskController::class, 'index'])->name('tasks.index');
+            Route::get('mine', [TaskController::class, 'mine'])->name('tasks.mine');
             Route::get('create', [TaskController::class, 'create'])->name('tasks.create');
             Route::post('/', [TaskController::class, 'store'])->name('tasks.store');
             Route::get('{task}', [TaskController::class, 'show'])->whereNumber('task')->name('tasks.show');

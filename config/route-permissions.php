@@ -127,6 +127,7 @@ return [
     'crm-leads.activities.store' => 'crm-leads.activities.store',
 
     'tasks.index' => 'tasks.index',
+    'tasks.mine' => 'tasks.mine',
     'tasks.create' => 'tasks.create',
     'tasks.store' => 'tasks.store',
     'tasks.show' => 'tasks.show',

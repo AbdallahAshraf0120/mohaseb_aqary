@@ -164,13 +164,30 @@
                             </li>
                         @endcan
                         @can('tasks.view')
-                            <li class="nav-item">
-                                <a href="{{ route('tasks.index') }}"
-                                   class="nav-link {{ request()->routeIs('tasks.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-list-check"></i>
-                                    <p>المهام</p>
-                                </a>
-                            </li>
+                            @can('tasks.manage')
+                                <li class="nav-item">
+                                    <a href="{{ route('tasks.index') }}"
+                                       class="nav-link {{ request()->routeIs('tasks.*') ? 'active' : '' }}">
+                                        <i class="nav-icon fa-solid fa-list-check"></i>
+                                        <p>المهام</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('tasks.mine') }}"
+                                       class="nav-link {{ request()->routeIs('tasks.mine') ? 'active' : '' }}">
+                                        <i class="nav-icon fa-solid fa-user-check"></i>
+                                        <p>مهامي</p>
+                                    </a>
+                                </li>
+                            @else
+                                <li class="nav-item">
+                                    <a href="{{ route('tasks.mine') }}"
+                                       class="nav-link {{ request()->routeIs('tasks.*') ? 'active' : '' }}">
+                                        <i class="nav-icon fa-solid fa-list-check"></i>
+                                        <p>مهامي</p>
+                                    </a>
+                                </li>
+                            @endcan
                         @endcan
                         @can('users.view')
                             <li class="nav-item">
