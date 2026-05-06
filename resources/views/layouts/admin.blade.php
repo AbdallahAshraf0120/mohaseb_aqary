@@ -10,6 +10,17 @@
         $projectsTreeOpen = request()->routeIs('projects.*') || $routeProject;
     @endphp
     <title>@if ($layoutProject){{ $layoutProject->name }} — @endif{{ $title ?? config('app.name', 'Mohaseb Aqary') }}</title>
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem('ma_theme');
+                if (!theme) {
+                    theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-bs-theme', theme);
+            } catch (e) {}
+        })();
+    </script>
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
@@ -33,6 +44,11 @@
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto align-items-center gap-2">
+                    <li class="nav-item py-1">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="themeToggle" title="تبديل الوضع الليلي">
+                            <i class="fa-solid fa-moon"></i>
+                        </button>
+                    </li>
                     @can('projects.view')
                         <li class="nav-item py-1 d-none d-md-block">
                             <a href="{{ route('projects.index') }}" class="nav-link small">إدارة المشاريع</a>
@@ -48,13 +64,37 @@
                             <a href="{{ route('activity-log.index') }}" class="nav-link small">سجل النشاط</a>
                         </li>
                     @endcan
-                    <li class="nav-item py-1">
-                        <form method="post" action="{{ route('logout') }}" class="mb-0">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                <i class="fa-solid fa-right-from-bracket ms-1"></i>تسجيل خروج
-                            </button>
-                        </form>
+                    @php
+                        $navUser = auth()->user();
+                        $navUserName = (string) ($navUser?->name ?? '');
+                        $navInitials = trim(mb_substr($navUserName, 0, 1));
+                        if ($navInitials === '') {
+                            $navInitials = 'U';
+                        }
+                    @endphp
+                    <li class="nav-item dropdown py-1">
+                        <a class="nav-link d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-body-secondary text-body"
+                                  style="width: 32px; height: 32px; font-weight: 700;">
+                                {{ $navInitials }}
+                            </span>
+                            <span class="small d-none d-md-inline">{{ $navUserName ?: 'المستخدم' }}</span>
+                            <i class="fa-solid fa-angle-down small opacity-75"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <h6 class="dropdown-header">{{ $navUserName ?: 'المستخدم' }}</h6>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="post" action="{{ route('logout') }}" class="mb-0">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="fa-solid fa-right-from-bracket ms-2"></i> تسجيل خروج
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>
