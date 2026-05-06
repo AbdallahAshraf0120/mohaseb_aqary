@@ -274,5 +274,48 @@
             </div>
         </main>
     </div>
+    <script>
+        (function () {
+            // Fallback: ensure theme toggle works even if bundled JS isn't loaded on server.
+            try {
+                if (window.__maThemeToggleBound) return;
+                var btn = document.getElementById('themeToggle');
+                if (!btn) return;
+
+                function getTheme() {
+                    try {
+                        var t = localStorage.getItem('ma_theme');
+                        if (t === 'dark' || t === 'light') return t;
+                    } catch (e) {}
+                    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+                }
+
+                function applyTheme(theme) {
+                    document.documentElement.setAttribute('data-bs-theme', theme);
+                    try { localStorage.setItem('ma_theme', theme); } catch (e) {}
+                }
+
+                function syncIcon(theme) {
+                    var icon = btn.querySelector('i');
+                    if (!icon) return;
+                    icon.classList.remove('fa-moon', 'fa-sun');
+                    icon.classList.add(theme === 'dark' ? 'fa-sun' : 'fa-moon');
+                    btn.title = theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي';
+                }
+
+                var initial = getTheme();
+                applyTheme(initial);
+                syncIcon(initial);
+
+                btn.addEventListener('click', function () {
+                    var next = (getTheme() === 'dark') ? 'light' : 'dark';
+                    applyTheme(next);
+                    syncIcon(next);
+                });
+
+                window.__maThemeToggleBound = true;
+            } catch (e) {}
+        })();
+    </script>
 </body>
 </html>
