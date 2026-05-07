@@ -74,3 +74,15 @@
     overflow: hidden;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
+
+/* TomSelect: keep search input visible with AdminLTE */
+.ts-wrapper .ts-control {
+    min-height: calc(1.5em + .75rem + 2px);
+}
+.ts-wrapper .ts-control > input {
+    min-width: 8rem !important;
+    width: auto !important;
+}
+.ts-wrapper.single .ts-control {
+    cursor: text;
+}

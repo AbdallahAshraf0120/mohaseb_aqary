@@ -54,6 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
       allowEmptyOption: true,
       maxOptions: 5000,
       placeholder: el.getAttribute('data-placeholder') || '',
+      searchField: ['text'],
+      openOnFocus: true,
       plugins: ['dropdown_input', 'clear_button'],
       render: {
         dropdown: function () {
