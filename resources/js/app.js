@@ -57,10 +57,10 @@ document.addEventListener('DOMContentLoaded', () => {
       searchField: ['text'],
       openOnFocus: true,
       plugins: ['dropdown_input', 'clear_button'],
-      render: {
-        dropdown: function () {
-          return `<div class="dropdown-menu ts-dropdown" dir="${direction}"></div>`;
-        },
+      dropdownClass: 'dropdown-menu ts-dropdown',
+      controlClass: 'form-select ts-control',
+      onDropdownOpen: function (dropdown) {
+        dropdown.setAttribute('dir', direction);
       },
     });
   });
