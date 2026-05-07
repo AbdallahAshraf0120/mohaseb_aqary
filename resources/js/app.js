@@ -2,6 +2,7 @@ import './bootstrap';
 import 'bootstrap';
 import 'admin-lte/dist/js/adminlte.min.js';
 import { registerSwalConfirmForms } from './swal-confirm';
+import TomSelect from 'tom-select';
 
 registerSwalConfirmForms();
 
@@ -40,5 +41,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const next = (getTheme() === 'dark') ? 'light' : 'dark';
     applyTheme(next);
     syncThemeToggleIcon(themeToggle, next);
+  });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const direction = document.documentElement.dir || 'rtl';
+  document.querySelectorAll('select[data-tomselect]').forEach((el) => {
+    if (el.tomselect) return;
+
+    new TomSelect(el, {
+      create: false,
+      allowEmptyOption: true,
+      maxOptions: 5000,
+      placeholder: el.getAttribute('data-placeholder') || '',
+      plugins: ['dropdown_input', 'clear_button'],
+      render: {
+        dropdown: function () {
+          return `<div class="dropdown-menu ts-dropdown" dir="${direction}"></div>`;
+        },
+      },
+    });
   });
 });

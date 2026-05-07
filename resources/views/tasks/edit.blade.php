@@ -36,15 +36,13 @@
 
                     <div class="col-md-6">
                         <label class="form-label">عميل للمتابعة (اختياري)</label>
-                        <input type="text"
-                               id="leadSearch"
-                               class="form-control mb-2"
-                               placeholder="ابحث بالاسم أو الهاتف…">
-                        <select name="crm_lead_id" class="form-select @error('crm_lead_id') is-invalid @enderror">
+                        <select name="crm_lead_id"
+                                data-tomselect
+                                data-placeholder="ابحث بالاسم أو الهاتف…"
+                                class="form-select @error('crm_lead_id') is-invalid @enderror">
                             <option value="">بدون عميل</option>
                             @foreach (($leads ?? collect()) as $lead)
                                 <option value="{{ $lead->id }}"
-                                        data-search="{{ mb_strtolower(trim(($lead->name ?? '') . ' ' . ($lead->phone ?? ''))) }}"
                                         @selected((string) old('crm_lead_id', $task->crm_lead_id) === (string) $lead->id)>
                                     {{ $lead->name }} @if($lead->phone) — {{ $lead->phone }} @endif
                                 </option>
@@ -97,32 +95,5 @@
         </div>
     </div>
 
-    <script>
-        (function () {
-            const input = document.getElementById('leadSearch');
-            const select = document.querySelector('select[name="crm_lead_id"]');
-            if (!input || !select) return;
-
-            const options = Array.from(select.options).map(o => ({
-                el: o,
-                isPlaceholder: o.value === '',
-                text: (o.getAttribute('data-search') || o.textContent || '').toLowerCase()
-            }));
-
-            function apply() {
-                const q = (input.value || '').trim().toLowerCase();
-                options.forEach(({ el, isPlaceholder, text }) => {
-                    if (isPlaceholder) {
-                        el.hidden = false;
-                        return;
-                    }
-                    el.hidden = q !== '' && !text.includes(q);
-                });
-            }
-
-            input.addEventListener('input', apply);
-            apply();
-        })();
-    </script>
 @endsection
 
