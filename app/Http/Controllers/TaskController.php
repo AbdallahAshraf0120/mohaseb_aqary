@@ -155,6 +155,28 @@ class TaskController extends Controller
         ]);
     }
 
+    public function edit(Task $task, Request $request): View
+    {
+        abort_unless($request->user()?->can('tasks.manage'), 403);
+
+        $brokers = User::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'role']);
+
+        $leads = CrmLead::query()
+            ->orderBy('name')
+            ->limit(500)
+            ->get(['id', 'name', 'phone']);
+
+        return view('tasks.edit', [
+            'title' => 'تعديل مهمة | Mohaseb Aqary',
+            'pageTitle' => 'تعديل مهمة',
+            'task' => $task,
+            'brokers' => $brokers,
+            'leads' => $leads,
+        ]);
+    }
+
     public function update(Task $task, Request $request): RedirectResponse
     {
         abort_unless($request->user()?->can('tasks.manage'), 403);

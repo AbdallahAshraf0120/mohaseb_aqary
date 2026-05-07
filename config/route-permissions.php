@@ -131,6 +131,7 @@ return [
     'tasks.create' => 'tasks.create',
     'tasks.store' => 'tasks.store',
     'tasks.show' => 'tasks.show',
+    'tasks.edit' => 'tasks.manage',
     'tasks.update' => 'tasks.update',
     'tasks.destroy' => 'tasks.destroy',
     'tasks.updates.store' => 'tasks.updates.store',
