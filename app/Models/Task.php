@@ -11,6 +11,7 @@ class Task extends Model
     protected $fillable = [
         'created_by',
         'assigned_to',
+        'crm_lead_id',
         'title',
         'description',
         'status',
@@ -33,6 +34,11 @@ class Task extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function lead(): BelongsTo
+    {
+        return $this->belongsTo(CrmLead::class, 'crm_lead_id');
     }
 
     public function updates(): HasMany

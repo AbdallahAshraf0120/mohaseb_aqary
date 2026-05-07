@@ -49,6 +49,19 @@
                     <div class="small text-body-secondary">تاريخ الإنشاء</div>
                     <div class="fw-semibold font-monospace">{{ $task->created_at?->format('Y-m-d H:i') ?? '—' }}</div>
                 </div>
+                <div class="col-12">
+                    <div class="small text-body-secondary">عميل المتابعة</div>
+                    <div class="fw-semibold">
+                        @if ($task->lead)
+                            {{ $task->lead->name }}
+                            @if ($task->lead->phone)
+                                <span class="text-body-secondary small font-monospace ms-2">{{ $task->lead->phone }}</span>
+                            @endif
+                        @else
+                            —
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Models\TaskUpdate;
 use App\Models\User;
+use App\Models\CrmLead;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -101,10 +102,16 @@ class TaskController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
 
+        $leads = CrmLead::query()
+            ->orderBy('name')
+            ->limit(500)
+            ->get(['id', 'name', 'phone']);
+
         return view('tasks.create', [
             'title' => 'إضافة مهمة | Mohaseb Aqary',
             'pageTitle' => 'إضافة مهمة',
             'brokers' => $brokers,
+            'leads' => $leads,
             'task' => new Task(['status' => 'open', 'priority' => 'normal']),
         ]);
     }
@@ -117,6 +124,7 @@ class TaskController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'assigned_to' => ['required', 'integer', 'exists:users,id'],
+            'crm_lead_id' => ['nullable', 'integer', 'exists:crm_leads,id'],
             'status' => ['required', 'string', Rule::in(['open', 'in_progress', 'done', 'cancelled'])],
             'priority' => ['required', 'string', Rule::in(['low', 'normal', 'high', 'urgent'])],
             'due_at' => ['nullable', 'date'],
@@ -136,6 +144,7 @@ class TaskController extends Controller
         $task->load([
             'creator:id,name',
             'assignee:id,name',
+            'lead:id,name,phone',
             'updates' => fn ($q) => $q->with(['user:id,name'])->latest('happened_at')->latest('id'),
         ]);
 
@@ -154,6 +163,7 @@ class TaskController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'assigned_to' => ['required', 'integer', 'exists:users,id'],
+            'crm_lead_id' => ['nullable', 'integer', 'exists:crm_leads,id'],
             'status' => ['required', 'string', Rule::in(['open', 'in_progress', 'done', 'cancelled'])],
             'priority' => ['required', 'string', Rule::in(['low', 'normal', 'high', 'urgent'])],
             'due_at' => ['nullable', 'date'],

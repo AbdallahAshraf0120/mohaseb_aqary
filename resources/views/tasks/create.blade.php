@@ -29,6 +29,20 @@
                         @error('assigned_to') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 
+                    <div class="col-md-6">
+                        <label class="form-label">عميل للمتابعة (اختياري)</label>
+                        <select name="crm_lead_id" class="form-select @error('crm_lead_id') is-invalid @enderror">
+                            <option value="">بدون عميل</option>
+                            @foreach (($leads ?? collect()) as $lead)
+                                <option value="{{ $lead->id }}" @selected((string) old('crm_lead_id') === (string) $lead->id)>
+                                    {{ $lead->name }} @if($lead->phone) — {{ $lead->phone }} @endif
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('crm_lead_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <div class="form-text">اختيار العميل يساعد البروكر يركز المتابعة على شخص محدد.</div>
+                    </div>
+
                     <div class="col-md-3">
                         <label class="form-label">الحالة</label>
                         <select name="status" class="form-select @error('status') is-invalid @enderror" required>
