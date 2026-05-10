@@ -146,13 +146,12 @@ class RevenueController extends Controller
     public function update(UpdateRevenueRequest $request, Project $project, Revenue $revenue): RedirectResponse
     {
         $oldContractId = (int) $revenue->contract_id;
+        $wasApproved = $revenue->approval_status === 'approved';
         $payload = $request->validated();
-        $user = $request->user();
-        $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
-        if ($isAdmin) {
-            $payload['approval_status'] = 'approved';
-            $payload['approved_at'] = $revenue->approved_at ?? now();
-            $payload['approved_by'] = $revenue->approved_by ?? (int) $user->id;
+        if ($wasApproved) {
+            $payload['approval_status'] = 'pending';
+            $payload['approved_at'] = null;
+            $payload['approved_by'] = null;
             $payload['rejected_at'] = null;
             $payload['rejected_by'] = null;
             $payload['rejection_reason'] = null;
@@ -163,7 +162,11 @@ class RevenueController extends Controller
         $this->recalculateContract($oldContractId);
         $this->recalculateContract((int) $revenue->contract_id);
 
-        return redirect()->route('revenues.index')->with('success', 'تم تحديث التحصيل بنجاح.');
+        $message = $wasApproved
+            ? 'تم تحديث التحصيل وأصبح معلقًا حتى إعادة الاعتماد.'
+            : 'تم تحديث التحصيل بنجاح.';
+
+        return redirect()->route('revenues.index')->with('success', $message);
     }
 
     public function destroy(Project $project, Revenue $revenue): RedirectResponse

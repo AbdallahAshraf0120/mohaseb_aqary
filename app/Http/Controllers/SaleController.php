@@ -173,8 +173,9 @@ class SaleController extends Controller
     {
         $validated = $request->validated();
         $client = $this->resolveClientForSaleUpdate($sale, $validated);
+        $wasApproved = $sale->approval_status === 'approved';
 
-        $sale->update([
+        $update = [
             'property_id' => $validated['property_id'],
             'client_id' => $client->id,
             'floor_number' => $validated['floor_number'],
@@ -189,12 +190,26 @@ class SaleController extends Controller
             'sale_date' => $validated['sale_date'],
             'broker_name' => $validated['broker_name'],
             'notes' => $validated['notes'] ?? null,
-        ]);
+        ];
+        if ($wasApproved) {
+            $update['approval_status'] = 'pending';
+            $update['approved_at'] = null;
+            $update['approved_by'] = null;
+            $update['rejected_at'] = null;
+            $update['rejected_by'] = null;
+            $update['rejection_reason'] = null;
+        }
+
+        $sale->update($update);
 
         $this->syncContractForSale($sale->refresh());
         $this->cashboxLedger->syncSaleDownPayment($sale);
 
-        return redirect()->route('sales.index')->with('success', 'تم تحديث البيعة بنجاح.');
+        $message = $wasApproved
+            ? 'تم تحديث البيعة وأصبحت معلقة حتى إعادة الاعتماد.'
+            : 'تم تحديث البيعة بنجاح.';
+
+        return redirect()->route('sales.index')->with('success', $message);
     }
 
     public function destroy(Project $project, Sale $sale): RedirectResponse
