@@ -21,6 +21,7 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\ShareholderController;
+use App\Http\Controllers\SiteSketchController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CrmLeadController;
 use App\Http\Controllers\TaskController;
@@ -99,6 +100,17 @@ Route::middleware('auth')->group(function (): void {
             Route::delete('leads/{lead}', [CrmLeadController::class, 'destroy'])->whereNumber('lead')->name('crm-leads.destroy');
 
             Route::post('leads/{lead}/activities', [CrmLeadController::class, 'storeActivity'])->whereNumber('lead')->name('crm-leads.activities.store');
+        });
+
+        // مخطط الموقع (كروكي العقارات) - برا المشاريع، لكن يقرأ بيانات كل المشاريع
+        Route::prefix('site-sketch')->group(function (): void {
+            Route::get('/', [SiteSketchController::class, 'index'])->name('site-sketch.index');
+            Route::post('properties/{property}/cells', [SiteSketchController::class, 'updateCell'])
+                ->whereNumber('property')
+                ->name('site-sketch.cells.update');
+            Route::post('properties/{property}/reset', [SiteSketchController::class, 'reset'])
+                ->whereNumber('property')
+                ->name('site-sketch.reset');
         });
 
         // Tasks (برا المشاريع)

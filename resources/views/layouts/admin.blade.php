@@ -234,6 +234,15 @@
                                 </a>
                             </li>
                         @endcan
+                        @can('site-sketch.view')
+                            <li class="nav-item">
+                                <a href="{{ route('site-sketch.index') }}"
+                                   class="nav-link {{ request()->routeIs('site-sketch.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-table-cells"></i>
+                                    <p>مخطط الموقع</p>
+                                </a>
+                            </li>
+                        @endcan
                         @can('tasks.view')
                             @can('tasks.manage')
                                 <li class="nav-item">

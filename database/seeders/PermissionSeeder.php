@@ -48,6 +48,9 @@ class PermissionSeeder extends Seeder
 
             'tasks.view' => 'عرض المهام',
             'tasks.manage' => 'إدارة المهام (إنشاء/تعديل/حذف/إسناد)',
+
+            'site-sketch.view' => 'عرض مخطط الموقع (كروكي العقارات)',
+            'site-sketch.manage' => 'تعديل خلايا الكروكي وإعادة الضبط',
         ];
 
         // صلاحيات دقيقة لكل Route/Action (متوافقة مع الصلاحيات القديمة view/manage).
@@ -88,12 +91,14 @@ class PermissionSeeder extends Seeder
             'reports.view',
             'crm.view',
             'tasks.view',
+            'site-sketch.view',
         ];
 
         $sales = array_merge($viewer, [
             'sales.manage',
             'revenues.manage',
             'crm.manage',
+            'site-sketch.manage',
         ]);
 
         $accountant = array_merge($viewer, [
@@ -152,6 +157,7 @@ class PermissionSeeder extends Seeder
             'storage' => 'الملفات',
             'crm-leads' => 'CRM - العملاء المحتملين',
             'tasks' => 'المهام',
+            'site-sketch' => 'مخطط الموقع',
         ];
 
         $actionLabels = [

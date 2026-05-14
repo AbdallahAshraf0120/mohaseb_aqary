@@ -137,6 +137,10 @@ return [
     'tasks.updates.store' => 'tasks.updates.store',
     'tasks.updates.attachment' => 'tasks.view',
 
+    'site-sketch.index' => 'site-sketch.view',
+    'site-sketch.cells.update' => 'site-sketch.manage',
+    'site-sketch.reset' => 'site-sketch.manage',
+
     'users.index' => 'users.index',
     'users.create' => 'users.create',
     'users.store' => 'users.store',
