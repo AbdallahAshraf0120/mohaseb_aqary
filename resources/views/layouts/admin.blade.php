@@ -357,5 +357,6 @@
             } catch (e) {}
         })();
     </script>
+    @stack('scripts')
 </body>
 </html>
