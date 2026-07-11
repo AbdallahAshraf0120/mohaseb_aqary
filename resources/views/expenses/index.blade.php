@@ -43,6 +43,7 @@
                             </td>
                             <td class="text-end">
                                 <a href="{{ route('expenses.show', [$project, $expense]) }}" class="btn btn-outline-info btn-sm">عرض</a>
+                                <a href="{{ route('expenses.edit', [$project, $expense]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
                                 <form method="post" action="{{ route('expenses.destroy', [$project, $expense]) }}" class="d-inline" data-swal-confirm="{{ e('حذف المصروف؟') }}">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>

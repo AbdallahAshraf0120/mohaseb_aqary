@@ -28,7 +28,7 @@ class PermissionSeeder extends Seeder
             'revenues.view' => 'عرض التحصيلات',
             'revenues.manage' => 'تسجيل وتعديل وحذف التحصيلات',
             'expenses.view' => 'عرض المصروفات',
-            'expenses.manage' => 'تسجيل وحذف المصروفات',
+            'expenses.manage' => 'تسجيل وتعديل وحذف المصروفات',
             'cashbox.view' => 'عرض الصندوق',
             'cashbox.manage' => 'تسجيل حركات الصندوق اليدوية',
             'debts.view' => 'عرض الذمم الدائنة',

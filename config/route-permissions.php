@@ -86,6 +86,8 @@ return [
     'expenses.show' => 'expenses.show',
     'expenses.create' => 'expenses.create',
     'expenses.store' => 'expenses.store',
+    'expenses.edit' => 'expenses.edit',
+    'expenses.update' => 'expenses.update',
     'expenses.destroy' => 'expenses.destroy',
 
     'cashbox.index' => 'cashbox.index',

@@ -87,6 +87,46 @@ class ExpenseController extends Controller
         ]);
     }
 
+    public function edit(Project $project, Expense $expense): View
+    {
+        return view('expenses.edit', [
+            'title' => 'تعديل المصروف | Mohaseb Aqary',
+            'pageTitle' => 'تعديل المصروف',
+            'project' => $project,
+            'expense' => $expense,
+            'modules' => $this->modules(),
+        ]);
+    }
+
+    public function update(Request $request, Project $project, Expense $expense): RedirectResponse
+    {
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:1'],
+            'category' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'spent_at' => ['required', 'date'],
+        ]);
+
+        $wasApproved = ($expense->approval_status ?? 'approved') === 'approved';
+        if ($wasApproved) {
+            $data['approval_status'] = 'pending';
+            $data['approved_at'] = null;
+            $data['approved_by'] = null;
+            $data['rejected_at'] = null;
+            $data['rejected_by'] = null;
+            $data['rejection_reason'] = null;
+        }
+
+        $expense->update($data);
+        $this->cashboxLedger->syncFromExpense($expense->refresh());
+
+        $message = $wasApproved
+            ? 'تم تحديث المصروف وأصبح معلقًا حتى إعادة الاعتماد.'
+            : 'تم تحديث المصروف بنجاح.';
+
+        return redirect()->route('expenses.index')->with('success', $message);
+    }
+
     public function destroy(Project $project, Expense $expense): RedirectResponse
     {
         $this->cashboxLedger->removeExpense((int) $expense->id);
