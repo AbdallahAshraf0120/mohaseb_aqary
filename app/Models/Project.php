@@ -100,6 +100,12 @@ class Project extends Model
         return $this->hasMany(Revenue::class);
     }
 
+    /** مطلوب لربط المسارات المقيّدة `{project}/expenses/{expense}` (scopeBindings). */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
+
     public function clients(): HasMany
     {
         return $this->hasMany(Client::class);
