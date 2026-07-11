@@ -127,10 +127,14 @@ class ExpenseController extends Controller
         return redirect()->route('expenses.index')->with('success', $message);
     }
 
-    public function destroy(Project $project, Expense $expense): RedirectResponse
+    public function destroy(Request $request, Project $project, Expense $expense): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $this->cashboxLedger->removeExpense((int) $expense->id);
         $expense->delete();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['ok' => true, 'message' => 'تم حذف المصروف بنجاح.']);
+        }
 
         return redirect()->route('expenses.index')->with('success', 'تم حذف المصروف بنجاح.');
     }
