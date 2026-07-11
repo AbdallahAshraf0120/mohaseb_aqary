@@ -7,7 +7,6 @@ use App\Models\Project;
 use App\Services\CashboxLedgerService;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -128,14 +127,10 @@ class ExpenseController extends Controller
         return redirect()->route('expenses.index')->with('success', $message);
     }
 
-    public function destroy(Request $request, Project $project, Expense $expense): RedirectResponse|JsonResponse
+    public function destroy(Project $project, Expense $expense): RedirectResponse
     {
         $this->cashboxLedger->removeExpense((int) $expense->id);
         $expense->delete();
-
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json(['ok' => true, 'message' => 'تم حذف المصروف بنجاح.']);
-        }
 
         return redirect()->route('expenses.index')->with('success', 'تم حذف المصروف بنجاح.');
     }

@@ -3,7 +3,6 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 
 /**
  * Forms with data-swal-confirm="…" show SweetAlert2 instead of blocking confirm().
- * Optional data-swal-ajax: submit via fetch and remove the closest table row (no full reload).
  * Programmatic form.submit() does not re-dispatch submit, so no loop.
  */
 export function registerSwalConfirmForms() {
@@ -33,87 +32,8 @@ export function registerSwalConfirmForms() {
             dir: 'rtl',
         });
 
-        if (! isConfirmed) {
-            return;
+        if (isConfirmed) {
+            form.submit();
         }
-
-        if (form.hasAttribute('data-swal-ajax')) {
-            await submitFormAjax(form);
-            return;
-        }
-
-        form.submit();
     }, true);
-}
-
-async function submitFormAjax(form) {
-    const submitters = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-    submitters.forEach((el) => {
-        el.disabled = true;
-    });
-
-    try {
-        const methodInput = form.querySelector('input[name="_method"]');
-        const method = (methodInput?.value || form.method || 'POST').toUpperCase();
-        const body = new FormData(form);
-
-        const response = await fetch(form.action, {
-            method: method === 'GET' ? 'GET' : 'POST',
-            headers: {
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: method === 'GET' ? undefined : body,
-            credentials: 'same-origin',
-        });
-
-        let payload = null;
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-            payload = await response.json();
-        }
-
-        if (! response.ok) {
-            const message = payload?.message
-                || (typeof payload?.error === 'string' ? payload.error : null)
-                || 'تعذّر تنفيذ العملية.';
-            throw new Error(message);
-        }
-
-        const row = form.closest('tr');
-        const tbody = row?.parentElement;
-        if (row) {
-            row.remove();
-        }
-
-        if (tbody instanceof HTMLTableSectionElement && tbody.querySelectorAll('tr').length === 0) {
-            const cols = tbody.closest('table')?.querySelectorAll('thead th').length || 1;
-            const emptyText = form.getAttribute('data-swal-empty') || 'لا توجد بيانات حتى الآن.';
-            const empty = document.createElement('tr');
-            empty.innerHTML = `<td colspan="${cols}" class="text-center text-muted">${emptyText}</td>`;
-            tbody.appendChild(empty);
-        }
-
-        await Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'success',
-            title: payload?.message || 'تم الحذف بنجاح.',
-            showConfirmButton: false,
-            timer: 2200,
-            timerProgressBar: true,
-            dir: 'rtl',
-        });
-    } catch (error) {
-        await Swal.fire({
-            icon: 'error',
-            title: 'خطأ',
-            text: error instanceof Error ? error.message : 'تعذّر تنفيذ العملية.',
-            confirmButtonText: 'حسناً',
-            dir: 'rtl',
-        });
-        submitters.forEach((el) => {
-            el.disabled = false;
-        });
-    }
 }
