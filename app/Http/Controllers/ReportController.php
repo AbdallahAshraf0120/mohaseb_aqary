@@ -95,11 +95,11 @@ class ReportController extends Controller
             }
             fputcsv($out, []);
             fputcsv($out, ['مصروفات — التفاصيل']);
-            fputcsv($out, ['id', 'created_at', 'amount', 'category', 'description']);
+            fputcsv($out, ['id', 'spent_at', 'amount', 'category', 'description']);
             foreach ((clone $expensesQ)->orderByDesc('id')->cursor() as $e) {
                 fputcsv($out, [
                     $e->id,
-                    $e->created_at?->format('Y-m-d H:i'),
+                    $e->spent_at?->format('Y-m-d') ?? '',
                     (string) (float) $e->amount,
                     (string) ($e->category ?? ''),
                     (string) ($e->description ?? ''),
@@ -267,8 +267,8 @@ class ReportController extends Controller
         $this->applyRevenueSearch($revenuesQ, $filters);
 
         $expensesQ = Expense::query()
-            ->whereDate('created_at', '>=', $fromStr)
-            ->whereDate('created_at', '<=', $toStr)
+            ->whereDate('spent_at', '>=', $fromStr)
+            ->whereDate('spent_at', '<=', $toStr)
             ->where('approval_status', 'approved');
         $this->applyExpenseSearch($expensesQ, $filters);
 

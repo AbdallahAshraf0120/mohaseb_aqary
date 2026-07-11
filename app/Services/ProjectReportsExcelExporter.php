@@ -210,13 +210,13 @@ final class ProjectReportsExcelExporter
      */
     private function buildExpenseRows(): array
     {
-        $headers = ['المعرّف', 'تاريخ التسجيل', 'المبلغ', 'التصنيف', 'الوصف'];
+        $headers = ['المعرّف', 'تاريخ الصرف', 'المبلغ', 'التصنيف', 'الوصف'];
         $rows = [$headers];
         /** @var Expense $ex */
         foreach ((clone $this->expensesQuery)->orderByDesc('id')->cursor() as $ex) {
             $rows[] = [
                 $ex->id,
-                $ex->created_at?->format('Y-m-d H:i'),
+                $ex->spent_at?->format('Y-m-d') ?? '',
                 (float) $ex->amount,
                 (string) ($ex->category ?? ''),
                 (string) ($ex->description ?? ''),

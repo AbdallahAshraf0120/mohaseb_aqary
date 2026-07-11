@@ -17,7 +17,7 @@ class SettlementController extends Controller
         $revQ = Revenue::query()->where('approval_status', 'approved');
         $expQ = Expense::query()->where('approval_status', 'approved');
         $filters->applyWhereDate($revQ, 'paid_at');
-        $filters->applyWhereDate($expQ, 'created_at');
+        $filters->applyWhereDate($expQ, 'spent_at');
         if ($filters->q !== '') {
             $like = '%'.$filters->likeTerm().'%';
             $revQ->where(function ($w) use ($like): void {

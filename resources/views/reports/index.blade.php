@@ -172,7 +172,7 @@
                             <tbody>
                             @forelse ($expenseRows as $e)
                                 <tr>
-                                    <td class="small font-monospace">{{ $e->created_at?->format('Y-m-d') }}</td>
+                                    <td class="small font-monospace">{{ $e->spent_at?->format('Y-m-d') ?? $e->created_at?->format('Y-m-d') }}</td>
                                     <td class="small">{{ $e->category }}</td>
                                     <td class="text-end small font-monospace">{{ $fmt((float) $e->amount) }}</td>
                                 </tr>

@@ -373,6 +373,7 @@ class DatabaseSeeder extends Seeder
                 [
                     'amount' => \fake()->numberBetween(3_000, 180_000),
                     'category' => \fake()->randomElement(['تشغيل', 'تسويق', 'رواتب', 'صيانة', 'مرافق', 'تصاريح', 'عمولات']),
+                    'spent_at' => \fake()->dateTimeBetween('-6 months', 'now')->format('Y-m-d'),
                 ]
             );
         });

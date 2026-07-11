@@ -15,12 +15,17 @@ class Expense extends Model
         'amount',
         'category',
         'description',
+        'spent_at',
         'approval_status',
         'approved_at',
         'approved_by',
         'rejected_at',
         'rejected_by',
         'rejection_reason',
+    ];
+
+    protected $casts = [
+        'spent_at' => 'date',
     ];
 
     public function project(): BelongsTo

@@ -27,7 +27,7 @@ class ExpenseController extends Controller
                     ->orWhere('description', 'like', $like);
             });
         }
-        $filters->applyWhereDate($query, 'created_at');
+        $filters->applyWhereDate($query, 'spent_at');
 
         $expenseStats = [
             'sum_amount' => (float) (clone $query)->sum('amount'),
@@ -60,6 +60,7 @@ class ExpenseController extends Controller
             'amount' => ['required', 'numeric', 'min:1'],
             'category' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'spent_at' => ['required', 'date'],
         ]);
 
         $user = $request->user();
