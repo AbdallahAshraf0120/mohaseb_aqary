@@ -81,7 +81,8 @@
     <thead>
     <tr>
         <th>#</th>
-        <th>التاريخ</th>
+        <th>تاريخ الصرف</th>
+        <th>تاريخ الإدخال</th>
         <th>المبلغ</th>
         <th>الفئة</th>
         <th>الوصف</th>
@@ -91,7 +92,8 @@
     @foreach ($expenses as $e)
         <tr>
             <td class="num">{{ $e->id }}</td>
-            <td class="num">{{ $e->spent_at?->format('Y-m-d') ?? $e->created_at?->format('Y-m-d H:i') }}</td>
+            <td class="num">{{ $e->spent_at?->format('Y-m-d') ?? '—' }}</td>
+            <td class="num">{{ $e->created_at?->format('Y-m-d H:i') ?? '—' }}</td>
             <td class="num">{{ number_format((float) $e->amount, 2, '.', ',') }}</td>
             <td>{{ $e->category }}</td>
             <td>{{ \Illuminate\Support\Str::limit((string) ($e->description ?? ''), 160) }}</td>
