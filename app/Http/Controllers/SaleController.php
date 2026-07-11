@@ -15,6 +15,7 @@ use App\Services\CashboxLedgerService;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -212,12 +213,22 @@ class SaleController extends Controller
         return redirect()->route('sales.index')->with('success', $message);
     }
 
-    public function destroy(Project $project, Sale $sale): RedirectResponse
+    public function destroy(Request $request, Project $project, Sale $sale): RedirectResponse|JsonResponse
     {
         $this->cashboxLedger->removeSaleDownPayment((int) $sale->id);
         $sale->delete();
 
-        return redirect()->route('sales.index')->with('success', 'تم حذف البيعة بنجاح.');
+        $message = 'تم حذف البيعة بنجاح.';
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'ok' => true,
+                'message' => $message,
+                'redirect' => route('sales.index', $project),
+            ]);
+        }
+
+        return redirect()->route('sales.index')->with('success', $message);
     }
 
     private function createClientForNewSale(array $validated): Client

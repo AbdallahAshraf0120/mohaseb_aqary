@@ -93,6 +93,13 @@
                                     <td class="text-end">
                                         <a href="{{ route('sales.show', [$project, $sale]) }}" class="btn btn-outline-info btn-sm">عرض</a>
                                         <a href="{{ route('sales.edit', [$project, $sale]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
+                                        <form method="post"
+                                              action="{{ route('sales.destroy', [$project, $sale]) }}"
+                                              class="d-inline js-sale-ajax-delete"
+                                              data-confirm="حذف البيعة؟">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
+                                        </form>
                                     </td>
                                 </tr>
                             @empty
@@ -125,3 +132,11 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    @include('partials.ajax-delete-script', [
+        'ajaxDeleteClass' => 'js-sale-ajax-delete',
+        'ajaxEmptyColspan' => 8,
+        'ajaxEmptyMessage' => 'لا توجد مبيعات مسجلة حتى الآن.',
+    ])
+@endpush

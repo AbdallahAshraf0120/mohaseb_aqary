@@ -43,6 +43,13 @@
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ route('sales.index', $project) }}" class="btn btn-outline-secondary btn-sm">رجوع</a>
                 <a href="{{ route('sales.edit', [$project, $sale]) }}" class="btn btn-primary btn-sm">تعديل</a>
+                <form method="post"
+                      action="{{ route('sales.destroy', [$project, $sale]) }}"
+                      class="js-sale-ajax-delete"
+                      data-confirm="حذف البيعة؟">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
+                </form>
                 @if ($sale->client)
                     <a href="{{ route('clients.show', [$project, $sale->client]) }}" class="btn btn-outline-info btn-sm">العميل</a>
                 @endif
@@ -349,3 +356,11 @@
         </div>
     @endif
 @endsection
+
+@push('scripts')
+    @include('partials.ajax-delete-script', [
+        'ajaxDeleteClass' => 'js-sale-ajax-delete',
+        'ajaxEmptyColspan' => 8,
+        'ajaxEmptyMessage' => 'لا توجد مبيعات مسجلة حتى الآن.',
+    ])
+@endpush

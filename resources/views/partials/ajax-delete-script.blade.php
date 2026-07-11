@@ -1,9 +1,20 @@
+{{-- Shared AJAX delete with SweetAlert2 (CDN) — no Vite rebuild needed --}}
+@php
+    $ajaxDeleteClass = $ajaxDeleteClass ?? 'js-ajax-delete';
+    $ajaxEmptyColspan = $ajaxEmptyColspan ?? 8;
+    $ajaxEmptyMessage = $ajaxEmptyMessage ?? 'لا توجد سجلات حتى الآن.';
+@endphp
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 <script>
 (function () {
-    if (window.__expenseAjaxDeleteBound) return;
-    window.__expenseAjaxDeleteBound = true;
+    var bindKey = '__ajaxDeleteBound_' + @json($ajaxDeleteClass);
+    if (window[bindKey]) return;
+    window[bindKey] = true;
+
+    var formClass = @json($ajaxDeleteClass);
+    var emptyColspan = @json($ajaxEmptyColspan);
+    var emptyMessage = @json($ajaxEmptyMessage);
 
     function swalConfirm(msg) {
         return Swal.fire({
@@ -25,7 +36,7 @@
 
     document.addEventListener('submit', function (event) {
         var form = event.target;
-        if (!(form instanceof HTMLFormElement) || !form.classList.contains('js-expense-ajax-delete')) {
+        if (!(form instanceof HTMLFormElement) || !form.classList.contains(formClass)) {
             return;
         }
 
@@ -63,15 +74,16 @@
             .then(function (data) {
                 var row = form.closest('tr');
                 if (row) {
+                    var table = row.closest('table');
                     row.remove();
-                    var tbody = document.querySelector('.card-body table tbody');
+                    var tbody = table ? table.querySelector('tbody') : null;
                     if (tbody && !tbody.querySelector('tr')) {
-                        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">لا توجد مصروفات حتى الآن.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="' + emptyColspan + '" class="text-center text-muted">' + emptyMessage + '</td></tr>';
                     }
                     Swal.fire({
                         icon: 'success',
                         title: 'تم',
-                        text: (data && data.message) || 'تم حذف المصروف بنجاح.',
+                        text: (data && data.message) || 'تم الحذف بنجاح.',
                         timer: 1400,
                         showConfirmButton: false,
                         dir: 'rtl'

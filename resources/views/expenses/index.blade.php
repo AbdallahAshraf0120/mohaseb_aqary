@@ -77,5 +77,9 @@
 @endsection
 
 @push('scripts')
-    @include('expenses._ajax-delete-script')
+    @include('partials.ajax-delete-script', [
+        'ajaxDeleteClass' => 'js-expense-ajax-delete',
+        'ajaxEmptyColspan' => 8,
+        'ajaxEmptyMessage' => 'لا توجد مصروفات حتى الآن.',
+    ])
 @endpush
