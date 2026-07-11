@@ -20,7 +20,7 @@
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ route('expenses.index', $project) }}" class="btn btn-outline-secondary btn-sm">رجوع للسجل</a>
                 <a href="{{ route('expenses.edit', [$project, $expense]) }}" class="btn btn-primary btn-sm">تعديل</a>
-                <form method="post" action="{{ route('expenses.destroy', [$project, $expense]) }}" data-swal-confirm="{{ e('حذف المصروف؟') }}">
+                <form method="post" action="{{ route('expenses.destroy', [$project, $expense]) }}" data-swal-confirm="{{ e('حذف المصروف؟') }}" data-swal-ajax>
                     @csrf @method('DELETE')
                     <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
                 </form>
