@@ -10,8 +10,8 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">تاريخ الصرف</label>
-        <input type="date" name="spent_at" class="form-control" required value="{{ old('spent_at', isset($expense) && $expense->spent_at ? $expense->spent_at->format('Y-m-d') : (isset($expense) && $expense->exists ? '' : now()->toDateString())) }}">
-        <div class="form-text">تاريخ حدوث الصرف فعليًا (مطلوب).</div>
+        <input type="date" name="spent_at" class="form-control" required value="{{ old('spent_at', isset($expense) && $expense->spent_at ? $expense->spent_at->format('Y-m-d') : now()->toDateString()) }}">
+        <div class="form-text">تاريخ حدوث الصرف فعليًا.</div>
     </div>
     <div class="col-md-3">
         <label class="form-label">الوصف</label>
