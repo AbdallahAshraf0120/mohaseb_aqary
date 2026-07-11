@@ -88,8 +88,9 @@ async function submitFormAjax(form) {
 
         if (tbody instanceof HTMLTableSectionElement && tbody.querySelectorAll('tr').length === 0) {
             const cols = tbody.closest('table')?.querySelectorAll('thead th').length || 1;
+            const emptyText = form.getAttribute('data-swal-empty') || 'لا توجد بيانات حتى الآن.';
             const empty = document.createElement('tr');
-            empty.innerHTML = `<td colspan="${cols}" class="text-center text-muted">لا توجد مصروفات حتى الآن.</td>`;
+            empty.innerHTML = `<td colspan="${cols}" class="text-center text-muted">${emptyText}</td>`;
             tbody.appendChild(empty);
         }
 
