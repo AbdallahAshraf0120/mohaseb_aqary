@@ -59,8 +59,8 @@
                             <tr>
                                 <th>#</th>
                                 <th>رقم البيعة</th>
+                                <th>تاريخ البيعة</th>
                                 <th>العقار/العميل</th>
-                                <th>البروكر</th>
                                 <th>قيمة البيع</th>
                                 <th>المقدم</th>
                                 <th>الحالة</th>
@@ -72,8 +72,13 @@
                                 <tr>
                                     <td>{{ $sales->firstItem() + $loop->index }}</td>
                                     <td>SL-{{ str_pad((string) $sale->id, 3, '0', STR_PAD_LEFT) }}</td>
-                                    <td>{{ $sale->property?->name ?? '-' }} / {{ $sale->client?->name ?? '-' }}</td>
-                                    <td>{{ $sale->broker_name ?: '—' }}</td>
+                                    <td class="font-monospace">{{ $sale->sale_date?->format('Y-m-d') ?? '—' }}</td>
+                                    <td>
+                                        <div>{{ $sale->property?->name ?? '-' }} / {{ $sale->client?->name ?? '-' }}</div>
+                                        @if (filled($sale->broker_name))
+                                            <div class="small text-body-secondary">البروكر: {{ $sale->broker_name }}</div>
+                                        @endif
+                                    </td>
                                     <td>{{ number_format((float) $sale->sale_price, 2) }} ج.م</td>
                                     <td>{{ number_format((float) $sale->down_payment, 2) }} ج.م</td>
                                     <td>
