@@ -30,9 +30,16 @@ class SaleController extends Controller
         $filters = ListingFilters::fromRequest($request);
         $totalsQuery = Sale::query();
         $this->applySaleListingFilters($totalsQuery, $filters);
+
+        $totalSales = round((float) (clone $totalsQuery)->sum('sale_price'), 2);
+        // مقدمات + أقساط معتمدة (من paid_amount على العقود المرتبطة بالمبيعات المفلترة)
+        $totalCollected = round((float) Contract::query()
+            ->whereIn('sale_id', (clone $totalsQuery)->select('id'))
+            ->sum('paid_amount'), 2);
+
         $saleTotals = [
-            'total_sales' => (float) (clone $totalsQuery)->sum('sale_price'),
-            'total_down_payment' => (float) (clone $totalsQuery)->sum('down_payment'),
+            'total_sales' => $totalSales,
+            'total_collected' => $totalCollected,
         ];
 
         $listQuery = Sale::query()->with(['property:id,name', 'client:id,name,phone']);

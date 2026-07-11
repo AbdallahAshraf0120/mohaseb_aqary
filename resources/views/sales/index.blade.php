@@ -3,8 +3,8 @@
 @section('content')
     @php
         $totalSales = (float) ($saleTotals['total_sales'] ?? 0);
-        $totalDownPayment = (float) ($saleTotals['total_down_payment'] ?? 0);
-        $remaining = max(0, $totalSales - $totalDownPayment);
+        $totalCollected = (float) ($saleTotals['total_collected'] ?? 0);
+        $remaining = round(max(0, $totalSales - $totalCollected), 2);
     @endphp
 
     <div class="row g-3 mb-3">
@@ -19,7 +19,7 @@
         <div class="col-lg-4 col-md-6">
             <div class="small-box text-bg-light border">
                 <div class="inner">
-                    <h5 class="mb-2">{{ number_format($totalDownPayment, 2) }} ج.م</h5>
+                    <h5 class="mb-2">{{ number_format($totalCollected, 2) }} ج.م</h5>
                     <p class="mb-0">الدفعات المحصلة</p>
                 </div>
             </div>
