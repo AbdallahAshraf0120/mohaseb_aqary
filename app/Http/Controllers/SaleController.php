@@ -32,13 +32,22 @@ class SaleController extends Controller
         $this->applySaleListingFilters($totalsQuery, $filters);
 
         $totalSales = round((float) (clone $totalsQuery)->sum('sale_price'), 2);
-        // مقدمات + أقساط معتمدة (من paid_amount على العقود المرتبطة بالمبيعات المفلترة)
-        $totalCollected = round((float) Contract::query()
-            ->whereIn('sale_id', (clone $totalsQuery)->select('id'))
-            ->sum('paid_amount'), 2);
+
+        // مقدمات معتمدة + أقساط/تحصيلات معتمدة على عقود نفس المبيعات المفلترة
+        $saleIds = (clone $totalsQuery)->select('id');
+        $downPayments = round((float) (clone $totalsQuery)
+            ->where('approval_status', 'approved')
+            ->sum('down_payment'), 2);
+        $installmentsCollected = round((float) Revenue::query()
+            ->where('approval_status', 'approved')
+            ->whereIn('contract_id', Contract::query()->whereIn('sale_id', $saleIds)->select('id'))
+            ->sum('amount'), 2);
+        $totalCollected = round($downPayments + $installmentsCollected, 2);
 
         $saleTotals = [
             'total_sales' => $totalSales,
+            'total_down_payments' => $downPayments,
+            'total_installments' => $installmentsCollected,
             'total_collected' => $totalCollected,
         ];
 
@@ -129,20 +138,30 @@ class SaleController extends Controller
             'property.area:id,name',
             'property.land:id,name',
             'client',
-            'contract.revenues' => static fn ($q) => $q->orderBy('paid_at')->orderBy('id'),
+            'contract.revenues' => static fn ($q) => $q
+                ->where('approval_status', 'approved')
+                ->orderBy('paid_at')
+                ->orderBy('id'),
         ]);
 
         $installmentRows = $sale->installmentScheduleWithPaymentSummary();
         $revenues = $sale->contract?->revenues ?? collect();
         $scheduledTotal = (float) collect($installmentRows)->sum(static fn (array $r) => $r['amount']);
+        $downPayment = ($sale->approval_status ?? 'approved') === 'approved'
+            ? round((float) ($sale->down_payment ?? 0), 2)
+            : 0.0;
+        $revenuesSum = round((float) $revenues->sum(static fn ($r) => (float) $r->amount), 2);
+        $contractTotal = round((float) ($sale->contract?->total_price ?? $sale->sale_price ?? 0), 2);
+        $contractPaid = round($downPayment + $revenuesSum, 2);
         $stats = [
             'installment_rows' => count($installmentRows),
             'scheduled_total' => round($scheduledTotal, 2),
+            'down_payment' => $downPayment,
             'revenues_count' => $revenues->count(),
-            'revenues_sum' => round((float) $revenues->sum(static fn ($r) => (float) $r->amount), 2),
-            'contract_total' => round((float) ($sale->contract?->total_price ?? 0), 2),
-            'contract_paid' => round((float) ($sale->contract?->paid_amount ?? 0), 2),
-            'contract_remaining' => round((float) ($sale->contract?->remaining_amount ?? 0), 2),
+            'revenues_sum' => $revenuesSum,
+            'contract_total' => $contractTotal,
+            'contract_paid' => $contractPaid,
+            'contract_remaining' => round(max(0, $contractTotal - $contractPaid), 2),
         ];
 
         return view('sales.show', [

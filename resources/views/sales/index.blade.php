@@ -4,6 +4,8 @@
     @php
         $totalSales = (float) ($saleTotals['total_sales'] ?? 0);
         $totalCollected = (float) ($saleTotals['total_collected'] ?? 0);
+        $totalDownPayments = (float) ($saleTotals['total_down_payments'] ?? 0);
+        $totalInstallments = (float) ($saleTotals['total_installments'] ?? 0);
         $remaining = round(max(0, $totalSales - $totalCollected), 2);
     @endphp
 
@@ -21,6 +23,10 @@
                 <div class="inner">
                     <h5 class="mb-2">{{ number_format($totalCollected, 2) }} ج.م</h5>
                     <p class="mb-0">الدفعات المحصلة</p>
+                    <p class="mb-0 small text-body-secondary">
+                        مقدمات {{ number_format($totalDownPayments, 2) }}
+                        + أقساط {{ number_format($totalInstallments, 2) }}
+                    </p>
                 </div>
             </div>
         </div>

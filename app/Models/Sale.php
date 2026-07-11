@@ -181,7 +181,9 @@ class Sale extends Model
             return [];
         }
         $revenues = $this->contract?->revenues ?? collect();
-        $paidPool = (float) $revenues->sum(static fn ($r) => (float) $r->amount);
+        $paidPool = (float) $revenues
+            ->filter(static fn ($r) => ($r->approval_status ?? 'approved') === 'approved')
+            ->sum(static fn ($r) => (float) $r->amount);
         $out = [];
         foreach ($schedule as $row) {
             $due = (float) $row['amount'];

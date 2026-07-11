@@ -28,9 +28,9 @@
     <x-partials.module-kpis :items="[
         ['label' => 'سعر البيعة', 'value' => number_format((float) $sale->sale_price, 2) . ' ج.م'],
         ['label' => 'المقدم', 'value' => number_format((float) $sale->down_payment, 2) . ' ج.م'],
-        ['label' => 'تحصيلات على العقد', 'value' => number_format($stats['revenues_sum'], 2) . ' ج.م (' . $stats['revenues_count'] . ')'],
+        ['label' => 'أقساط محصّلة', 'value' => number_format($stats['revenues_sum'], 2) . ' ج.م (' . $stats['revenues_count'] . ')'],
+        ['label' => 'إجمالي المدفوع', 'value' => number_format($stats['contract_paid'], 2) . ' ج.م'],
         ['label' => 'متبقي العقد', 'value' => number_format($stats['contract_remaining'], 2) . ' ج.م'],
-        ['label' => 'أقساط مجدولة', 'value' => $stats['installment_rows'] > 0 ? $stats['installment_rows'] . ' بند' : '—'],
     ]" />
 
     <div class="card shadow-sm border-0 mb-3">
@@ -211,7 +211,14 @@
                             </div>
                             <div class="row g-2 small">
                                 <div class="col-md-3"><span class="text-body-secondary">الإجمالي</span><br><span class="font-monospace fw-medium">{{ number_format($stats['contract_total'], 2) }}</span> ج.م</div>
-                                <div class="col-md-3"><span class="text-body-secondary">المدفوع</span><br><span class="font-monospace text-success-emphasis">{{ number_format($stats['contract_paid'], 2) }}</span> ج.م</div>
+                                <div class="col-md-3">
+                                    <span class="text-body-secondary">المدفوع</span><br>
+                                    <span class="font-monospace text-success-emphasis">{{ number_format($stats['contract_paid'], 2) }}</span> ج.م
+                                    <div class="text-body-secondary mt-1" style="font-size: .75rem;">
+                                        مقدم {{ number_format($stats['down_payment'], 2) }}
+                                        + أقساط {{ number_format($stats['revenues_sum'], 2) }}
+                                    </div>
+                                </div>
                                 <div class="col-md-3"><span class="text-body-secondary">المتبقي</span><br><span class="font-monospace fw-semibold">{{ number_format($stats['contract_remaining'], 2) }}</span> ج.م</div>
                                 <div class="col-md-3"><span class="text-body-secondary">الفترة</span><br><span class="font-monospace">{{ $sale->contract->start_date?->format('Y-m-d') ?? '—' }}</span> → <span class="font-monospace">{{ $sale->contract->end_date?->format('Y-m-d') ?? '—' }}</span></div>
                             </div>
@@ -245,7 +252,8 @@
             </div>
             <div class="card-body">
                 <p class="small text-muted mb-3 border-start border-4 border-secondary ps-3">
-                    عمود «المسدد» يوزّع مجموع <strong>تحصيلات العقد</strong> بالتسلسل (FIFO) على البنود — للمتابعة السريعة.
+                    عمود «المسدد» يوزّع <strong>تحصيلات الأقساط فقط</strong> (بدون المقدم) بالتسلسل (FIFO) على البنود.
+                    المدفوع أعلى الصفحة = المقدم + هذه التحصيلات.
                 </p>
                 <div class="table-responsive rounded-3 border">
                     <table class="table table-sm table-striped table-hover align-middle mb-0">
@@ -302,14 +310,14 @@
         </div>
     @endif
 
-    @if ($sale->contract && $revenues->isNotEmpty())
+    @if ($sale->contract && ($revenues->isNotEmpty() || $stats['down_payment'] > 0.009))
         <div class="card shadow-sm border-0">
             <div class="card-header bg-body-secondary border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
                 <div>
                     <h5 class="mb-0">حركات التحصيل</h5>
-                    <div class="small text-body-secondary mt-1">مسجلة على عقد هذه البيعة</div>
+                    <div class="small text-body-secondary mt-1">المقدم + الأقساط المسجّلة على عقد هذه البيعة</div>
                 </div>
-                <span class="badge text-bg-primary fs-6">{{ $revenues->count() }} حركة</span>
+                <span class="badge text-bg-primary fs-6">{{ $revenues->count() + ($stats['down_payment'] > 0.009 ? 1 : 0) }} حركة</span>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -319,19 +327,32 @@
                             <th scope="col">#</th>
                             <th scope="col">التاريخ</th>
                             <th scope="col" class="text-end">المبلغ</th>
-                            <th scope="col">طريقة الدفع</th>
+                            <th scope="col">النوع / الطريقة</th>
                             <th scope="col">ملاحظات</th>
                             <th scope="col" class="text-end"></th>
                         </tr>
                         </thead>
                         <tbody>
+                        @if ($stats['down_payment'] > 0.009)
+                            <tr>
+                                <td class="font-monospace">—</td>
+                                <td class="font-monospace">{{ $sale->sale_date?->format('Y-m-d') ?? '—' }}</td>
+                                <td class="text-end font-monospace fw-medium">{{ number_format($stats['down_payment'], 2) }}</td>
+                                <td><span class="badge text-bg-success">مقدم</span></td>
+                                <td class="small text-break">مقدم البيعة</td>
+                                <td class="text-end"></td>
+                            </tr>
+                        @endif
                         @foreach ($revenues as $rev)
                             @php($revPm = ['cash' => 'نقدي', 'bank_transfer' => 'تحويل بنكي', 'check' => 'شيك'][$rev->payment_method ?? ''] ?? $rev->payment_method)
                             <tr>
                                 <td class="font-monospace">{{ $rev->id }}</td>
                                 <td class="font-monospace">{{ $rev->paid_at?->format('Y-m-d') ?? '—' }}</td>
                                 <td class="text-end font-monospace fw-medium">{{ number_format((float) $rev->amount, 2) }}</td>
-                                <td>{{ $revPm ?: '—' }}</td>
+                                <td>
+                                    <span class="badge text-bg-light text-dark border">قسط</span>
+                                    <span class="small ms-1">{{ $revPm ?: '—' }}</span>
+                                </td>
                                 <td class="small text-break">{{ $rev->notes ?: '—' }}</td>
                                 <td class="text-end">
                                     <a href="{{ route('revenues.show', [$project, $rev]) }}" class="btn btn-outline-secondary btn-sm">عرض</a>
@@ -341,8 +362,8 @@
                         </tbody>
                         <tfoot class="table-group-divider fw-semibold table-light">
                         <tr>
-                            <td colspan="2">المجموع</td>
-                            <td class="text-end font-monospace">{{ number_format($stats['revenues_sum'], 2) }}</td>
+                            <td colspan="2">المجموع (مقدم + أقساط)</td>
+                            <td class="text-end font-monospace">{{ number_format($stats['contract_paid'], 2) }}</td>
                             <td colspan="3"></td>
                         </tr>
                         </tfoot>
