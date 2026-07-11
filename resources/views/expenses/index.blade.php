@@ -56,10 +56,7 @@
                             <td class="text-end">
                                 <a href="{{ route('expenses.show', [$project, $expense]) }}" class="btn btn-outline-info btn-sm">عرض</a>
                                 <a href="{{ route('expenses.edit', [$project, $expense]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
-                                <form method="post"
-                                      action="{{ route('expenses.destroy', [$project, $expense]) }}"
-                                      class="d-inline js-ajax-delete"
-                                      data-confirm="{{ e('حذف المصروف؟') }}">
+                                <form method="post" action="{{ route('expenses.destroy', [$project, $expense]) }}" class="d-inline" data-swal-confirm="{{ e('حذف المصروف؟') }}" data-swal-ajax>
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
                                 </form>
@@ -75,75 +72,3 @@
         </div>
     </div>
 @endsection
-
-@push('scripts')
-<script>
-(function () {
-    document.addEventListener('submit', function (event) {
-        var form = event.target;
-        if (!(form instanceof HTMLFormElement) || !form.classList.contains('js-ajax-delete')) {
-            return;
-        }
-
-        event.preventDefault();
-        event.stopImmediatePropagation();
-
-        if (form.dataset.busy === '1') {
-            return;
-        }
-
-        var msg = form.getAttribute('data-confirm') || 'تأكيد الحذف؟';
-        if (!window.confirm(msg)) {
-            return;
-        }
-
-        form.dataset.busy = '1';
-        var btn = form.querySelector('[type="submit"]');
-        if (btn) btn.disabled = true;
-
-        fetch(form.action, {
-            method: 'POST',
-            body: new FormData(form),
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'same-origin'
-        }).then(function (res) {
-            return res.json().then(function (data) {
-                if (!res.ok) {
-                    throw new Error((data && data.message) || 'تعذّر تنفيذ الحذف.');
-                }
-                return data;
-            });
-        }).then(function (data) {
-            var row = form.closest('tr');
-            if (row) {
-                row.remove();
-                var tbody = document.querySelector('.card-body table tbody');
-                if (tbody && !tbody.querySelector('tr')) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">لا توجد مصروفات حتى الآن.</td></tr>';
-                }
-            } else if (data && data.redirect) {
-                window.location.href = data.redirect;
-                return;
-            }
-            if (window.Swal && typeof window.Swal.fire === 'function') {
-                window.Swal.fire({
-                    icon: 'success',
-                    title: 'تم',
-                    text: (data && data.message) || 'تم الحذف بنجاح.',
-                    timer: 1400,
-                    showConfirmButton: false,
-                    dir: 'rtl'
-                });
-            }
-        }).catch(function (err) {
-            alert(err.message || 'تعذّر تنفيذ الحذف.');
-            form.dataset.busy = '0';
-            if (btn) btn.disabled = false;
-        });
-    }, true);
-})();
-</script>
-@endpush
