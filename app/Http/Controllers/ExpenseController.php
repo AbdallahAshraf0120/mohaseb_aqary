@@ -75,6 +75,17 @@ class ExpenseController extends Controller
         return redirect()->route('expenses.index')->with('success', $isAdmin ? 'تم تسجيل المصروف واعتماده تلقائيًا.' : 'تم تسجيل المصروف كعملية معلقة حتى اعتماد الأدمن.');
     }
 
+    public function show(Project $project, Expense $expense): View
+    {
+        return view('expenses.show', [
+            'title' => 'تفاصيل المصروف | Mohaseb Aqary',
+            'pageTitle' => 'تفاصيل المصروف',
+            'project' => $project,
+            'expense' => $expense,
+            'modules' => $this->modules(),
+        ]);
+    }
+
     public function destroy(Project $project, Expense $expense): RedirectResponse
     {
         $this->cashboxLedger->removeExpense((int) $expense->id);

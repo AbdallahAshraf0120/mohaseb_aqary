@@ -23,7 +23,7 @@
             @endif
             <div class="table-responsive">
                 <table class="table table-striped align-middle">
-                    <thead><tr><th>#</th><th>الفئة</th><th>القيمة</th><th>الوصف</th><th>الحالة</th><th class="text-end">حذف</th></tr></thead>
+                    <thead><tr><th>#</th><th>الفئة</th><th>القيمة</th><th>الوصف</th><th>الحالة</th><th class="text-end">العمليات</th></tr></thead>
                     <tbody>
                     @forelse ($expenses as $expense)
                         <tr>
@@ -41,7 +41,8 @@
                                 @endif
                             </td>
                             <td class="text-end">
-                                <form method="post" action="{{ route('expenses.destroy', [$project, $expense]) }}" data-swal-confirm="{{ e('حذف المصروف؟') }}">
+                                <a href="{{ route('expenses.show', [$project, $expense]) }}" class="btn btn-outline-info btn-sm">عرض</a>
+                                <form method="post" action="{{ route('expenses.destroy', [$project, $expense]) }}" class="d-inline" data-swal-confirm="{{ e('حذف المصروف؟') }}">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
                                 </form>

@@ -149,7 +149,7 @@ Route::middleware(['auth', AuthorizeRoutePermission::class, SyncProjectFromRoute
         Route::get('contracts/{contract}/word', [ContractController::class, 'downloadWord'])->name('contracts.word');
         Route::resource('contracts', ContractController::class)->only(['index', 'show']);
         Route::resource('revenues', RevenueController::class);
-        Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'destroy']);
+        Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
 
         Route::get('cashbox', [CashboxController::class, 'index'])->name('cashbox.index');
         Route::post('cashbox', [CashboxController::class, 'store'])->name('cashbox.store');

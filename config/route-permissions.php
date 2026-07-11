@@ -83,6 +83,7 @@ return [
     'revenues.destroy' => 'revenues.destroy',
 
     'expenses.index' => 'expenses.index',
+    'expenses.show' => 'expenses.show',
     'expenses.create' => 'expenses.create',
     'expenses.store' => 'expenses.store',
     'expenses.destroy' => 'expenses.destroy',

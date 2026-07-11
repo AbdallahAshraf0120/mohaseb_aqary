@@ -150,7 +150,7 @@ class AppServiceProvider extends ServiceProvider
                 'route' => 'expenses.index',
                 'label' => 'المصروفات',
                 'icon' => 'fa-money-bill-wave',
-                'active' => ['expenses.index'],
+                'active' => ['expenses.index', 'expenses.show'],
                 'create_route' => 'expenses.create',
                 'create_active' => ['expenses.create'],
                 'permission' => 'expenses.view',
