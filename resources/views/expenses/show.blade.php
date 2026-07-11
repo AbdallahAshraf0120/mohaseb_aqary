@@ -49,7 +49,7 @@
                         <dt class="col-sm-3 text-body-secondary">تاريخ الصرف</dt>
                         <dd class="col-sm-9 font-monospace">{{ $expense->spent_at?->format('Y-m-d') ?? '—' }}</dd>
 
-                        <dt class="col-sm-3 text-body-secondary">تاريخ التسجيل</dt>
+                        <dt class="col-sm-3 text-body-secondary">تاريخ الإدخال على النظام</dt>
                         <dd class="col-sm-9 font-monospace">{{ $expense->created_at?->format('Y-m-d H:i') ?? '—' }}</dd>
 
                         @if ($status === 'approved' && $expense->approved_at)

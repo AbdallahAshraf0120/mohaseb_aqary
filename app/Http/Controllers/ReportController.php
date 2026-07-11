@@ -95,11 +95,12 @@ class ReportController extends Controller
             }
             fputcsv($out, []);
             fputcsv($out, ['مصروفات — التفاصيل']);
-            fputcsv($out, ['id', 'spent_at', 'amount', 'category', 'description']);
+            fputcsv($out, ['id', 'spent_at', 'created_at', 'amount', 'category', 'description']);
             foreach ((clone $expensesQ)->orderByDesc('id')->cursor() as $e) {
                 fputcsv($out, [
                     $e->id,
                     $e->spent_at?->format('Y-m-d') ?? '',
+                    $e->created_at?->format('Y-m-d H:i') ?? '',
                     (string) (float) $e->amount,
                     (string) ($e->category ?? ''),
                     (string) ($e->description ?? ''),
