@@ -13,6 +13,8 @@ use Illuminate\Support\Collection;
  * يوزّع على المساهمين ما يخص كل عقار من التحصيلات (عبر العقود) ومقدمات المبيعات،
  * مضروباً في نسبة المساهم المحفوظة في توزيع المساهمين على العقار.
  *
+ * تُحتسب فقط البيعات والتحصيلات **المعتمدة** (مثل التقارير والصندوق)، حتى لا تضخّم العمليات المعلّقة المنسب/الجاري.
+ *
  * مبالغ التحصيل والمقدم و(كمبيالة) سعر البيعة تُوزَّن حسب دور الوحدة: على أدوار «مشاع مع شريك»
  * يُحتسب نصف المبلغ فقط ضمن منسب المساهمين (النصف الآخر للشريك خارج المساهمين).
  *
@@ -21,7 +23,7 @@ use Illuminate\Support\Collection;
 final class ShareholderAttributedFlowService
 {
     /**
-     * أرقام التحصيلات والمقدمات وأسعار البيعات **بعد** تطبيق عامل المشاع (ما يدخل في منسب المساهمين لكل عقار).
+     * أرقام التحصيلات والمقدمات وأسعار البيعات **المعتمدة** بعد تطبيق عامل المشاع (ما يدخل في منسب المساهمين لكل عقار).
      *
      * @return array<int, array{revenues: float, down_payments: float, sale_volume: float}>
      */
@@ -53,6 +55,7 @@ final class ShareholderAttributedFlowService
         foreach (
             Sale::query()
                 ->where('project_id', $projectId)
+                ->where('approval_status', 'approved')
                 ->cursor() as $sale
         ) {
             /** @var Sale $sale */
@@ -67,6 +70,7 @@ final class ShareholderAttributedFlowService
         foreach (
             Revenue::query()
                 ->where('project_id', $projectId)
+                ->where('approval_status', 'approved')
                 ->whereNotNull('contract_id')
                 ->with([
                     'contract' => static fn ($q) => $q->select('id', 'property_id', 'sale_id', 'project_id'),
@@ -199,7 +203,7 @@ final class ShareholderAttributedFlowService
     }
 
     /**
-     * جاري مساهم (تقريبي): المنسب التشغيلي (تحصيلات + مقدمات) ناقص حصة التكاليف المنسوبة من العقار.
+     * جاري مساهم (تقريبي): المنسب التشغيلي المعتمد (تحصيلات + مقدمات) ناقص حصة التكاليف المنسوبة من العقار.
      * موجب يعني أن التدفق المنسوب للمساهم يتجاوز — في هذا النموذج — حصته من التكاليف المسجّلة على العقارات.
      */
     public function shareholderCurrentAccountApprox(float $attributedOperatingFlow, float $attributedDevelopmentCostShare): float

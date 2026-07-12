@@ -37,8 +37,8 @@ class DashboardController extends Controller
             'shareholders' => Shareholder::query()->count(),
             'debts_open' => Debt::query()->where('status', 'open')->count(),
             'revenues_this_month' => (float) Revenue::query()
-                ->whereMonth('created_at', now()->month)
-                ->whereYear('created_at', now()->year)
+                ->whereMonth('paid_at', now()->month)
+                ->whereYear('paid_at', now()->year)
                 ->where('approval_status', 'approved')
                 ->sum('amount'),
         ];

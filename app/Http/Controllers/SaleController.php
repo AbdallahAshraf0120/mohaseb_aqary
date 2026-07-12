@@ -31,13 +31,13 @@ class SaleController extends Controller
         $totalsQuery = Sale::query();
         $this->applySaleListingFilters($totalsQuery, $filters);
 
-        $totalSales = round((float) (clone $totalsQuery)->sum('sale_price'), 2);
+        // مؤشرات الملخص تعتمد المعتمد فقط — مثل التقارير والصندوق
+        $approvedTotalsQuery = (clone $totalsQuery)->where('approval_status', 'approved');
+        $totalSales = round((float) (clone $approvedTotalsQuery)->sum('sale_price'), 2);
 
-        // مقدمات معتمدة + أقساط/تحصيلات معتمدة على عقود نفس المبيعات المفلترة
-        $saleIds = (clone $totalsQuery)->select('id');
-        $downPayments = round((float) (clone $totalsQuery)
-            ->where('approval_status', 'approved')
-            ->sum('down_payment'), 2);
+        // مقدمات معتمدة + أقساط/تحصيلات معتمدة على عقود نفس المبيعات المعتمدة المفلترة
+        $saleIds = (clone $approvedTotalsQuery)->select('id');
+        $downPayments = round((float) (clone $approvedTotalsQuery)->sum('down_payment'), 2);
         $installmentsCollected = round((float) Revenue::query()
             ->where('approval_status', 'approved')
             ->whereIn('contract_id', Contract::query()->whereIn('sale_id', $saleIds)->select('id'))

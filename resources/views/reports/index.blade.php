@@ -46,30 +46,36 @@
             <div class="rounded-4 border p-4 h-100 bg-body-secondary bg-opacity-25">
                 <div class="small text-body-secondary mb-1">تحصيلات الفترة</div>
                 <div class="fs-4 fw-bold font-monospace text-success-emphasis">{{ $fmt($periodStats['revenues_sum']) }}</div>
-                <div class="small text-muted">{{ $currencyLabel }} — {{ $periodStats['revenues_count'] }} إيصال</div>
+                <div class="small text-muted">{{ $currencyLabel }} — {{ $periodStats['revenues_count'] }} إيصال معتمد</div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
             <div class="rounded-4 border p-4 h-100 bg-body-secondary bg-opacity-25">
                 <div class="small text-body-secondary mb-1">مصروفات الفترة</div>
                 <div class="fs-4 fw-bold font-monospace text-danger-emphasis">{{ $fmt($periodStats['expenses_sum']) }}</div>
-                <div class="small text-muted">{{ $currencyLabel }} — {{ $periodStats['expenses_count'] }} سجل</div>
+                <div class="small text-muted">{{ $currencyLabel }} — {{ $periodStats['expenses_count'] }} سجل معتمد</div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
             <div class="rounded-4 border p-4 h-100 bg-body-secondary bg-opacity-25">
                 <div class="small text-body-secondary mb-1">صافي (تحصيل − مصروف)</div>
                 <div class="fs-4 fw-bold font-monospace">{{ $fmt($periodStats['net_revenue_expense']) }}</div>
-                <div class="small text-muted">{{ $currencyLabel }}</div>
+                <div class="small text-muted">بدون المقدمات وسداد الذمم والقيود اليدوية</div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
             <div class="rounded-4 border p-4 h-100 bg-body-secondary bg-opacity-25">
                 <div class="small text-body-secondary mb-1">صندوق الفترة (وارد − صادر)</div>
                 <div class="fs-4 fw-bold font-monospace">{{ $fmt($periodStats['net_treasury']) }}</div>
-                <div class="small text-muted">يدوي: قبض {{ $fmt($periodStats['treasury_in']) }} / صرف {{ $fmt($periodStats['treasury_out']) }}</div>
+                <div class="small text-muted">قبض {{ $fmt($periodStats['treasury_in']) }} / صرف {{ $fmt($periodStats['treasury_out']) }} — كل الحركات المعتمدة</div>
             </div>
         </div>
+    </div>
+
+    <div class="alert alert-light border small mb-4">
+        <strong>ملاحظة:</strong>
+        صافي التحصيل−مصروف يختلف عن صافي الصندوق لأن الصندوق يشمل أيضاً مقدمات البيع، سداد الذمم، والقيود اليدوية.
+        الأرقام أدناه للمعتمد فقط؛ العمليات المعلّقة لا تدخل التقارير حتى الاعتماد.
     </div>
 
     <div class="row g-3 mb-4">
@@ -78,7 +84,7 @@
                 <div class="card-header">
                     <div>
                         <h5 class="mb-0 fw-semibold">مبيعات الفترة</h5>
-                        <p class="small text-body-secondary mb-0 mt-1">{{ $periodStats['sales_count'] }} بيعة — إجمالي {{ $fmt($periodStats['sales_sum']) }} {{ $currencyLabel }}</p>
+                        <p class="small text-body-secondary mb-0 mt-1">{{ $periodStats['sales_count'] }} بيعة معتمدة — إجمالي {{ $fmt($periodStats['sales_sum']) }} {{ $currencyLabel }}</p>
                     </div>
                 </div>
                 <div class="card-body">
@@ -106,18 +112,18 @@
                         <span class="font-monospace fw-semibold">{{ $fmt($allTime['expenses_sum']) }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-2 border-bottom">
-                        <span>وارد الصندوق اليدوي</span>
+                        <span>وارد الصندوق</span>
                         <span class="font-monospace fw-semibold text-success-emphasis">{{ $fmt($allTime['treasury_in']) }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-2 border-bottom">
-                        <span>صادر الصندوق اليدوي</span>
+                        <span>صادر الصندوق</span>
                         <span class="font-monospace fw-semibold text-danger-emphasis">{{ $fmt($allTime['treasury_out']) }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-2">
                         <span class="fw-semibold">صافي الصندوق</span>
                         <span class="font-monospace fw-bold">{{ $fmt($allTime['treasury_net']) }}</span>
                     </div>
-                    <p class="text-muted mb-0 mt-2">{{ $currencyLabel }}</p>
+                    <p class="text-muted mb-0 mt-2">{{ $currencyLabel }} — كل الحركات المعتمدة (تحصيل، مصروف، مقدم، ذمم، يدوي)</p>
                 </div>
             </div>
         </div>

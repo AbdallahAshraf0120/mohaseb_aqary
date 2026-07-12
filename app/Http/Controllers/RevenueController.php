@@ -25,10 +25,11 @@ class RevenueController extends Controller
         $filters = ListingFilters::fromRequest($request);
         $totalsQuery = Revenue::query();
         $this->applyRevenueListingFilters($totalsQuery, $filters);
+        $approvedTotals = (clone $totalsQuery)->where('approval_status', 'approved');
         $revenueStats = [
-            'sum_amount' => (float) (clone $totalsQuery)->sum('amount'),
-            'count' => (clone $totalsQuery)->count(),
-            'avg_amount' => (float) (clone $totalsQuery)->avg('amount'),
+            'sum_amount' => (float) (clone $approvedTotals)->sum('amount'),
+            'count' => (clone $approvedTotals)->count(),
+            'avg_amount' => (float) (clone $approvedTotals)->avg('amount'),
         ];
 
         $listQuery = Revenue::query()->with(['client:id,name', 'contract:id']);

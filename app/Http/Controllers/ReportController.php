@@ -176,16 +176,16 @@ class ReportController extends Controller
             'مبيعات الفترة (إجمالي)' => $ps['sales_sum'],
             'مجموع المقدمات' => $ps['sales_down'],
             'عدد المبيعات' => $ps['sales_count'],
-            'صندوق الفترة — وارد' => $ps['treasury_in'],
-            'صندوق الفترة — صادر' => $ps['treasury_out'],
+            'صندوق الفترة — وارد (كل الحركات المعتمدة)' => $ps['treasury_in'],
+            'صندوق الفترة — صادر (كل الحركات المعتمدة)' => $ps['treasury_out'],
             'صندوق الفترة — صافي' => $ps['net_treasury'],
         ];
 
         $summaryAllTime = [
             'تحصيلات متراكمة (كل الفترات)' => $at['revenues_sum'],
             'مصروفات متراكمة' => $at['expenses_sum'],
-            'وارد الصندوق اليدوي' => $at['treasury_in'],
-            'صادر الصندوق اليدوي' => $at['treasury_out'],
+            'وارد الصندوق (كل الحركات المعتمدة)' => $at['treasury_in'],
+            'صادر الصندوق (كل الحركات المعتمدة)' => $at['treasury_out'],
             'صافي الصندوق' => $at['treasury_net'],
             'المتبقي على العقود' => $snap['contractsRemaining'],
             'عدد العقود ذات متبقٍ' => $snap['contractsOpenCount'],

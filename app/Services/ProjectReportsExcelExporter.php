@@ -118,8 +118,8 @@ final class ProjectReportsExcelExporter
             ['مبيعات الفترة (إجمالي)', $this->periodStats['sales_sum']],
             ['مجموع المقدمات', $this->periodStats['sales_down']],
             ['عدد المبيعات', $this->periodStats['sales_count']],
-            ['صندوق الفترة — وارد', $this->periodStats['treasury_in']],
-            ['صندوق الفترة — صادر', $this->periodStats['treasury_out']],
+            ['صندوق الفترة — وارد (كل الحركات المعتمدة)', $this->periodStats['treasury_in']],
+            ['صندوق الفترة — صادر (كل الحركات المعتمدة)', $this->periodStats['treasury_out']],
             ['صندوق الفترة — صافي', $this->periodStats['net_treasury']],
         ];
 
@@ -137,8 +137,8 @@ final class ProjectReportsExcelExporter
         $allPairs = [
             ['تحصيلات متراكمة', $this->allTime['revenues_sum']],
             ['مصروفات متراكمة', $this->allTime['expenses_sum']],
-            ['وارد الصندوق اليدوي', $this->allTime['treasury_in']],
-            ['صادر الصندوق اليدوي', $this->allTime['treasury_out']],
+            ['وارد الصندوق (كل الحركات المعتمدة)', $this->allTime['treasury_in']],
+            ['صادر الصندوق (كل الحركات المعتمدة)', $this->allTime['treasury_out']],
             ['صافي الصندوق', $this->allTime['treasury_net']],
             ['المتبقي الحالي على العقود', $this->contractsRemaining],
             ['عدد العقود ذات متبقٍ', $this->contractsOpenCount],

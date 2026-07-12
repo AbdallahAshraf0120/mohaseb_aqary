@@ -30,10 +30,11 @@ class ExpenseController extends Controller
         }
         $filters->applyWhereDate($query, 'spent_at');
 
+        $approvedQuery = (clone $query)->where('approval_status', 'approved');
         $expenseStats = [
-            'sum_amount' => (float) (clone $query)->sum('amount'),
-            'count' => (clone $query)->count(),
-            'avg_amount' => (float) (clone $query)->avg('amount'),
+            'sum_amount' => (float) (clone $approvedQuery)->sum('amount'),
+            'count' => (clone $approvedQuery)->count(),
+            'avg_amount' => (float) (clone $approvedQuery)->avg('amount'),
         ];
 
         return view('expenses.index', [

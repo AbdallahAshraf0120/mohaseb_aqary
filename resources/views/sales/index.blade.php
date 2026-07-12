@@ -15,6 +15,7 @@
                 <div class="inner">
                     <h5 class="mb-2">{{ number_format($totalSales, 2) }} ج.م</h5>
                     <p class="mb-0">المبيعات الكلية</p>
+                    <p class="mb-0 small text-body-secondary">المعتمدة فقط</p>
                 </div>
             </div>
         </div>
