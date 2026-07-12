@@ -129,6 +129,14 @@ return [
     'crm-leads.destroy' => 'crm-leads.destroy',
     'crm-leads.activities.store' => 'crm-leads.activities.store',
 
+    'land-trading.index' => 'land-trading.index',
+    'land-trading.create' => 'land-trading.create',
+    'land-trading.store' => 'land-trading.store',
+    'land-trading.show' => 'land-trading.show',
+    'land-trading.edit' => 'land-trading.edit',
+    'land-trading.update' => 'land-trading.update',
+    'land-trading.destroy' => 'land-trading.destroy',
+
     'tasks.index' => 'tasks.index',
     'tasks.mine' => 'tasks.view',
     'tasks.create' => 'tasks.create',

@@ -12,6 +12,7 @@ use App\Http\Controllers\DebtController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FacingController;
 use App\Http\Controllers\LandController;
+use App\Http\Controllers\LandTradingController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\RemainingController;
@@ -111,6 +112,17 @@ Route::middleware('auth')->group(function (): void {
             Route::post('properties/{property}/reset', [SiteSketchController::class, 'reset'])
                 ->whereNumber('property')
                 ->name('site-sketch.reset');
+        });
+
+        // أراضي البيع والشراء (برا المشاريع)
+        Route::prefix('land-trading')->group(function (): void {
+            Route::get('/', [LandTradingController::class, 'index'])->name('land-trading.index');
+            Route::get('create', [LandTradingController::class, 'create'])->name('land-trading.create');
+            Route::post('/', [LandTradingController::class, 'store'])->name('land-trading.store');
+            Route::get('{parcel}', [LandTradingController::class, 'show'])->whereNumber('parcel')->name('land-trading.show');
+            Route::get('{parcel}/edit', [LandTradingController::class, 'edit'])->whereNumber('parcel')->name('land-trading.edit');
+            Route::put('{parcel}', [LandTradingController::class, 'update'])->whereNumber('parcel')->name('land-trading.update');
+            Route::delete('{parcel}', [LandTradingController::class, 'destroy'])->whereNumber('parcel')->name('land-trading.destroy');
         });
 
         // Tasks (برا المشاريع)

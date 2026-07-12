@@ -46,6 +46,9 @@ class PermissionSeeder extends Seeder
             'crm.manage' => 'إدارة CRM (إضافة/تعديل/حذف/متابعة العملاء)',
             'crm-leads.activities.store' => 'تسجيل متابعة - CRM العملاء المحتملين',
 
+            'land-trading.view' => 'عرض أراضي البيع والشراء',
+            'land-trading.manage' => 'إدارة أراضي البيع والشراء (إضافة/تعديل/حذف)',
+
             'tasks.view' => 'عرض المهام',
             'tasks.manage' => 'إدارة المهام (إنشاء/تعديل/حذف/إسناد)',
 
@@ -90,6 +93,7 @@ class PermissionSeeder extends Seeder
             'settlements.view',
             'reports.view',
             'crm.view',
+            'land-trading.view',
             'tasks.view',
             'site-sketch.view',
         ];
@@ -98,6 +102,7 @@ class PermissionSeeder extends Seeder
             'sales.manage',
             'revenues.manage',
             'crm.manage',
+            'land-trading.manage',
             'site-sketch.manage',
         ]);
 
@@ -107,6 +112,7 @@ class PermissionSeeder extends Seeder
             'areas.manage',
             'facings.manage',
             'lands.manage',
+            'land-trading.manage',
             'shareholders.manage',
             'revenues.manage',
             'expenses.manage',
@@ -156,6 +162,7 @@ class PermissionSeeder extends Seeder
             'activity-log' => 'سجل النشاط',
             'storage' => 'الملفات',
             'crm-leads' => 'CRM - العملاء المحتملين',
+            'land-trading' => 'أراضي البيع والشراء',
             'tasks' => 'المهام',
             'site-sketch' => 'مخطط الموقع',
         ];

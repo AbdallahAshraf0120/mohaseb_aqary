@@ -234,6 +234,15 @@
                                 </a>
                             </li>
                         @endcan
+                        @can('land-trading.view')
+                            <li class="nav-item">
+                                <a href="{{ route('land-trading.index') }}"
+                                   class="nav-link {{ request()->routeIs('land-trading.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-map"></i>
+                                    <p>أراضي البيع والشراء</p>
+                                </a>
+                            </li>
+                        @endcan
                         @can('site-sketch.view')
                             <li class="nav-item">
                                 <a href="{{ route('site-sketch.index') }}"
