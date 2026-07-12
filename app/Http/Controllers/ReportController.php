@@ -182,6 +182,9 @@ class ReportController extends Controller
         ];
 
         $summaryAllTime = [
+            'مبيعات معتمدة (كل الفترات)' => $at['sales_sum'],
+            'عدد المبيعات المعتمدة' => $at['sales_count'],
+            'مقدمات المبيعات المعتمدة' => $at['sales_down'],
             'تحصيلات متراكمة (كل الفترات)' => $at['revenues_sum'],
             'مصروفات متراكمة' => $at['expenses_sum'],
             'وارد الصندوق (كل الحركات المعتمدة)' => $at['treasury_in'],
@@ -342,6 +345,9 @@ class ReportController extends Controller
             'treasury_out' => (float) TreasuryTransaction::query()->where('type', 'expense')->where('approval_status', 'approved')->sum('amount'),
             'revenues_sum' => (float) Revenue::query()->where('approval_status', 'approved')->sum('amount'),
             'expenses_sum' => (float) Expense::query()->where('approval_status', 'approved')->sum('amount'),
+            'sales_sum' => (float) Sale::query()->where('approval_status', 'approved')->sum('sale_price'),
+            'sales_count' => (int) Sale::query()->where('approval_status', 'approved')->count(),
+            'sales_down' => (float) Sale::query()->where('approval_status', 'approved')->sum('down_payment'),
         ];
         $allTime['treasury_net'] = $allTime['treasury_in'] - $allTime['treasury_out'];
 

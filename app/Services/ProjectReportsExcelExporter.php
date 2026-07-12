@@ -135,6 +135,9 @@ final class ProjectReportsExcelExporter
         $row++;
 
         $allPairs = [
+            ['مبيعات معتمدة (كل الفترات)', $this->allTime['sales_sum']],
+            ['عدد المبيعات المعتمدة', $this->allTime['sales_count']],
+            ['مقدمات المبيعات المعتمدة', $this->allTime['sales_down']],
             ['تحصيلات متراكمة', $this->allTime['revenues_sum']],
             ['مصروفات متراكمة', $this->allTime['expenses_sum']],
             ['وارد الصندوق (كل الحركات المعتمدة)', $this->allTime['treasury_in']],

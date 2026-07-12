@@ -84,16 +84,13 @@
                 <div class="card-header">
                     <div>
                         <h5 class="mb-0 fw-semibold">مبيعات الفترة</h5>
-                        <p class="small text-body-secondary mb-0 mt-1">{{ $periodStats['sales_count'] }} بيعة معتمدة — إجمالي {{ $fmt($periodStats['sales_sum']) }} {{ $currencyLabel }}</p>
+                        <p class="small text-body-secondary mb-0 mt-1">{{ $periodStats['sales_count'] }} بيعة معتمدة ضمن الفترة — إجمالي {{ $fmt($periodStats['sales_sum']) }} {{ $currencyLabel }}</p>
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="small text-body-secondary mb-1">مجموع المقدمات</div>
+                    <div class="small text-body-secondary mb-1">مجموع المقدمات (نفس بيوعات الفترة)</div>
                     <div class="fs-5 font-monospace fw-semibold">{{ $fmt($periodStats['sales_down']) }} {{ $currencyLabel }}</div>
-                    <hr>
-                    <div class="small text-body-secondary mb-1">المتبقي الحالي على كل العقود</div>
-                    <div class="fs-5 font-monospace fw-semibold">{{ $fmt($contractsRemaining) }} {{ $currencyLabel }}</div>
-                    <div class="small text-muted">{{ $contractsOpenCount }} عقداً بها متبقٍ</div>
+                    <p class="small text-muted mb-0 mt-3">هذا الرقم يطابق صفحة المبيعات فقط إذا طبّقت نفس تاريخي البداية والنهاية هناك.</p>
                 </div>
             </div>
         </div>
@@ -103,6 +100,14 @@
                     <h5 class="mb-0 fw-semibold">إجماليات المشروع (كل الفترات)</h5>
                 </div>
                 <div class="card-body small">
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span>مبيعات معتمدة (كل الفترات)</span>
+                        <span class="font-monospace fw-semibold">{{ $fmt($allTime['sales_sum']) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">عدد البيعات المعتمدة</span>
+                        <span class="font-monospace">{{ (int) $allTime['sales_count'] }}</span>
+                    </div>
                     <div class="d-flex justify-content-between py-2 border-bottom">
                         <span>تحصيلات متراكمة</span>
                         <span class="font-monospace fw-semibold">{{ $fmt($allTime['revenues_sum']) }}</span>
@@ -123,20 +128,26 @@
                         <span class="fw-semibold">صافي الصندوق</span>
                         <span class="font-monospace fw-bold">{{ $fmt($allTime['treasury_net']) }}</span>
                     </div>
-                    <p class="text-muted mb-0 mt-2">{{ $currencyLabel }} — كل الحركات المعتمدة (تحصيل، مصروف، مقدم، ذمم، يدوي)</p>
+                    <p class="text-muted mb-0 mt-2">{{ $currencyLabel }} — المبيعات هنا تطابق «المبيعات الكلية» في صفحة المبيعات (بدون فلتر تاريخ)</p>
                 </div>
             </div>
         </div>
         <div class="col-lg-4">
             <div class="card app-surface h-100">
                 <div class="card-header">
-                    <h5 class="mb-0 fw-semibold">اختصارات</h5>
+                    <h5 class="mb-0 fw-semibold">المتبقي على العقود</h5>
                 </div>
-                <div class="card-body d-grid gap-2">
-                    <a href="{{ route('revenues.index', array_filter(['q' => request('q'), 'date_from' => request('date_from'), 'date_to' => request('date_to')])) }}" class="btn btn-outline-primary btn-sm">سجل التحصيلات</a>
-                    <a href="{{ route('expenses.index', array_filter(['q' => request('q'), 'date_from' => request('date_from'), 'date_to' => request('date_to')])) }}" class="btn btn-outline-primary btn-sm">سجل المصروفات</a>
-                    <a href="{{ route('sales.index', array_filter(['q' => request('q'), 'date_from' => request('date_from'), 'date_to' => request('date_to')])) }}" class="btn btn-outline-primary btn-sm">المبيعات</a>
-                    <a href="{{ route('remaining.index') }}" class="btn btn-outline-secondary btn-sm">كشف المتبقي</a>
+                <div class="card-body">
+                    <div class="small text-body-secondary mb-1">إجمالي المتبقي الحالي</div>
+                    <div class="fs-5 font-monospace fw-semibold">{{ $fmt($contractsRemaining) }} {{ $currencyLabel }}</div>
+                    <div class="small text-muted mt-1">{{ $contractsOpenCount }} عقداً بها متبقٍ — لكل العقود وليس لفترة المبيعات أعلاه</div>
+                    <hr>
+                    <div class="d-grid gap-2">
+                        <a href="{{ route('revenues.index', array_filter(['q' => request('q'), 'date_from' => request('date_from'), 'date_to' => request('date_to')])) }}" class="btn btn-outline-primary btn-sm">سجل التحصيلات</a>
+                        <a href="{{ route('expenses.index', array_filter(['q' => request('q'), 'date_from' => request('date_from'), 'date_to' => request('date_to')])) }}" class="btn btn-outline-primary btn-sm">سجل المصروفات</a>
+                        <a href="{{ route('sales.index', array_filter(['q' => request('q'), 'date_from' => request('date_from'), 'date_to' => request('date_to')])) }}" class="btn btn-outline-primary btn-sm">المبيعات (بنفس الفترة)</a>
+                        <a href="{{ route('remaining.index') }}" class="btn btn-outline-secondary btn-sm">كشف المتبقي</a>
+                    </div>
                 </div>
             </div>
         </div>
