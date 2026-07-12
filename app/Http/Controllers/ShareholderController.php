@@ -6,7 +6,9 @@ use App\Http\Requests\StoreShareholderRequest;
 use App\Http\Requests\UpdateShareholderRequest;
 use App\Models\Project;
 use App\Models\Shareholder;
+use App\Models\ShareholderLedgerEntry;
 use App\Services\ShareholderAttributedFlowService;
+use App\Services\ShareholderLedgerService;
 use App\Services\ShareholderService;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
@@ -18,6 +20,7 @@ class ShareholderController extends Controller
     public function __construct(
         private readonly ShareholderService $shareholderService,
         private readonly ShareholderAttributedFlowService $attributedFlowService,
+        private readonly ShareholderLedgerService $ledgerService,
     ) {}
 
     public function index(Project $project, Request $request): View
@@ -32,14 +35,22 @@ class ShareholderController extends Controller
 
         $propertyFinancials = $this->attributedFlowService->propertyFinancials($project);
         $propertyDevelopmentCosts = $this->attributedFlowService->propertyDevelopmentCosts($project);
-        $shareholdersForKpis = (clone $query)->get();
+        $shareholdersForKpis = (clone $query)->withSum([
+            'ledgerEntries as ledger_credit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT),
+            'ledgerEntries as ledger_debit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT),
+            'ledgerEntries as capital_deposits_sum' => fn ($q) => $q->where('type', ShareholderLedgerEntry::TYPE_CAPITAL),
+        ])->get();
+
         $attributedOperatingTotal = (float) $shareholdersForKpis->sum(
             fn ($sh) => $this->attributedFlowService->attributedOperatingFlow($sh, $project, $propertyFinancials)
         );
         $attributedCostTotal = (float) $shareholdersForKpis->sum(
             fn ($sh) => $this->attributedFlowService->attributedDevelopmentCostShare($sh, $project, $propertyDevelopmentCosts)
         );
-        $currentAccountTotal = (float) $shareholdersForKpis->sum(
+        $ledgerBalanceTotal = (float) $shareholdersForKpis->sum(
+            fn ($sh) => round((float) ($sh->ledger_credit_sum ?? 0) - (float) ($sh->ledger_debit_sum ?? 0), 2)
+        );
+        $approxCurrentAccountTotal = (float) $shareholdersForKpis->sum(
             function ($sh) use ($project, $propertyFinancials, $propertyDevelopmentCosts): float {
                 $op = $this->attributedFlowService->attributedOperatingFlow($sh, $project, $propertyFinancials);
                 $cost = $this->attributedFlowService->attributedDevelopmentCostShare($sh, $project, $propertyDevelopmentCosts);
@@ -50,23 +61,35 @@ class ShareholderController extends Controller
 
         $shareholderKpis = [
             'count' => (clone $query)->count(),
-            'total_investment' => (float) (clone $query)->sum('total_investment'),
+            'total_investment' => (float) $shareholdersForKpis->sum(fn ($sh) => (float) ($sh->capital_deposits_sum ?? 0)),
             'share_percentage' => (float) (clone $query)->sum('share_percentage'),
             'attributed_operating_total' => $attributedOperatingTotal,
             'attributed_cost_total' => $attributedCostTotal,
-            'current_account_total' => $currentAccountTotal,
+            'ledger_balance_total' => $ledgerBalanceTotal,
+            'approx_current_account_total' => $approxCurrentAccountTotal,
         ];
 
-        $shareholders = $query->latest()->paginate(10)->withQueryString();
+        $shareholders = $query
+            ->withSum([
+                'ledgerEntries as ledger_credit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT),
+                'ledgerEntries as ledger_debit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT),
+                'ledgerEntries as capital_deposits_sum' => fn ($q) => $q->where('type', ShareholderLedgerEntry::TYPE_CAPITAL),
+            ])
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
         $shareholders->getCollection()->transform(function (Shareholder $sh) use ($project, $propertyFinancials, $propertyDevelopmentCosts): Shareholder {
             $operating = $this->attributedFlowService->attributedOperatingFlow($sh, $project, $propertyFinancials);
             $cost = $this->attributedFlowService->attributedDevelopmentCostShare($sh, $project, $propertyDevelopmentCosts);
+            $ledgerBalance = round((float) ($sh->ledger_credit_sum ?? 0) - (float) ($sh->ledger_debit_sum ?? 0), 2);
             $sh->setAttribute('attributed_operating_flow', $operating);
             $sh->setAttribute('attributed_development_cost_share', $cost);
             $sh->setAttribute(
-                'shareholder_current_account',
+                'shareholder_current_account_approx',
                 $this->attributedFlowService->shareholderCurrentAccountApprox($operating, $cost)
             );
+            $sh->setAttribute('ledger_balance', $ledgerBalance);
+            $sh->setAttribute('capital_deposits_total', round((float) ($sh->capital_deposits_sum ?? 0), 2));
 
             return $sh;
         });
@@ -87,13 +110,25 @@ class ShareholderController extends Controller
             'title' => 'إضافة مساهم | Mohaseb Aqary',
             'pageTitle' => 'إضافة مساهم',
             'project' => $project,
+            'shareholder' => new Shareholder,
             'modules' => $this->modules(),
         ]);
     }
 
     public function store(Project $project, StoreShareholderRequest $request): RedirectResponse
     {
-        $this->shareholderService->create($request->validated());
+        $data = $request->validated();
+        $shareholder = $this->shareholderService->create($data);
+
+        $initialCapital = round((float) ($data['total_investment'] ?? 0), 2);
+        if ($initialCapital > 0) {
+            $this->ledgerService->create($shareholder, [
+                'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
+                'amount' => $initialCapital,
+                'entry_date' => now()->toDateString(),
+                'notes' => 'إيداع رأس مال عند تسجيل المساهم',
+            ], $request->user());
+        }
 
         return redirect()->route('shareholders.index', $project)->with('success', 'تم إضافة المساهم بنجاح.');
     }
@@ -128,6 +163,13 @@ class ShareholderController extends Controller
             $propertyFinancials,
             $propertyDevelopmentCosts
         );
+        $ledgerEntries = $shareholder->ledgerEntries()
+            ->with(['creator:id,name', 'treasuryTransaction:id,approval_status,type'])
+            ->orderByDesc('entry_date')
+            ->orderByDesc('id')
+            ->get();
+        $ledgerBalance = $shareholder->ledgerBalance();
+        $capitalDepositsTotal = $shareholder->capitalDepositsTotal();
 
         return view('shareholders.show', [
             'title' => 'بروفايل المساهم | Mohaseb Aqary',
@@ -141,6 +183,9 @@ class ShareholderController extends Controller
             'attributedDevelopmentCostShare' => $attributedDevelopmentCostShare,
             'shareholderCurrentAccountApprox' => $shareholderCurrentAccountApprox,
             'participationFinancialBreakdown' => $participationFinancialBreakdown,
+            'ledgerEntries' => $ledgerEntries,
+            'ledgerBalance' => $ledgerBalance,
+            'capitalDepositsTotal' => $capitalDepositsTotal,
             'modules' => $this->modules(),
         ]);
     }

@@ -58,6 +58,8 @@ return [
     'shareholders.edit' => 'shareholders.edit',
     'shareholders.update' => 'shareholders.update',
     'shareholders.destroy' => 'shareholders.destroy',
+    'shareholders.ledger.store' => 'shareholders.manage',
+    'shareholders.ledger.destroy' => 'shareholders.manage',
 
     'sales.index' => 'sales.index',
     'sales.show' => 'sales.show',

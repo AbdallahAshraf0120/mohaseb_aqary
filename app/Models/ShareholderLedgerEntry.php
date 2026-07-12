@@ -1,0 +1,122 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\BelongsToProject;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class ShareholderLedgerEntry extends Model
+{
+    use BelongsToProject;
+
+    public const TYPE_CAPITAL = 'capital';
+
+    public const TYPE_WITHDRAWAL = 'withdrawal';
+
+    public const TYPE_DISTRIBUTION = 'distribution';
+
+    public const TYPE_SETTLEMENT = 'settlement';
+
+    public const TYPE_ADJUSTMENT = 'adjustment';
+
+    public const TYPES = [
+        self::TYPE_CAPITAL => 'إيداع رأس مال',
+        self::TYPE_WITHDRAWAL => 'سحب',
+        self::TYPE_DISTRIBUTION => 'توزيع أرباح',
+        self::TYPE_SETTLEMENT => 'تصفية مدفوعة',
+        self::TYPE_ADJUSTMENT => 'تسوية',
+    ];
+
+    public const DIRECTION_CREDIT = 'credit';
+
+    public const DIRECTION_DEBIT = 'debit';
+
+    protected $fillable = [
+        'project_id',
+        'shareholder_id',
+        'type',
+        'direction',
+        'amount',
+        'entry_date',
+        'notes',
+        'created_by',
+        'treasury_transaction_id',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'entry_date' => 'date',
+        ];
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function shareholder(): BelongsTo
+    {
+        return $this->belongsTo(Shareholder::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function treasuryTransaction(): BelongsTo
+    {
+        return $this->belongsTo(TreasuryTransaction::class, 'treasury_transaction_id');
+    }
+
+    public function typeLabel(): string
+    {
+        return self::TYPES[$this->type] ?? (string) $this->type;
+    }
+
+    public function signedAmount(): float
+    {
+        $amount = (float) $this->amount;
+
+        return $this->direction === self::DIRECTION_CREDIT ? $amount : -$amount;
+    }
+
+    public static function defaultDirectionForType(string $type): string
+    {
+        return match ($type) {
+            self::TYPE_CAPITAL => self::DIRECTION_CREDIT,
+            self::TYPE_WITHDRAWAL, self::TYPE_DISTRIBUTION, self::TYPE_SETTLEMENT => self::DIRECTION_DEBIT,
+            default => self::DIRECTION_CREDIT,
+        };
+    }
+
+    public static function affectsCashbox(string $type): bool
+    {
+        return in_array($type, [
+            self::TYPE_CAPITAL,
+            self::TYPE_WITHDRAWAL,
+            self::TYPE_DISTRIBUTION,
+            self::TYPE_SETTLEMENT,
+        ], true);
+    }
+
+    public static function cashboxTypeFor(string $type, string $direction): ?string
+    {
+        if (! self::affectsCashbox($type)) {
+            return null;
+        }
+
+        if ($type === self::TYPE_CAPITAL) {
+            return 'revenue';
+        }
+
+        if (in_array($type, [self::TYPE_WITHDRAWAL, self::TYPE_DISTRIBUTION, self::TYPE_SETTLEMENT], true)) {
+            return 'expense';
+        }
+
+        return $direction === self::DIRECTION_CREDIT ? 'revenue' : 'expense';
+    }
+}

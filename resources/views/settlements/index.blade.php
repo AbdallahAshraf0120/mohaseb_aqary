@@ -24,20 +24,66 @@
         </div>
         <div class="col-md-4">
             <div class="rounded-4 border p-4 h-100 bg-primary-subtle">
-                <div class="small text-body-secondary mb-1">صافي التسوية</div>
+                <div class="small text-body-secondary mb-1">صافي التسوية (تحصيل − مصروف)</div>
                 <div class="fs-4 fw-bold font-monospace">{{ number_format((float) $net, 2) }}</div>
-                <div class="small text-muted">تحصيل − مصروف</div>
+                <div class="small text-muted">ملخص تشغيلي للمشروع</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card app-surface mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="mb-0 fw-semibold">أرصدة جاري المساهمين</h5>
+            <span class="badge text-bg-light border">
+                إجمالي الأرصدة: {{ number_format((float) ($shareholderLedgerTotal ?? 0), 2) }} ج.م
+            </span>
+        </div>
+        <div class="card-body">
+            <p class="small text-body-secondary mb-3">من دفتر الجاري اليدوي. لتسجيل سحب أو تصفية مدفوعة افتح بروفايل المساهم.</p>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>المساهم</th>
+                        <th>النسبة</th>
+                        <th class="text-end">رأس المال (إيداعات)</th>
+                        <th class="text-end">رصيد الجاري</th>
+                        <th class="text-end">العمليات</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @forelse ($shareholders as $shareholder)
+                        <tr>
+                            <td>{{ $loop->iteration }}</td>
+                            <td class="fw-semibold">{{ $shareholder->name }}</td>
+                            <td>{{ number_format((float) $shareholder->share_percentage, 2) }}%</td>
+                            <td class="text-end font-monospace">{{ number_format((float) ($shareholder->capital_deposits_total ?? 0), 2) }}</td>
+                            <td class="text-end font-monospace fw-semibold {{ ($shareholder->ledger_balance ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                {{ number_format((float) ($shareholder->ledger_balance ?? 0), 2) }}
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ route('shareholders.show', [$project, $shareholder]) }}" class="btn btn-outline-info btn-sm">الجاري</a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">لا يوجد مساهمون في هذا المشروع.</td>
+                        </tr>
+                    @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
     <div class="card app-surface mb-4">
         <div class="card-header">
-            <h5 class="mb-0 fw-semibold">ملخص التسويات</h5>
+            <h5 class="mb-0 fw-semibold">ملخص التسويات التشغيلية</h5>
         </div>
         <div class="card-body text-body-secondary">
-            <p class="mb-2">شاشة تشغيلية لمراجعة توازن التحصيلات والمصروفات ضمن المشروع والفترة والبحث المحددين أعلاه.</p>
-            <p class="mb-0 small">للتفاصيل الكاملة استخدم <a href="{{ route('revenues.index') }}">التحصيلات</a> و <a href="{{ route('expenses.index') }}">المصروفات</a> و <a href="{{ route('reports.index') }}">التقارير</a>.</p>
+            <p class="mb-2">البطاقات أعلاه لمراجعة توازن التحصيلات والمصروفات ضمن المشروع والفترة والبحث المحددين.</p>
+            <p class="mb-0 small">للتفاصيل الكاملة استخدم <a href="{{ route('revenues.index', $project) }}">التحصيلات</a> و <a href="{{ route('expenses.index', $project) }}">المصروفات</a> و <a href="{{ route('shareholders.index', $project) }}">المساهمين</a>.</p>
         </div>
     </div>
 @endsection

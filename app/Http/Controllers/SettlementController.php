@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Expense;
 use App\Models\Project;
 use App\Models\Revenue;
+use App\Models\Shareholder;
+use App\Models\ShareholderLedgerEntry;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -34,6 +36,22 @@ class SettlementController extends Controller
         $revenues = (float) (clone $revQ)->sum('amount');
         $expenses = (float) (clone $expQ)->sum('amount');
 
+        $shareholders = Shareholder::query()
+            ->withSum([
+                'ledgerEntries as ledger_credit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT),
+                'ledgerEntries as ledger_debit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT),
+                'ledgerEntries as capital_deposits_sum' => fn ($q) => $q->where('type', ShareholderLedgerEntry::TYPE_CAPITAL),
+            ])
+            ->orderBy('name')
+            ->get()
+            ->map(function (Shareholder $sh) {
+                $balance = round((float) ($sh->ledger_credit_sum ?? 0) - (float) ($sh->ledger_debit_sum ?? 0), 2);
+                $sh->setAttribute('ledger_balance', $balance);
+                $sh->setAttribute('capital_deposits_total', round((float) ($sh->capital_deposits_sum ?? 0), 2));
+
+                return $sh;
+            });
+
         return view('settlements.index', [
             'title' => 'التسويات | Mohaseb Aqary',
             'pageTitle' => 'التسويات',
@@ -41,6 +59,8 @@ class SettlementController extends Controller
             'revenues' => $revenues,
             'expenses' => $expenses,
             'net' => $revenues - $expenses,
+            'shareholders' => $shareholders,
+            'shareholderLedgerTotal' => (float) $shareholders->sum(fn ($sh) => (float) ($sh->ledger_balance ?? 0)),
             'modules' => $this->modules(),
         ]);
     }

@@ -14,12 +14,18 @@
         <label class="form-label" for="shareholder-total-investment">رأس المال / التمويل المُدخل (ج.م)</label>
         <input id="shareholder-total-investment" type="number" step="0.01" min="0" name="total_investment" class="form-control font-monospace"
                value="{{ old('total_investment', $shareholder->total_investment ?? '') }}" required>
-        <div class="form-text">يُحدَّد في <strong>لحظة التسجيل</strong> أو عند <strong>أي تعديل</strong> لاحق — سجل إداري لما اعتمدتموه كتمويل للمساهم.</div>
+        @if (! isset($shareholder) || ! $shareholder->exists)
+            <div class="form-text">عند الإنشاء يُسجَّل كحركة <strong>إيداع رأس مال</strong> في الجاري ويُربط بإيراد في الصندوق.</div>
+        @else
+            <div class="form-text">للتعديل الإداري فقط. زيادة/نقص رأس المال تتم عبر حركات الجاري في البروفايل (لا يُحدَّث الدفتر من هذا الحقل).</div>
+        @endif
     </div>
     <div class="col-12">
         <div class="alert alert-light border small mb-0">
-            <i class="fa-solid fa-calculator text-primary ms-1"></i>
-            <strong>لكل مساهم على حدة:</strong> يُحسب <strong>حصة التكاليف</strong> من حقول تكلفة كل عقار × نسبة المساهم في التوزيع، و<strong>المنسب التشغيلي</strong> من التحصيلات ومقدمات البيع على العقار بنفس النسبة، و<strong>الجاري (تقريبي)</strong> = المنسب − حصة التكلفة — يظهر في القائمة والبروفايل دون تكرار لكل المساهمين في حساب واحد.
+            <i class="fa-solid fa-book text-primary ms-1"></i>
+            <strong>جاري المساهم (دفتر):</strong> حركات يدوية (إيداع / سحب / توزيع / تصفية / تسوية). الإيداع والسحب والتوزيع والتصفية تؤثر على الصندوق.
+            <br>
+            <strong>المرجع المحسوب:</strong> المنسب وحصة التكاليف من العقارات تبقى للعرض فقط ولا تدخل الدفتر تلقائياً.
         </div>
     </div>
 </div>

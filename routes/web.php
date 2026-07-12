@@ -22,6 +22,7 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\ShareholderController;
+use App\Http\Controllers\ShareholderLedgerController;
 use App\Http\Controllers\SiteSketchController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CrmLeadController;
@@ -156,6 +157,11 @@ Route::middleware(['auth', AuthorizeRoutePermission::class, SyncProjectFromRoute
         Route::resource('facings', FacingController::class)->except(['show']);
         Route::resource('lands', LandController::class)->except(['show']);
         Route::resource('shareholders', ShareholderController::class);
+        Route::post('shareholders/{shareholder}/ledger', [ShareholderLedgerController::class, 'store'])
+            ->name('shareholders.ledger.store');
+        Route::delete('shareholders/{shareholder}/ledger/{ledger}', [ShareholderLedgerController::class, 'destroy'])
+            ->whereNumber('ledger')
+            ->name('shareholders.ledger.destroy');
         Route::resource('sales', SaleController::class);
         Route::resource('clients', ClientController::class)->only(['index', 'show']);
         Route::get('contracts/{contract}/word', [ContractController::class, 'downloadWord'])->name('contracts.word');
