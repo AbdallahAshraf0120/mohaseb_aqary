@@ -39,7 +39,7 @@ class ShareholderController extends Controller
             'ledgerEntries as ledger_credit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT),
             'ledgerEntries as ledger_debit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT),
             'ledgerEntries as capital_deposits_sum' => fn ($q) => $q->where('type', ShareholderLedgerEntry::TYPE_CAPITAL),
-        ])->get();
+        ], 'amount')->get();
 
         $attributedOperatingTotal = (float) $shareholdersForKpis->sum(
             fn ($sh) => $this->attributedFlowService->attributedOperatingFlow($sh, $project, $propertyFinancials)
@@ -74,7 +74,7 @@ class ShareholderController extends Controller
                 'ledgerEntries as ledger_credit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT),
                 'ledgerEntries as ledger_debit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT),
                 'ledgerEntries as capital_deposits_sum' => fn ($q) => $q->where('type', ShareholderLedgerEntry::TYPE_CAPITAL),
-            ])
+            ], 'amount')
             ->latest()
             ->paginate(10)
             ->withQueryString();

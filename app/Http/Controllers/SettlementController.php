@@ -41,7 +41,7 @@ class SettlementController extends Controller
                 'ledgerEntries as ledger_credit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT),
                 'ledgerEntries as ledger_debit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT),
                 'ledgerEntries as capital_deposits_sum' => fn ($q) => $q->where('type', ShareholderLedgerEntry::TYPE_CAPITAL),
-            ])
+            ], 'amount')
             ->orderBy('name')
             ->get()
             ->map(function (Shareholder $sh) {
