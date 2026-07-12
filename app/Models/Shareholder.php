@@ -29,6 +29,14 @@ class Shareholder extends Model
 
     public function ledgerEntries(): HasMany
     {
+        return $this->ledgers();
+    }
+
+    /**
+     * Used by scoped route binding for {ledger} (Laravel expects plural: ledgers).
+     */
+    public function ledgers(): HasMany
+    {
         return $this->hasMany(ShareholderLedgerEntry::class);
     }
 
