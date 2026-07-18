@@ -1,6 +1,24 @@
 @csrf
 
 <div class="row g-3">
+    @if (! isset($shareholder) || ! $shareholder->exists)
+        <div class="col-md-6">
+            <label class="form-label">المشروع</label>
+            <select name="project_id" class="form-select @error('project_id') is-invalid @enderror" required>
+                <option value="">اختر المشروع…</option>
+                @foreach ($projects ?? [] as $p)
+                    <option value="{{ $p->id }}" @selected((string) old('project_id', request('project_id')) === (string) $p->id)>{{ $p->name }}</option>
+                @endforeach
+            </select>
+            @error('project_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+    @else
+        <div class="col-md-6">
+            <label class="form-label">المشروع</label>
+            <input type="text" class="form-control" value="{{ $shareholder->project?->name ?? '—' }}" disabled>
+            <div class="form-text">لا يمكن نقل المساهم لمشروع آخر من هنا.</div>
+        </div>
+    @endif
     <div class="col-md-6">
         <label class="form-label">اسم المساهم</label>
         <input type="text" name="name" class="form-control" value="{{ old('name', $shareholder->name ?? '') }}" required>

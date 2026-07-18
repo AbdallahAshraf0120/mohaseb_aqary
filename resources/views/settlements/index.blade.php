@@ -63,7 +63,7 @@
                                 {{ number_format((float) ($shareholder->ledger_balance ?? 0), 2) }}
                             </td>
                             <td class="text-end">
-                                <a href="{{ route('shareholders.show', [$project, $shareholder]) }}" class="btn btn-outline-info btn-sm">الجاري</a>
+                                <a href="{{ route('shareholders.show', $shareholder) }}" class="btn btn-outline-info btn-sm">الجاري</a>
                             </td>
                         </tr>
                     @empty
@@ -83,7 +83,7 @@
         </div>
         <div class="card-body text-body-secondary">
             <p class="mb-2">البطاقات أعلاه لمراجعة توازن التحصيلات والمصروفات ضمن المشروع والفترة والبحث المحددين.</p>
-            <p class="mb-0 small">للتفاصيل الكاملة استخدم <a href="{{ route('revenues.index', $project) }}">التحصيلات</a> و <a href="{{ route('expenses.index', $project) }}">المصروفات</a> و <a href="{{ route('shareholders.index', $project) }}">المساهمين</a>.</p>
+            <p class="mb-0 small">للتفاصيل الكاملة استخدم <a href="{{ route('revenues.index', $project) }}">التحصيلات</a> و <a href="{{ route('expenses.index', $project) }}">المصروفات</a> و <a href="{{ route('shareholders.index', ['project_id' => $project->id]) }}">المساهمين</a>.</p>
         </div>
     </div>
 @endsection

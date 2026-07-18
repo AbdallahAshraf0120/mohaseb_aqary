@@ -91,6 +91,14 @@ Route::middleware('auth')->group(function (): void {
 
         Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
 
+        // إدارة المساهمين (برا المشاريع)
+        Route::resource('shareholders', ShareholderController::class);
+        Route::post('shareholders/{shareholder}/ledger', [ShareholderLedgerController::class, 'store'])
+            ->name('shareholders.ledger.store');
+        Route::delete('shareholders/{shareholder}/ledger/{ledger}', [ShareholderLedgerController::class, 'destroy'])
+            ->whereNumber('ledger')
+            ->name('shareholders.ledger.destroy');
+
         // CRM (برا المشاريع) - يعتمد على المشروع الحالي من السيشن
         Route::prefix('crm')->group(function (): void {
             Route::get('leads', [CrmLeadController::class, 'index'])->name('crm-leads.index');
@@ -156,12 +164,6 @@ Route::middleware(['auth', AuthorizeRoutePermission::class, SyncProjectFromRoute
         Route::resource('areas', AreaController::class)->except(['show']);
         Route::resource('facings', FacingController::class)->except(['show']);
         Route::resource('lands', LandController::class)->except(['show']);
-        Route::resource('shareholders', ShareholderController::class);
-        Route::post('shareholders/{shareholder}/ledger', [ShareholderLedgerController::class, 'store'])
-            ->name('shareholders.ledger.store');
-        Route::delete('shareholders/{shareholder}/ledger/{ledger}', [ShareholderLedgerController::class, 'destroy'])
-            ->whereNumber('ledger')
-            ->name('shareholders.ledger.destroy');
         Route::resource('sales', SaleController::class);
         Route::resource('clients', ClientController::class)->only(['index', 'show']);
         Route::get('contracts/{contract}/word', [ContractController::class, 'downloadWord'])->name('contracts.word');

@@ -46,7 +46,7 @@ class ShareholderService
         $name = (string) $shareholder->name;
         $projectId = (int) $shareholder->project_id;
 
-        return Property::query()
+        return Property::withoutProjectScope()
             ->with('area:id,name')
             ->where('project_id', $projectId)
             ->whereNotNull('shareholder_allocations')

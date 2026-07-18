@@ -32,7 +32,7 @@ final class ShareholderAttributedFlowService
         $projectId = (int) $project->id;
 
         /** @var Collection<int, Property> $propertyMap */
-        $propertyMap = Property::query()
+        $propertyMap = Property::withoutProjectScope()
             ->where('project_id', $projectId)
             ->get()
             ->keyBy('id');
@@ -53,7 +53,7 @@ final class ShareholderAttributedFlowService
         };
 
         foreach (
-            Sale::query()
+            Sale::withoutProjectScope()
                 ->where('project_id', $projectId)
                 ->where('approval_status', 'approved')
                 ->cursor() as $sale
@@ -68,13 +68,13 @@ final class ShareholderAttributedFlowService
         }
 
         foreach (
-            Revenue::query()
+            Revenue::withoutProjectScope()
                 ->where('project_id', $projectId)
                 ->where('approval_status', 'approved')
                 ->whereNotNull('contract_id')
                 ->with([
-                    'contract' => static fn ($q) => $q->select('id', 'property_id', 'sale_id', 'project_id'),
-                    'sale' => static fn ($q) => $q->select('id', 'property_id', 'floor_number'),
+                    'contract' => static fn ($q) => $q->withoutGlobalScope('project')->select('id', 'property_id', 'sale_id', 'project_id'),
+                    'sale' => static fn ($q) => $q->withoutGlobalScope('project')->select('id', 'property_id', 'floor_number'),
                 ])
                 ->cursor() as $revenue
         ) {
@@ -133,7 +133,7 @@ final class ShareholderAttributedFlowService
     {
         $propertyFinancials ??= $this->propertyFinancials($project);
 
-        $properties = Property::query()
+        $properties = Property::withoutProjectScope()
             ->where('project_id', (int) $project->id)
             ->whereNotNull('shareholder_allocations')
             ->get(['id', 'name', 'shareholder_allocations']);
@@ -164,7 +164,7 @@ final class ShareholderAttributedFlowService
     {
         $out = [];
         foreach (
-            Property::query()
+            Property::withoutProjectScope()
                 ->where('project_id', (int) $project->id)
                 ->get() as $property
         ) {
@@ -183,7 +183,7 @@ final class ShareholderAttributedFlowService
     {
         $propertyDevelopmentCosts ??= $this->propertyDevelopmentCosts($project);
 
-        $properties = Property::query()
+        $properties = Property::withoutProjectScope()
             ->where('project_id', (int) $project->id)
             ->whereNotNull('shareholder_allocations')
             ->get(['id', 'name', 'shareholder_allocations']);
@@ -220,7 +220,7 @@ final class ShareholderAttributedFlowService
     {
         $propertyFinancials ??= $this->propertyFinancials($project);
 
-        $properties = Property::query()
+        $properties = Property::withoutProjectScope()
             ->where('project_id', (int) $project->id)
             ->whereNotNull('shareholder_allocations')
             ->get(['id', 'shareholder_allocations']);

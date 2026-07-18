@@ -17,12 +17,12 @@ class ShareholderRepository implements ShareholderRepositoryInterface
 
     public function findOrFail(int $id): Shareholder
     {
-        return Shareholder::query()->findOrFail($id);
+        return Shareholder::withoutProjectScope()->findOrFail($id);
     }
 
     public function create(array $data): Shareholder
     {
-        return Shareholder::query()->create($data);
+        return Shareholder::withoutProjectScope()->create($data);
     }
 
     public function update(Shareholder $shareholder, array $data): Shareholder

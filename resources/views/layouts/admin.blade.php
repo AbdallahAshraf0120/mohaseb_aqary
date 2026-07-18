@@ -278,6 +278,15 @@
                                 </li>
                             @endcan
                         @endcan
+                        @can('shareholders.view')
+                            <li class="nav-item">
+                                <a href="{{ route('shareholders.index') }}"
+                                   class="nav-link {{ request()->routeIs('shareholders.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-people-group"></i>
+                                    <p>إدارة المساهمين</p>
+                                </a>
+                            </li>
+                        @endcan
                         @can('users.view')
                             <li class="nav-item">
                                 <a href="{{ route('users.index') }}"

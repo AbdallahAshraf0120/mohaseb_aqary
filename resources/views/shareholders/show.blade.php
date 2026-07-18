@@ -30,8 +30,8 @@
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">البيانات الأساسية</h5>
                     <div class="d-flex gap-2">
-                        <a href="{{ route('shareholders.edit', [$project, $shareholder]) }}" class="btn btn-outline-warning btn-sm">تعديل المساهم</a>
-                        <a href="{{ route('shareholders.index', $project) }}" class="btn btn-outline-secondary btn-sm">قائمة المساهمين</a>
+                        <a href="{{ route('shareholders.edit', $shareholder) }}" class="btn btn-outline-warning btn-sm">تعديل المساهم</a>
+                        <a href="{{ route('shareholders.index') }}" class="btn btn-outline-secondary btn-sm">قائمة المساهمين</a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -39,6 +39,10 @@
                         <div class="col-md-6">
                             <div class="text-muted small mb-1">اسم المساهم</div>
                             <div class="fw-semibold">{{ $shareholder->name }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small mb-1">المشروع</div>
+                            <div class="fw-semibold">{{ $project->name ?? '—' }}</div>
                         </div>
                         <div class="col-md-6">
                             <div class="text-muted small mb-1">النسبة العامة المسجّلة في الملف</div>
@@ -87,7 +91,7 @@
         </div>
         <div class="card-body">
             @can('shareholders.manage')
-                <form method="post" action="{{ route('shareholders.ledger.store', [$project, $shareholder]) }}" class="border rounded-3 p-3 mb-4 bg-body-tertiary bg-opacity-50">
+                <form method="post" action="{{ route('shareholders.ledger.store', $shareholder) }}" class="border rounded-3 p-3 mb-4 bg-body-tertiary bg-opacity-50">
                     @csrf
                     <div class="row g-3 align-items-end">
                         <div class="col-md-3">
@@ -178,7 +182,7 @@
                             <td class="text-end">
                                 @can('shareholders.manage')
                                     <form method="post"
-                                          action="{{ route('shareholders.ledger.destroy', [$project, $shareholder, $entry]) }}"
+                                          action="{{ route('shareholders.ledger.destroy', [$shareholder, $entry]) }}"
                                           class="d-inline"
                                           data-swal-confirm="{{ e('حذف الحركة وحركة الصندوق المرتبطة؟') }}">
                                         @csrf

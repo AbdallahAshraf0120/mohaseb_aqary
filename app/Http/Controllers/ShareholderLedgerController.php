@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Project;
 use App\Models\Shareholder;
 use App\Models\ShareholderLedgerEntry;
 use App\Services\ShareholderLedgerService;
+use App\Support\CurrentProject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,9 +16,9 @@ class ShareholderLedgerController extends Controller
         private readonly ShareholderLedgerService $ledgerService,
     ) {}
 
-    public function store(Request $request, Project $project, Shareholder $shareholder): RedirectResponse
+    public function store(Request $request, Shareholder $shareholder): RedirectResponse
     {
-        abort_unless((int) $shareholder->project_id === (int) $project->id, 404);
+        app(CurrentProject::class)->force((int) $shareholder->project_id);
 
         $data = $request->validate([
             'type' => ['required', 'string', Rule::in(array_keys(ShareholderLedgerEntry::TYPES))],
@@ -39,7 +39,7 @@ class ShareholderLedgerController extends Controller
         $this->ledgerService->create($shareholder, $data, $request->user());
 
         return redirect()
-            ->route('shareholders.show', [$project, $shareholder])
+            ->route('shareholders.show', $shareholder)
             ->with('success', 'تم تسجيل حركة الجاري'.(
                 ShareholderLedgerEntry::affectsCashbox((string) $data['type'])
                     ? ' وربطها بالصندوق.'
@@ -47,16 +47,17 @@ class ShareholderLedgerController extends Controller
             ));
     }
 
-    public function destroy(Project $project, Shareholder $shareholder, ShareholderLedgerEntry $ledger): RedirectResponse
+    public function destroy(Shareholder $shareholder, ShareholderLedgerEntry $ledger): RedirectResponse
     {
-        abort_unless((int) $shareholder->project_id === (int) $project->id, 404);
         abort_unless((int) $ledger->shareholder_id === (int) $shareholder->id, 404);
-        abort_unless((int) $ledger->project_id === (int) $project->id, 404);
+        abort_unless((int) $ledger->project_id === (int) $shareholder->project_id, 404);
+
+        app(CurrentProject::class)->force((int) $shareholder->project_id);
 
         $this->ledgerService->delete($ledger);
 
         return redirect()
-            ->route('shareholders.show', [$project, $shareholder])
+            ->route('shareholders.show', $shareholder)
             ->with('success', 'تم حذف حركة الجاري وحركة الصندوق المرتبطة إن وُجدت.');
     }
 }

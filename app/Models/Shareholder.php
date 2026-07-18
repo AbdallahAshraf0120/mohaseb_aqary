@@ -27,6 +27,13 @@ class Shareholder extends Model
         return $this->belongsTo(Project::class);
     }
 
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return static::withoutProjectScope()
+            ->where($field ?? $this->getRouteKeyName(), $value)
+            ->firstOrFail();
+    }
+
     public function ledgerEntries(): HasMany
     {
         return $this->ledgers();
@@ -37,7 +44,7 @@ class Shareholder extends Model
      */
     public function ledgers(): HasMany
     {
-        return $this->hasMany(ShareholderLedgerEntry::class);
+        return $this->hasMany(ShareholderLedgerEntry::class)->withoutGlobalScope('project');
     }
 
     public function ledgerBalance(): float

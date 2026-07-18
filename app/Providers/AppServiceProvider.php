@@ -112,16 +112,6 @@ class AppServiceProvider extends ServiceProvider
                 'permission' => 'lands.manage',
                 'create_permission' => 'lands.manage',
             ],
-            [
-                'route' => 'shareholders.index',
-                'label' => 'المساهمين',
-                'icon' => 'fa-people-group',
-                'active' => ['shareholders.*'],
-                'create_route' => 'shareholders.create',
-                'create_active' => ['shareholders.create'],
-                'permission' => 'shareholders.view',
-                'create_permission' => 'shareholders.manage',
-            ],
             ['route' => 'clients.index', 'label' => 'العملاء', 'icon' => 'fa-users', 'active' => ['clients.*'], 'permission' => 'clients.view'],
             ['route' => 'contracts.index', 'label' => 'العقود', 'icon' => 'fa-file-signature', 'active' => ['contracts.*'], 'permission' => 'contracts.view'],
             [

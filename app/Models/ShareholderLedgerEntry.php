@@ -57,6 +57,13 @@ class ShareholderLedgerEntry extends Model
         return $this->belongsTo(Project::class);
     }
 
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return static::withoutProjectScope()
+            ->where($field ?? $this->getRouteKeyName(), $value)
+            ->firstOrFail();
+    }
+
     public function shareholder(): BelongsTo
     {
         return $this->belongsTo(Shareholder::class);
