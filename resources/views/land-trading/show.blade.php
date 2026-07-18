@@ -216,7 +216,23 @@
                                 <td class="text-end">
                                     @can('land-trading.manage')
                                         @if ($pRemaining > 0.01 && !empty($paymentsReady))
-                                            <button type="button" class="btn btn-success btn-sm" data-bs-toggle="collapse" data-bs-target="#collect-part-{{ $part->id }}">تحصيل</button>
+                                            @if (($part->sale_payment_type ?? 'cash') === 'cash')
+                                                <form method="post" action="{{ route('land-trading.payments.store', $parcel) }}" class="d-inline">
+                                                    @csrf
+                                                    <input type="hidden" name="side" value="sale">
+                                                    <input type="hidden" name="land_parcel_part_id" value="{{ $part->id }}">
+                                                    <input type="hidden" name="kind" value="down_payment">
+                                                    <input type="hidden" name="amount" value="{{ $pRemaining }}">
+                                                    <input type="hidden" name="paid_at" value="{{ now()->toDateString() }}">
+                                                    <input type="hidden" name="payment_method" value="cash">
+                                                    <input type="hidden" name="notes" value="تحصيل كاش كامل">
+                                                    <button type="submit" class="btn btn-success btn-sm">تسجيل الكاش</button>
+                                                </form>
+                                            @else
+                                                <button type="button" class="btn btn-success btn-sm" data-bs-toggle="collapse" data-bs-target="#collect-part-{{ $part->id }}">تحصيل قسط</button>
+                                            @endif
+                                        @elseif ($pRemaining <= 0.01)
+                                            <span class="badge text-bg-success">محصّل</span>
                                         @endif
                                         <form method="post" action="{{ route('land-trading.parts.destroy', [$parcel, $part]) }}" class="d-inline" onsubmit="return confirm('حذف الجزء؟');">
                                             @csrf
@@ -227,7 +243,7 @@
                                 </td>
                             </tr>
                             @can('land-trading.manage')
-                                @if ($pRemaining > 0.01 && !empty($paymentsReady))
+                                @if ($pRemaining > 0.01 && !empty($paymentsReady) && ($part->sale_payment_type ?? '') === 'installment')
                                     <tr class="collapse" id="collect-part-{{ $part->id }}">
                                         <td colspan="9" class="bg-body-tertiary">
                                             <form method="post" action="{{ route('land-trading.payments.store', $parcel) }}" class="row g-2 align-items-end p-2">

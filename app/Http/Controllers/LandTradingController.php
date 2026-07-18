@@ -344,9 +344,33 @@ class LandTradingController extends Controller
             $parcel->update(['status' => 'for_sale']);
         }
 
+        $message = 'تم إضافة جزء بيع «'.$part->name.'».';
+
+        // البيع كاش = تحصيل كامل فورًا في صندوق الأراضي
+        if (($data['sale_payment_type'] ?? '') === 'cash'
+            && (float) $part->sale_price > 0
+            && Schema::hasTable('land_parcel_payments')) {
+            try {
+                $this->paymentService->create($parcel, [
+                    'side' => LandParcelPayment::SIDE_SALE,
+                    'land_parcel_part_id' => (int) $part->id,
+                    'kind' => LandParcelPayment::KIND_DOWN_PAYMENT,
+                    'amount' => (float) $part->sale_price,
+                    'paid_at' => $data['sale_date'] ?? now()->toDateString(),
+                    'payment_method' => 'cash',
+                    'notes' => 'تحصيل كاش تلقائي عند تسجيل الجزء',
+                ], $request->user());
+                $message .= ' وتم تسجيل تحصيل الكاش كاملًا في الصندوق.';
+            } catch (InvalidArgumentException $e) {
+                $message .= ' (لم يُسجَّل التحصيل التلقائي: '.$e->getMessage().')';
+            }
+        } else {
+            $message .= ' يمكنك تحصيل أقساطه مع استمرار سداد شراء الأرض.';
+        }
+
         return redirect()
             ->route('land-trading.show', $parcel)
-            ->with('success', 'تم إضافة جزء بيع «'.$part->name.'». يمكنك تحصيل أقساطه مع استمرار سداد شراء الأرض.');
+            ->with('success', $message);
     }
 
     public function updatePart(Request $request, LandParcel $parcel, LandParcelPart $part): RedirectResponse
