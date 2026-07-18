@@ -62,6 +62,7 @@ return [
     'shareholders.ledger.destroy' => 'shareholders.manage',
     'shareholders.projects.attach' => 'shareholders.manage',
     'shareholders.lands.attach' => 'shareholders.manage',
+    'shareholders.funding.update' => 'shareholders.manage',
 
     'sales.index' => 'sales.index',
     'sales.show' => 'sales.show',

@@ -41,6 +41,9 @@
                                 <th class="text-end">التمويل</th>
                                 <th class="text-end">النسبة</th>
                                 <th class="text-end">جاري</th>
+                                @can('shareholders.manage')
+                                    <th class="text-end">إجراء</th>
+                                @endcan
                             </tr>
                             </thead>
                             <tbody>
@@ -52,9 +55,26 @@
                                     <td class="text-end font-monospace {{ $row->ledger_balance >= 0 ? 'text-success' : 'text-danger' }}">
                                         {{ number_format((float) $row->ledger_balance, 2) }}
                                     </td>
+                                    @can('shareholders.manage')
+                                        <td class="text-end">
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-warning btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#fundingModal"
+                                                data-funding-type="project"
+                                                data-funding-id="{{ $row->project->id }}"
+                                                data-funding-label="مشروع: {{ $row->project->name }}"
+                                                data-funding-amount="{{ number_format((float) $row->membership->total_investment, 2, '.', '') }}"
+                                                data-funding-hint="النسبة = التمويل ÷ رأس مال المشروع × 100. الزيادة/التخفيض تُسجَّل في دفتر الجاري."
+                                            >
+                                                تعديل التمويل
+                                            </button>
+                                        </td>
+                                    @endcan
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="text-muted text-center">لا توجد مشاريع.</td></tr>
+                                <tr><td colspan="{{ auth()->user()?->can('shareholders.manage') ? 5 : 4 }}" class="text-muted text-center">لا توجد مشاريع.</td></tr>
                             @endforelse
                             </tbody>
                         </table>
@@ -69,6 +89,9 @@
                                 <th class="text-end">التمويل</th>
                                 <th class="text-end">النسبة</th>
                                 <th class="text-end">جاري</th>
+                                @can('shareholders.manage')
+                                    <th class="text-end">إجراء</th>
+                                @endcan
                             </tr>
                             </thead>
                             <tbody>
@@ -86,9 +109,28 @@
                                     <td class="text-end font-monospace {{ $row->ledger_balance >= 0 ? 'text-success' : 'text-danger' }}">
                                         {{ number_format((float) $row->ledger_balance, 2) }}
                                     </td>
+                                    @can('shareholders.manage')
+                                        <td class="text-end">
+                                            @if ($row->parcel)
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-outline-warning btn-sm"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#fundingModal"
+                                                    data-funding-type="land"
+                                                    data-funding-id="{{ $row->parcel->id }}"
+                                                    data-funding-label="أرض: {{ $row->parcel->name }}"
+                                                    data-funding-amount="{{ number_format((float) $row->membership->total_investment, 2, '.', '') }}"
+                                                    data-funding-hint="النسبة = التمويل ÷ سعر شراء الأرض × 100. الزيادة/التخفيض تُسجَّل في دفتر الجاري."
+                                                >
+                                                    تعديل التمويل
+                                                </button>
+                                            @endif
+                                        </td>
+                                    @endcan
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="text-muted text-center">لا توجد أراضي.</td></tr>
+                                <tr><td colspan="{{ auth()->user()?->can('shareholders.manage') ? 5 : 4 }}" class="text-muted text-center">لا توجد أراضي.</td></tr>
                             @endforelse
                             </tbody>
                         </table>
@@ -398,15 +440,97 @@
         </div>
     </div>
 
+    @can('shareholders.manage')
+        <div class="modal fade" id="fundingModal" tabindex="-1" aria-labelledby="fundingModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-semibold" id="fundingModalLabel">تعديل التمويل</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                    </div>
+                    <form method="post" id="fundingModalForm" action="{{ route('shareholders.funding.update', $shareholder) }}">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="target_type" id="funding-target-type" value="{{ old('target_type') }}">
+                        <input type="hidden" name="target_id" id="funding-target-id" value="{{ old('target_id') }}">
+                        <div class="modal-body">
+                            <div class="small text-body-secondary mb-2" id="fundingModalLabelTarget">—</div>
+                            <label class="form-label fw-semibold" for="funding-total-investment">التمويل الجديد</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                name="total_investment"
+                                id="funding-total-investment"
+                                value="{{ old('total_investment') }}"
+                                class="form-control font-monospace @error('total_investment') is-invalid @enderror"
+                                required
+                            >
+                            @error('total_investment')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                            @error('target_id')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                            <div class="form-text mt-2" id="fundingModalHint"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="submit" class="btn btn-warning">حفظ التمويل</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endcan
+
     @push('scripts')
         <script>
             (function () {
                 const typeEl = document.getElementById('ledger-type');
                 const dirWrap = document.getElementById('ledger-direction-wrap');
-                if (!typeEl || !dirWrap) return;
-                const sync = () => { dirWrap.style.display = typeEl.value === 'adjustment' ? '' : 'none'; };
-                typeEl.addEventListener('change', sync);
-                sync();
+                if (typeEl && dirWrap) {
+                    const sync = () => { dirWrap.style.display = typeEl.value === 'adjustment' ? '' : 'none'; };
+                    typeEl.addEventListener('change', sync);
+                    sync();
+                }
+
+                const fundingModal = document.getElementById('fundingModal');
+                if (!fundingModal) return;
+
+                const typeInput = document.getElementById('funding-target-type');
+                const idInput = document.getElementById('funding-target-id');
+                const amountInput = document.getElementById('funding-total-investment');
+                const labelEl = document.getElementById('fundingModalLabelTarget');
+                const hintEl = document.getElementById('fundingModalHint');
+
+                fundingModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    if (!button) return;
+
+                    typeInput.value = button.getAttribute('data-funding-type') || '';
+                    idInput.value = button.getAttribute('data-funding-id') || '';
+                    amountInput.value = button.getAttribute('data-funding-amount') || '';
+                    labelEl.textContent = button.getAttribute('data-funding-label') || '—';
+                    hintEl.textContent = button.getAttribute('data-funding-hint') || '';
+                });
+
+                @if ($errors->hasAny(['total_investment', 'target_id', 'target_type']))
+                    (function () {
+                        const type = @json(old('target_type'));
+                        const id = @json(old('target_id'));
+                        if (type && id) {
+                            const btn = document.querySelector(
+                                '[data-funding-type="' + type + '"][data-funding-id="' + id + '"]'
+                            );
+                            if (btn) {
+                                labelEl.textContent = btn.getAttribute('data-funding-label') || '—';
+                                hintEl.textContent = btn.getAttribute('data-funding-hint') || '';
+                            }
+                        }
+                        bootstrap.Modal.getOrCreateInstance(fundingModal).show();
+                    })();
+                @endif
             })();
         </script>
     @endpush

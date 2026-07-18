@@ -220,4 +220,107 @@ class ShareholderLedgerService
             ]
         );
     }
+
+    /**
+     * يضبط تمويل المساهم ليصل لمبلغ مستهدف (يزيد/ينقص إيداعات رأس المال ثم يزامن النسبة).
+     */
+    public function setFundingAmount(
+        Shareholder $shareholder,
+        ?int $projectId,
+        ?int $landParcelId,
+        float $newAmount,
+        ?User $user = null
+    ): void {
+        if (($projectId === null) === ($landParcelId === null)) {
+            throw new InvalidArgumentException('يجب تحديد مشروع أو أرض واحدة فقط.');
+        }
+
+        $target = round($newAmount, 2);
+        if ($target < 0.01) {
+            throw new InvalidArgumentException('التمويل يجب أن يكون أكبر من صفر.');
+        }
+
+        $current = $shareholder->capitalDepositsTotal($projectId, $landParcelId);
+        $diff = round($target - $current, 2);
+
+        if (abs($diff) < 0.01) {
+            if ($projectId !== null) {
+                $this->syncProjectInvestment($shareholder, $projectId);
+            } else {
+                $this->syncLandInvestment($shareholder, (int) $landParcelId);
+            }
+
+            return;
+        }
+
+        DB::transaction(function () use ($shareholder, $projectId, $landParcelId, $diff, $user): void {
+            if ($diff > 0) {
+                $this->create($shareholder, [
+                    'project_id' => $projectId,
+                    'land_parcel_id' => $landParcelId,
+                    'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
+                    'amount' => $diff,
+                    'entry_date' => now()->toDateString(),
+                    'notes' => 'تعديل التمويل — زيادة رأس المال',
+                ], $user);
+
+                return;
+            }
+
+            $this->reduceCapitalDeposits($shareholder, $projectId, $landParcelId, abs($diff));
+        });
+    }
+
+    private function reduceCapitalDeposits(
+        Shareholder $shareholder,
+        ?int $projectId,
+        ?int $landParcelId,
+        float $reduceBy
+    ): void {
+        $remaining = round($reduceBy, 2);
+        $query = ShareholderLedgerEntry::withoutProjectScope()
+            ->where('shareholder_id', (int) $shareholder->id)
+            ->where('type', ShareholderLedgerEntry::TYPE_CAPITAL)
+            ->orderByDesc('id');
+
+        if ($projectId !== null) {
+            $query->where('project_id', $projectId)->whereNull('land_parcel_id');
+        } else {
+            $query->where('land_parcel_id', (int) $landParcelId)->whereNull('project_id');
+        }
+
+        foreach ($query->get() as $entry) {
+            if ($remaining < 0.01) {
+                break;
+            }
+
+            $amount = round((float) $entry->amount, 2);
+            if ($amount <= $remaining + 0.001) {
+                $remaining = round($remaining - $amount, 2);
+                $this->delete($entry);
+
+                continue;
+            }
+
+            $newAmount = round($amount - $remaining, 2);
+            $entry->update(['amount' => $newAmount]);
+            if ($entry->treasury_transaction_id) {
+                TreasuryTransaction::withoutProjectScope()
+                    ->whereKey((int) $entry->treasury_transaction_id)
+                    ->where('reference_type', 'shareholder_ledger_entry')
+                    ->update(['amount' => $newAmount]);
+            }
+            $remaining = 0;
+        }
+
+        if ($remaining >= 0.01) {
+            throw new InvalidArgumentException('لا يمكن تخفيض التمويل أكثر من إجمالي إيداعات رأس المال المسجّلة.');
+        }
+
+        if ($projectId !== null) {
+            $this->syncProjectInvestment($shareholder, $projectId);
+        } else {
+            $this->syncLandInvestment($shareholder, (int) $landParcelId);
+        }
+    }
 }

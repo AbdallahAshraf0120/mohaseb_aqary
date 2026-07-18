@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AttachShareholderLandRequest;
 use App\Http\Requests\AttachShareholderProjectRequest;
 use App\Http\Requests\StoreShareholderRequest;
+use App\Http\Requests\UpdateShareholderFundingRequest;
 use App\Http\Requests\UpdateShareholderRequest;
 use App\Models\LandParcel;
 use App\Models\Project;
 use App\Models\ProjectShareholder;
 use App\Models\Shareholder;
 use App\Models\ShareholderLedgerEntry;
+use InvalidArgumentException;
 use App\Services\ShareholderAttributedFlowService;
 use App\Services\ShareholderLedgerService;
 use App\Services\ShareholderService;
@@ -296,5 +298,32 @@ class ShareholderController extends Controller
         return redirect()
             ->route('shareholders.show', $shareholder)
             ->with('success', 'تم ربط المساهم بالأرض وتسجيل رأس المال في الجاري.');
+    }
+
+    public function updateFunding(UpdateShareholderFundingRequest $request, Shareholder $shareholder): RedirectResponse
+    {
+        $data = $request->validated();
+        $isProject = $data['target_type'] === 'project';
+
+        try {
+            $this->ledgerService->setFundingAmount(
+                $shareholder,
+                $isProject ? (int) $data['target_id'] : null,
+                $isProject ? null : (int) $data['target_id'],
+                (float) $data['total_investment'],
+                $request->user()
+            );
+        } catch (InvalidArgumentException $e) {
+            return redirect()
+                ->route('shareholders.show', $shareholder)
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('shareholders.show', $shareholder)
+            ->with('success', $isProject
+                ? 'تم تحديث تمويل المشروع وإعادة حساب النسبة.'
+                : 'تم تحديث تمويل الأرض وإعادة حساب النسبة.');
     }
 }
