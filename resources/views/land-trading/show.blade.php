@@ -151,6 +151,10 @@
     </div>
 
     @if (!empty($partsReady))
+        @php
+            $totalAreaJs = (float) ($parcel->area_size ?? 0);
+            $remainingAreaJs = (float) ($remainingArea ?? 0);
+        @endphp
         <div class="card app-surface mb-3">
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
@@ -200,7 +204,15 @@
                                     </div>
                                 </td>
                                 <td class="font-monospace small">
-                                    {{ $part->area_size !== null ? number_format((float) $part->area_size, 2).' م²' : '—' }}
+                                    @if ($part->area_size !== null)
+                                        {{ number_format((float) $part->area_size, 2) }} م²
+                                        @php $partPct = $parcel->areaPercentageOfTotal($part->area_size); @endphp
+                                        @if ($partPct !== null)
+                                            <div class="text-primary fw-semibold">{{ number_format($partPct, 2) }}%</div>
+                                        @endif
+                                    @else
+                                        —
+                                    @endif
                                 </td>
                                 <td>
                                     {{ $part->sold_to ?: '—' }}
@@ -311,16 +323,33 @@
             @can('land-trading.manage')
                 <div class="card-footer">
                     <div class="fw-semibold mb-2">إضافة جزء للبيع</div>
-                    <form method="post" action="{{ route('land-trading.parts.store', $parcel) }}" class="row g-2 align-items-end">
+                    <form method="post" action="{{ route('land-trading.parts.store', $parcel) }}" class="row g-2 align-items-end" id="add-part-form">
                         @csrf
                         <div class="col-md-2">
                             <label class="form-label small">اسم الجزء</label>
                             <input name="name" class="form-control form-control-sm @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="مثال: قطعة أمامية" required>
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
-                        <div class="col-md-1">
+                        <div class="col-md-2">
                             <label class="form-label small">مساحة م²</label>
-                            <input type="number" step="0.01" min="0" name="area_size" class="form-control form-control-sm" value="{{ old('area_size') }}">
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="0.01" min="0.01"
+                                       @if ($parcel->area_size !== null) max="{{ $remainingAreaJs }}" @endif
+                                       name="area_size" id="part_area_size"
+                                       class="form-control font-monospace @error('area_size') is-invalid @enderror"
+                                       value="{{ old('area_size') }}"
+                                       @if ($parcel->area_size !== null) required @endif
+                                       placeholder="أمتار">
+                                <span class="input-group-text fw-semibold text-primary" id="part_area_percent" style="min-width: 4.5rem;">0%</span>
+                            </div>
+                            @error('area_size') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            @if ($parcel->area_size !== null)
+                                <div class="form-text" id="part_area_hint">
+                                    المتاح: {{ number_format($remainingAreaJs, 2) }} م² —
+                                    النسبة من إجمالي الأرض ({{ number_format($totalAreaJs, 2) }} م²)
+                                </div>
+                                <div class="invalid-feedback d-none" id="part_area_client_error">المساحة أكبر من المتاح.</div>
+                            @endif
                         </div>
                         <div class="col-md-2">
                             <label class="form-label small">المشتري</label>
@@ -391,6 +420,58 @@
             }
             document.getElementById('part_sale_payment_type')?.addEventListener('change', togglePartInstallment);
             togglePartInstallment();
+
+            var totalArea = {{ json_encode($totalAreaJs ?? 0) }};
+            var remainingArea = {{ json_encode($remainingAreaJs ?? 0) }};
+            var areaInput = document.getElementById('part_area_size');
+            var percentEl = document.getElementById('part_area_percent');
+            var errEl = document.getElementById('part_area_client_error');
+            var form = document.getElementById('add-part-form');
+
+            function updatePartAreaPercent() {
+                if (!areaInput || !percentEl) return;
+                var val = parseFloat(areaInput.value);
+                if (!isFinite(val) || val <= 0 || totalArea <= 0) {
+                    percentEl.textContent = '0%';
+                    areaInput.classList.remove('is-invalid');
+                    if (errEl) errEl.classList.add('d-none');
+                    return;
+                }
+                var pct = (val / totalArea) * 100;
+                percentEl.textContent = pct.toFixed(2) + '%';
+                var over = remainingArea > 0 && val > remainingArea + 0.0001;
+                if (over) {
+                    areaInput.classList.add('is-invalid');
+                    if (errEl) {
+                        errEl.textContent = 'المساحة أكبر من المتاح (' + remainingArea.toLocaleString('en-US', {maximumFractionDigits: 2}) + ' م²).';
+                        errEl.classList.remove('d-none');
+                    }
+                } else {
+                    areaInput.classList.remove('is-invalid');
+                    if (errEl) errEl.classList.add('d-none');
+                }
+            }
+
+            areaInput?.addEventListener('input', updatePartAreaPercent);
+            areaInput?.addEventListener('change', updatePartAreaPercent);
+            form?.addEventListener('submit', function (e) {
+                var val = parseFloat(areaInput?.value);
+                if (totalArea > 0 && (!isFinite(val) || val <= 0)) {
+                    e.preventDefault();
+                    areaInput?.classList.add('is-invalid');
+                    if (errEl) {
+                        errEl.textContent = 'أدخل مساحة صحيحة.';
+                        errEl.classList.remove('d-none');
+                    }
+                    return;
+                }
+                if (remainingArea > 0 && isFinite(val) && val > remainingArea + 0.0001) {
+                    e.preventDefault();
+                    updatePartAreaPercent();
+                    areaInput?.focus();
+                }
+            });
+            updatePartAreaPercent();
         })();
         </script>
         @endpush

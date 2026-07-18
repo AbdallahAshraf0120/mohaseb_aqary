@@ -24,6 +24,8 @@ class LandParcel extends Model
         'location',
         'city',
         'area_size',
+        'purchase_price_per_m2',
+        'sale_price_per_m2',
         'deed_number',
         'status',
         'purchase_price',
@@ -53,6 +55,8 @@ class LandParcel extends Model
     {
         return [
             'area_size' => 'decimal:2',
+            'purchase_price_per_m2' => 'decimal:2',
+            'sale_price_per_m2' => 'decimal:2',
             'purchase_price' => 'decimal:2',
             'purchase_down_payment' => 'decimal:2',
             'sale_price' => 'decimal:2',
@@ -93,20 +97,63 @@ class LandParcel extends Model
         return $this->hasMany(LandParcelPart::class, 'land_parcel_id');
     }
 
-    public function soldPartsArea(): float
+    /** مساحة الأجزاء المحجوزة/المباعة/المتاحة (كل شيء غير الملغى). */
+    public function allocatedPartsArea(?int $exceptPartId = null): float
     {
-        return round((float) $this->parts()
-            ->whereIn('status', ['sold', 'reserved'])
-            ->sum('area_size'), 2);
+        $query = $this->parts()->whereNotIn('status', ['cancelled']);
+        if ($exceptPartId !== null) {
+            $query->where('id', '!=', $exceptPartId);
+        }
+
+        return round((float) $query->sum('area_size'), 2);
     }
 
-    public function remainingArea(): ?float
+    /** @deprecated استخدم allocatedPartsArea */
+    public function soldPartsArea(): float
+    {
+        return $this->allocatedPartsArea();
+    }
+
+    public function remainingArea(?int $exceptPartId = null): ?float
     {
         if ($this->area_size === null) {
             return null;
         }
 
-        return round(max(0, (float) $this->area_size - $this->soldPartsArea()), 2);
+        return round(max(0, (float) $this->area_size - $this->allocatedPartsArea($exceptPartId)), 2);
+    }
+
+    /** نسبة الجزء من إجمالي مساحة الأرض. */
+    public function areaPercentageOfTotal(float|int|string|null $partArea): ?float
+    {
+        $total = (float) ($this->area_size ?? 0);
+        if ($total <= 0 || $partArea === null || $partArea === '') {
+            return null;
+        }
+
+        return round(((float) $partArea / $total) * 100, 2);
+    }
+
+    public function totalFromPurchasePerM2(?float $area = null): ?float
+    {
+        $rate = (float) ($this->purchase_price_per_m2 ?? 0);
+        $m2 = $area ?? (float) ($this->area_size ?? 0);
+        if ($rate <= 0 || $m2 <= 0) {
+            return null;
+        }
+
+        return round($rate * $m2, 2);
+    }
+
+    public function totalFromSalePerM2(?float $area = null): ?float
+    {
+        $rate = (float) ($this->sale_price_per_m2 ?? 0);
+        $m2 = $area ?? (float) ($this->area_size ?? 0);
+        if ($rate <= 0 || $m2 <= 0) {
+            return null;
+        }
+
+        return round($rate * $m2, 2);
     }
 
     public function partsSaleTotal(): float

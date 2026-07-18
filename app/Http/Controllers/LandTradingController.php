@@ -337,7 +337,7 @@ class LandTradingController extends Controller
             return back()->with('error', 'قاعدة البيانات غير محدّثة. شغّل: php artisan migrate --force');
         }
 
-        $data = $this->validatedPart($request);
+        $data = $this->validatedPart($request, $parcel);
         $part = $parcel->parts()->create($data);
 
         if ($parcel->status === 'owned') {
@@ -379,7 +379,7 @@ class LandTradingController extends Controller
             abort(404);
         }
 
-        $part->update($this->validatedPart($request));
+        $part->update($this->validatedPart($request, $parcel, $part));
 
         return redirect()
             ->route('land-trading.show', $parcel)
@@ -406,11 +406,19 @@ class LandTradingController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function validatedPart(Request $request): array
+    private function validatedPart(Request $request, LandParcel $parcel, ?LandParcelPart $exceptPart = null): array
     {
+        $remaining = $parcel->remainingArea($exceptPart?->id);
+        $areaRules = $parcel->area_size !== null
+            ? ['required', 'numeric', 'min:0.01']
+            : ['nullable', 'numeric', 'min:0.01'];
+        if ($remaining !== null) {
+            $areaRules[] = 'max:'.$remaining;
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'area_size' => ['nullable', 'numeric', 'min:0'],
+            'area_size' => $areaRules,
             'status' => ['required', 'string', Rule::in(array_keys(LandParcelPart::STATUSES))],
             'sale_price' => ['required', 'numeric', 'min:0.01'],
             'sale_date' => ['nullable', 'date'],
@@ -422,6 +430,12 @@ class LandTradingController extends Controller
             'sale_installment_schedule' => ['nullable', 'in:monthly,quarterly,semiannual', 'required_if:sale_payment_type,installment'],
             'sale_installment_start_date' => ['nullable', 'date', 'required_if:sale_payment_type,installment'],
             'notes' => ['nullable', 'string'],
+        ], [
+            'area_size.required' => 'المساحة مطلوبة لتحديد نسبة الجزء من الأرض.',
+            'area_size.max' => $remaining !== null
+                ? 'المساحة أكبر من المتاح. المتبقي: '.number_format($remaining, 2).' م².'
+                : 'المساحة غير صحيحة.',
+            'area_size.min' => 'أدخل مساحة أكبر من صفر.',
         ]);
 
         $built = LandInstallmentPlanBuilder::build(
