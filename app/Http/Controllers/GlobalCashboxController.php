@@ -97,7 +97,19 @@ class GlobalCashboxController extends Controller
             'currentBalance' => $currentBalance,
             'transactions' => (clone $baseQuery)->latest()->paginate(20)->withQueryString(),
             'byProject' => $byProject,
-            'projects' => Project::query()->listed()->orderBy('name')->get(['id', 'name']),
+            'projects' => Project::query()
+                ->where(function ($q): void {
+                    $q->where(function ($listed): void {
+                        $listed->where('is_active', true)
+                            ->where('is_draft', false)
+                            ->where(function ($cashbox): void {
+                                $cashbox->where('is_land_trading_cashbox', false)
+                                    ->orWhereNull('is_land_trading_cashbox');
+                            });
+                    })->orWhere('is_land_trading_cashbox', true);
+                })
+                ->orderBy('name')
+                ->get(['id', 'name']),
             'selectedProjectId' => $projectId,
             'selectedType' => $type,
             'selectedStatus' => $status,

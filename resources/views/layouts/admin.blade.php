@@ -280,6 +280,13 @@
                         @endcan
                         @can('cashbox.view')
                             <li class="nav-item">
+                                <a href="{{ route('land-cashbox.index') }}"
+                                   class="nav-link {{ request()->routeIs('land-cashbox.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-map-location-dot"></i>
+                                    <p>صندوق الأراضي</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('global-cashbox.index') }}"
                                    class="nav-link {{ request()->routeIs('global-cashbox.*') ? 'active' : '' }}">
                                     <i class="nav-icon fa-solid fa-vault"></i>

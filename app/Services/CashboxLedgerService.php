@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Models\DebtPayment;
 use App\Models\Expense;
+use App\Models\LandParcelPayment;
 use App\Models\Revenue;
 use App\Models\Sale;
 use App\Models\TreasuryTransaction;
+use App\Support\LandTradingCashbox;
 
 class CashboxLedgerService
 {
@@ -143,13 +145,46 @@ class CashboxLedgerService
             ->delete();
     }
 
+    public function syncFromLandParcelPayment(LandParcelPayment $payment): void
+    {
+        $payment->loadMissing('landParcel:id,name');
+        $parcelName = $payment->landParcel?->name ?? ('أرض #'.$payment->land_parcel_id);
+        $isPurchase = $payment->side === LandParcelPayment::SIDE_PURCHASE;
+        $type = $isPurchase ? 'expense' : 'revenue';
+        $label = $isPurchase
+            ? 'دفعة شراء أرض — '.$parcelName.' — '.$payment->kindLabel()
+            : 'تحصيل بيع أرض — '.$parcelName.' — '.$payment->kindLabel();
+
+        TreasuryTransaction::withoutProjectScope()->updateOrCreate(
+            [
+                'reference_type' => LandParcelPayment::class,
+                'reference_id' => $payment->id,
+            ],
+            [
+                'project_id' => LandTradingCashbox::projectId(),
+                'type' => $type,
+                'amount' => $payment->amount,
+                'description' => $label.($payment->notes ? ' — '.$payment->notes : ''),
+                'approval_status' => (string) ($payment->approval_status ?? 'approved'),
+            ]
+        );
+    }
+
+    public function removeLandParcelPayment(int $paymentId): void
+    {
+        TreasuryTransaction::withoutProjectScope()
+            ->where('reference_type', LandParcelPayment::class)
+            ->where('reference_id', $paymentId)
+            ->delete();
+    }
+
     /**
      * إعادة بناء حركات الصندوق المرتبطة بالتحصيل والمصروفات والمقدمات وسداد الذمم (بدون المساس بالحركات اليدوية reference null).
      */
     public function rebuildFromAccountingRecords(): void
     {
         TreasuryTransaction::query()
-            ->whereIn('reference_type', [Revenue::class, Expense::class, Sale::class, DebtPayment::class])
+            ->whereIn('reference_type', [Revenue::class, Expense::class, Sale::class, DebtPayment::class, LandParcelPayment::class])
             ->where('approval_status', 'approved')
             ->delete();
 
@@ -161,6 +196,10 @@ class CashboxLedgerService
             ->with(['debt' => static fn ($q) => $q->withoutGlobalScopes()])
             ->orderBy('id')
             ->each(fn (DebtPayment $p) => $this->syncFromDebtPayment($p));
+        LandParcelPayment::query()
+            ->where('approval_status', 'approved')
+            ->orderBy('id')
+            ->each(fn (LandParcelPayment $p) => $this->syncFromLandParcelPayment($p));
     }
 
     private function revenueDescription(Revenue $revenue): string

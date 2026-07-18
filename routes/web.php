@@ -6,6 +6,7 @@ use App\Http\Controllers\AreaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CashboxController;
 use App\Http\Controllers\GlobalCashboxController;
+use App\Http\Controllers\LandCashboxController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DashboardController;
@@ -95,6 +96,10 @@ Route::middleware('auth')->group(function (): void {
         // الصندوق الشامل (برا المشاريع) — مراقبة حركات كل المشاريع
         Route::get('global-cashbox', [GlobalCashboxController::class, 'index'])->name('global-cashbox.index');
 
+        // صندوق أراضي البيع والشراء (مشروع نظامي) — يظهر أيضًا في الصندوق الشامل
+        Route::get('land-cashbox', [LandCashboxController::class, 'index'])->name('land-cashbox.index');
+        Route::post('land-cashbox', [LandCashboxController::class, 'store'])->name('land-cashbox.store');
+
         // إدارة المساهمين (برا المشاريع) — مساهم عام يمكن ربطه بعدة مشاريع
         Route::resource('shareholders', ShareholderController::class);
         Route::post('shareholders/{shareholder}/projects', [ShareholderController::class, 'attachProject'])
@@ -136,6 +141,13 @@ Route::middleware('auth')->group(function (): void {
             Route::get('/', [LandTradingController::class, 'index'])->name('land-trading.index');
             Route::get('create', [LandTradingController::class, 'create'])->name('land-trading.create');
             Route::post('/', [LandTradingController::class, 'store'])->name('land-trading.store');
+            Route::post('{parcel}/payments', [LandTradingController::class, 'storePayment'])
+                ->whereNumber('parcel')
+                ->name('land-trading.payments.store');
+            Route::delete('{parcel}/payments/{payment}', [LandTradingController::class, 'destroyPayment'])
+                ->whereNumber('parcel')
+                ->whereNumber('payment')
+                ->name('land-trading.payments.destroy');
             Route::get('{parcel}', [LandTradingController::class, 'show'])->whereNumber('parcel')->name('land-trading.show');
             Route::get('{parcel}/edit', [LandTradingController::class, 'edit'])->whereNumber('parcel')->name('land-trading.edit');
             Route::put('{parcel}', [LandTradingController::class, 'update'])->whereNumber('parcel')->name('land-trading.update');

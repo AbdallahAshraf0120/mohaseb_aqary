@@ -19,6 +19,7 @@ class Project extends Model
         'capital',
         'is_active',
         'is_draft',
+        'is_land_trading_cashbox',
         'contract_template_path',
     ];
 
@@ -28,6 +29,7 @@ class Project extends Model
             'capital' => 'decimal:2',
             'is_active' => 'boolean',
             'is_draft' => 'boolean',
+            'is_land_trading_cashbox' => 'boolean',
         ];
     }
 
@@ -71,10 +73,15 @@ class Project extends Model
         Storage::disk('local')->deleteDirectory('project-contract-templates/'.$this->id);
     }
 
-    /** مشاريع تظهر في الشريط الجانبي والتنقل (ليست مسودة). */
+    /** مشاريع تظهر في الشريط الجانبي والتنقل (ليست مسودة ولا صندوق أراضي نظامي). */
     public function scopeListed($query)
     {
-        return $query->where('is_active', true)->where('is_draft', false);
+        return $query->where('is_active', true)
+            ->where('is_draft', false)
+            ->where(function ($q): void {
+                $q->where('is_land_trading_cashbox', false)
+                    ->orWhereNull('is_land_trading_cashbox');
+            });
     }
 
     /** نسبة المساهم من رأس مال المشروع: (تمويل المساهم ÷ رأس مال المشروع) × 100. */

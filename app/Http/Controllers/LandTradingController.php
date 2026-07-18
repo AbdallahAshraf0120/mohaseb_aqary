@@ -3,16 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\LandParcel;
+use App\Models\LandParcelPayment;
 use App\Models\LandParcelShareholder;
+use App\Services\LandParcelPaymentService;
+use App\Support\LandInstallmentPlanBuilder;
 use App\Support\ListingFilters;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
 class LandTradingController extends Controller
 {
+    public function __construct(
+        private readonly LandParcelPaymentService $paymentService,
+    ) {}
+
     public function index(Request $request): View
     {
         $filters = ListingFilters::fromRequest($request);
@@ -72,6 +80,8 @@ class LandTradingController extends Controller
             'parcel' => new LandParcel([
                 'status' => 'owned',
                 'purchase_price' => 0,
+                'purchase_payment_type' => 'cash',
+                'purchase_down_payment' => 0,
             ]),
         ]);
     }
@@ -100,11 +110,24 @@ class LandTradingController extends Controller
                 ->values()
             : collect();
 
+        $paymentsReady = Schema::hasTable('land_parcel_payments');
+        $payments = $paymentsReady
+            ? $parcel->payments()->with('creator:id,name')->orderByDesc('paid_at')->orderByDesc('id')->get()
+            : collect();
+
         return view('land-trading.show', [
             'title' => $parcel->name.' | أراضي البيع والشراء',
             'pageTitle' => $parcel->name,
             'parcel' => $parcel,
             'parcelShareholders' => $shareholders,
+            'payments' => $payments,
+            'paymentsReady' => $paymentsReady,
+            'purchaseSchedule' => $paymentsReady ? $parcel->installmentScheduleWithPaymentSummary(LandParcelPayment::SIDE_PURCHASE) : [],
+            'saleSchedule' => $paymentsReady ? $parcel->installmentScheduleWithPaymentSummary(LandParcelPayment::SIDE_SALE) : [],
+            'purchasePaid' => $paymentsReady ? $parcel->approvedPaidTotal(LandParcelPayment::SIDE_PURCHASE) : 0.0,
+            'purchaseRemaining' => $paymentsReady ? $parcel->remainingTotal(LandParcelPayment::SIDE_PURCHASE) : (float) $parcel->purchase_price,
+            'salePaid' => $paymentsReady ? $parcel->approvedPaidTotal(LandParcelPayment::SIDE_SALE) : 0.0,
+            'saleRemaining' => $paymentsReady ? $parcel->remainingTotal(LandParcelPayment::SIDE_SALE) : (float) ($parcel->sale_price ?? 0),
         ]);
     }
 
@@ -135,6 +158,47 @@ class LandTradingController extends Controller
             ->with('success', 'تم حذف الأرض.');
     }
 
+    public function storePayment(Request $request, LandParcel $parcel): RedirectResponse
+    {
+        if (! Schema::hasTable('land_parcel_payments')) {
+            return back()->with('error', 'قاعدة البيانات غير محدّثة. شغّل: php artisan migrate --force');
+        }
+
+        $data = $request->validate([
+            'side' => ['required', 'in:purchase,sale'],
+            'kind' => ['required', 'in:down_payment,installment,secondary,other'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'paid_at' => ['required', 'date'],
+            'payment_method' => ['required', 'in:cash,bank_transfer,check'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $this->paymentService->create($parcel, $data, $request->user());
+        } catch (InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        $msg = $data['side'] === 'purchase' ? 'تم تسجيل دفعة الشراء وتحديث صندوق الأراضي.' : 'تم تسجيل تحصيل البيع وتحديث صندوق الأراضي.';
+
+        return redirect()
+            ->route('land-trading.show', $parcel)
+            ->with('success', $msg);
+    }
+
+    public function destroyPayment(LandParcel $parcel, LandParcelPayment $payment): RedirectResponse
+    {
+        if ((int) $payment->land_parcel_id !== (int) $parcel->id) {
+            abort(404);
+        }
+
+        $this->paymentService->delete($payment);
+
+        return redirect()
+            ->route('land-trading.show', $parcel)
+            ->with('success', 'تم حذف الدفعة وإلغاء حركتها من الصندوق.');
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -151,10 +215,20 @@ class LandTradingController extends Controller
             'purchase_date' => ['nullable', 'date'],
             'purchased_from' => ['nullable', 'string', 'max:255'],
             'purchase_phone' => ['nullable', 'string', 'max:50'],
+            'purchase_payment_type' => ['required', 'in:cash,installment'],
+            'purchase_down_payment' => ['nullable', 'numeric', 'min:0'],
+            'purchase_installment_months' => ['nullable', 'integer', 'min:1', 'required_if:purchase_payment_type,installment'],
+            'purchase_installment_schedule' => ['nullable', 'in:monthly,quarterly,semiannual', 'required_if:purchase_payment_type,installment'],
+            'purchase_installment_start_date' => ['nullable', 'date', 'required_if:purchase_payment_type,installment'],
             'sale_price' => ['nullable', 'numeric', 'min:0'],
             'sale_date' => ['nullable', 'date'],
             'sold_to' => ['nullable', 'string', 'max:255'],
             'sale_phone' => ['nullable', 'string', 'max:50'],
+            'sale_payment_type' => ['nullable', 'in:cash,installment'],
+            'sale_down_payment' => ['nullable', 'numeric', 'min:0'],
+            'sale_installment_months' => ['nullable', 'integer', 'min:1', 'required_if:sale_payment_type,installment'],
+            'sale_installment_schedule' => ['nullable', 'in:monthly,quarterly,semiannual', 'required_if:sale_payment_type,installment'],
+            'sale_installment_start_date' => ['nullable', 'date', 'required_if:sale_payment_type,installment'],
             'notes' => ['nullable', 'string'],
         ]);
 
@@ -164,6 +238,50 @@ class LandTradingController extends Controller
             ], [
                 'sale_price.required' => 'سعر البيع مطلوب عند حالة «مباعة».',
             ]);
+        }
+
+        $purchaseBuilt = LandInstallmentPlanBuilder::build(
+            (string) $data['purchase_payment_type'],
+            (float) $data['purchase_price'],
+            $data['purchase_down_payment'] ?? null,
+            $data['purchase_installment_months'] ?? null,
+            $data['purchase_installment_schedule'] ?? null,
+            $data['purchase_installment_start_date'] ?? null,
+        );
+        $data['purchase_payment_type'] = $purchaseBuilt['payment_type'];
+        $data['purchase_down_payment'] = $purchaseBuilt['down_payment'];
+        $data['purchase_installment_months'] = $purchaseBuilt['installment_months'];
+        $data['purchase_installment_schedule'] = $purchaseBuilt['installment_schedule'];
+        $data['purchase_installment_start_date'] = $purchaseBuilt['installment_start_date'];
+        $data['purchase_installment_plan'] = $purchaseBuilt['installment_plan'];
+
+        $salePrice = isset($data['sale_price']) && $data['sale_price'] !== null && $data['sale_price'] !== ''
+            ? (float) $data['sale_price']
+            : null;
+
+        if ($salePrice !== null && $salePrice > 0) {
+            $saleType = (string) ($data['sale_payment_type'] ?: 'cash');
+            $saleBuilt = LandInstallmentPlanBuilder::build(
+                $saleType,
+                $salePrice,
+                $data['sale_down_payment'] ?? null,
+                $data['sale_installment_months'] ?? null,
+                $data['sale_installment_schedule'] ?? null,
+                $data['sale_installment_start_date'] ?? null,
+            );
+            $data['sale_payment_type'] = $saleBuilt['payment_type'];
+            $data['sale_down_payment'] = $saleBuilt['down_payment'];
+            $data['sale_installment_months'] = $saleBuilt['installment_months'];
+            $data['sale_installment_schedule'] = $saleBuilt['installment_schedule'];
+            $data['sale_installment_start_date'] = $saleBuilt['installment_start_date'];
+            $data['sale_installment_plan'] = $saleBuilt['installment_plan'];
+        } else {
+            $data['sale_payment_type'] = null;
+            $data['sale_down_payment'] = null;
+            $data['sale_installment_months'] = null;
+            $data['sale_installment_schedule'] = null;
+            $data['sale_installment_start_date'] = null;
+            $data['sale_installment_plan'] = null;
         }
 
         return $data;

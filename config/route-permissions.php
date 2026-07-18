@@ -97,6 +97,8 @@ return [
     'cashbox.index' => 'cashbox.index',
     'cashbox.store' => 'cashbox.store',
     'global-cashbox.index' => 'cashbox.view',
+    'land-cashbox.index' => 'cashbox.view',
+    'land-cashbox.store' => 'cashbox.manage',
 
     'approvals.index' => 'approvals.index',
     'approvals.approve' => 'approvals.approve',
@@ -141,6 +143,8 @@ return [
     'land-trading.edit' => 'land-trading.edit',
     'land-trading.update' => 'land-trading.update',
     'land-trading.destroy' => 'land-trading.destroy',
+    'land-trading.payments.store' => 'land-trading.manage',
+    'land-trading.payments.destroy' => 'land-trading.manage',
 
     'tasks.index' => 'tasks.index',
     'tasks.mine' => 'tasks.view',
