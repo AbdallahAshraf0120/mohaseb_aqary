@@ -8,6 +8,7 @@ use App\Models\TreasuryTransaction;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
@@ -48,9 +49,13 @@ class ProjectController extends Controller
             'code' => ['nullable', 'string', 'max:50', 'unique:projects,code'],
             'capital' => ['nullable', 'numeric', 'min:0'],
         ]);
-        $data['capital'] = round((float) ($data['capital'] ?? 0), 2);
         $data['is_active'] = true;
         $data['is_draft'] = false;
+        if ($this->projectsHaveCapitalColumn()) {
+            $data['capital'] = round((float) ($data['capital'] ?? 0), 2);
+        } else {
+            unset($data['capital']);
+        }
 
         $project = Project::query()->create($data);
         Facing::seedDefaultsForProject((int) $project->id);
@@ -87,8 +92,10 @@ class ProjectController extends Controller
         $payload = [
             'name' => $data['name'],
             'code' => $code,
-            'capital' => round((float) ($data['capital'] ?? 0), 2),
         ];
+        if ($this->projectsHaveCapitalColumn()) {
+            $payload['capital'] = round((float) ($data['capital'] ?? 0), 2);
+        }
 
         $remove = $request->boolean('remove_contract_template');
         if ($remove && ! $request->hasFile('contract_template')) {
@@ -165,11 +172,20 @@ class ProjectController extends Controller
         return redirect()->route('projects.index')->with('success', 'تم إرجاع المشروع من المسودة وظهوره في القائمة.');
     }
 
+    private function projectsHaveCapitalColumn(): bool
+    {
+        return Schema::hasColumn('projects', 'capital');
+    }
+
     /**
      * يزامن حركة قبض معتمدة في الصندوق بعنوان «رأس مال المشروع».
      */
     private function syncProjectCapitalCashbox(Project $project, mixed $user = null): void
     {
+        if (! $this->projectsHaveCapitalColumn()) {
+            return;
+        }
+
         $capital = round((float) $project->capital, 2);
         $existing = TreasuryTransaction::withoutProjectScope()
             ->where('project_id', (int) $project->id)
