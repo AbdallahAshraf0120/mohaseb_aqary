@@ -25,8 +25,10 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">نسبة المساهمة (%)</label>
-        <input type="number" step="0.01" min="0" max="100" name="share_percentage" class="form-control"
+        <input type="number" step="0.01" min="0" max="100" name="share_percentage" class="form-control @error('share_percentage') is-invalid @enderror"
                value="{{ old('share_percentage', $shareholder->share_percentage ?? '') }}" required>
+        @error('share_percentage') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        <div class="form-text">مجموع نسب المساهمين في نفس المشروع يجب ألا يتجاوز 100%.</div>
     </div>
     <div class="col-md-3">
         <label class="form-label" for="shareholder-total-investment">رأس المال / التمويل المُدخل (ج.م)</label>
