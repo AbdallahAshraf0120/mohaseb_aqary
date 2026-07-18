@@ -21,6 +21,7 @@ class LandParcelPayment extends Model
 
     protected $fillable = [
         'land_parcel_id',
+        'land_parcel_part_id',
         'side',
         'kind',
         'amount',
@@ -49,6 +50,11 @@ class LandParcelPayment extends Model
     public function landParcel(): BelongsTo
     {
         return $this->belongsTo(LandParcel::class, 'land_parcel_id');
+    }
+
+    public function part(): BelongsTo
+    {
+        return $this->belongsTo(LandParcelPart::class, 'land_parcel_part_id');
     }
 
     public function creator(): BelongsTo

@@ -88,6 +88,41 @@ class LandParcel extends Model
         return $this->hasMany(LandParcelPayment::class, 'land_parcel_id');
     }
 
+    public function parts(): HasMany
+    {
+        return $this->hasMany(LandParcelPart::class, 'land_parcel_id');
+    }
+
+    public function soldPartsArea(): float
+    {
+        return round((float) $this->parts()
+            ->whereIn('status', ['sold', 'reserved'])
+            ->sum('area_size'), 2);
+    }
+
+    public function remainingArea(): ?float
+    {
+        if ($this->area_size === null) {
+            return null;
+        }
+
+        return round(max(0, (float) $this->area_size - $this->soldPartsArea()), 2);
+    }
+
+    public function partsSaleTotal(): float
+    {
+        return round((float) $this->parts()->sum('sale_price'), 2);
+    }
+
+    public function partsCollectedTotal(): float
+    {
+        return round((float) $this->payments()
+            ->where('side', LandParcelPayment::SIDE_SALE)
+            ->where('approval_status', 'approved')
+            ->whereNotNull('land_parcel_part_id')
+            ->sum('amount'), 2);
+    }
+
     public function statusLabel(): string
     {
         return self::STATUSES[$this->status] ?? (string) $this->status;
