@@ -150,6 +150,236 @@
         </div>
     </div>
 
+    @if (!empty($partsReady))
+        <div class="card app-surface mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h6 class="mb-0">بيع أجزاء من الأرض</h6>
+                    <div class="small text-body-secondary">يمكنك بيع أجزاء وتحصيلها بينما ما زلت تسدد أقساط الشراء.</div>
+                </div>
+                @if ($parcel->area_size !== null)
+                    <span class="badge text-bg-light">
+                        متبقي مساحة: {{ number_format((float) ($remainingArea ?? 0), 2) }} م²
+                        من {{ number_format((float) $parcel->area_size, 2) }}
+                    </span>
+                @endif
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>الجزء</th>
+                            <th>المساحة</th>
+                            <th>المشتري</th>
+                            <th>التحصيل</th>
+                            <th class="text-end">سعر البيع</th>
+                            <th class="text-end">محصّل</th>
+                            <th class="text-end">متبقي</th>
+                            <th>الحالة</th>
+                            <th class="text-end">تحصيل</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @forelse ($parts as $part)
+                            @php
+                                $pCollected = $part->approvedPaidTotal();
+                                $pRemaining = $part->remainingTotal();
+                                $pBadge = match ($part->status) {
+                                    'available' => 'text-bg-info',
+                                    'reserved' => 'text-bg-primary',
+                                    'sold' => 'text-bg-success',
+                                    default => 'text-bg-secondary',
+                                };
+                            @endphp
+                            <tr>
+                                <td class="fw-semibold">
+                                    {{ $part->name }}
+                                    <div class="small text-body-secondary">
+                                        {{ ($part->sale_payment_type ?? 'cash') === 'installment' ? 'أقساط' : 'كاش' }}
+                                    </div>
+                                </td>
+                                <td class="font-monospace small">
+                                    {{ $part->area_size !== null ? number_format((float) $part->area_size, 2).' م²' : '—' }}
+                                </td>
+                                <td>
+                                    {{ $part->sold_to ?: '—' }}
+                                    @if ($part->sale_phone)
+                                        <div class="small font-monospace text-body-secondary">{{ $part->sale_phone }}</div>
+                                    @endif
+                                </td>
+                                <td class="font-monospace small">{{ optional($part->sale_date)->format('Y-m-d') ?: '—' }}</td>
+                                <td class="text-end font-monospace">{{ number_format((float) $part->sale_price, 2) }}</td>
+                                <td class="text-end font-monospace text-success-emphasis">{{ number_format($pCollected, 2) }}</td>
+                                <td class="text-end font-monospace {{ $pRemaining > 0.01 ? 'text-danger-emphasis' : '' }}">{{ number_format($pRemaining, 2) }}</td>
+                                <td><span class="badge {{ $pBadge }}">{{ $part->statusLabel() }}</span></td>
+                                <td class="text-end">
+                                    @can('land-trading.manage')
+                                        @if ($pRemaining > 0.01 && !empty($paymentsReady))
+                                            <button type="button" class="btn btn-success btn-sm" data-bs-toggle="collapse" data-bs-target="#collect-part-{{ $part->id }}">تحصيل</button>
+                                        @endif
+                                        <form method="post" action="{{ route('land-trading.parts.destroy', [$parcel, $part]) }}" class="d-inline" onsubmit="return confirm('حذف الجزء؟');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
+                                        </form>
+                                    @endcan
+                                </td>
+                            </tr>
+                            @can('land-trading.manage')
+                                @if ($pRemaining > 0.01 && !empty($paymentsReady))
+                                    <tr class="collapse" id="collect-part-{{ $part->id }}">
+                                        <td colspan="9" class="bg-body-tertiary">
+                                            <form method="post" action="{{ route('land-trading.payments.store', $parcel) }}" class="row g-2 align-items-end p-2">
+                                                @csrf
+                                                <input type="hidden" name="side" value="sale">
+                                                <input type="hidden" name="land_parcel_part_id" value="{{ $part->id }}">
+                                                <div class="col-md-2">
+                                                    <label class="form-label small">النوع</label>
+                                                    <select name="kind" class="form-select form-select-sm" required>
+                                                        <option value="down_payment">مقدم</option>
+                                                        <option value="installment" selected>قسط</option>
+                                                        <option value="other">أخرى</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small">المبلغ</label>
+                                                    <input type="number" step="0.01" min="0.01" max="{{ $pRemaining }}" name="amount" class="form-control form-control-sm font-monospace" required>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small">التاريخ</label>
+                                                    <input type="date" name="paid_at" class="form-control form-control-sm" value="{{ now()->toDateString() }}" required>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small">الطريقة</label>
+                                                    <select name="payment_method" class="form-select form-select-sm" required>
+                                                        <option value="cash">نقدي</option>
+                                                        <option value="bank_transfer">تحويل</option>
+                                                        <option value="check">شيك</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small">ملاحظة</label>
+                                                    <input name="notes" class="form-control form-control-sm" placeholder="اختياري">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <button type="submit" class="btn btn-success btn-sm w-100">حفظ التحصيل</button>
+                                                </div>
+                                            </form>
+                                            @if ($part->installmentScheduleWithPaymentSummary() !== [])
+                                                <div class="px-2 pb-2 small">
+                                                    جدول الجزء:
+                                                    @foreach ($part->installmentScheduleWithPaymentSummary() as $row)
+                                                        <span class="badge text-bg-light me-1">
+                                                            {{ $row['label'] }} {{ $row['due_date']->format('Y-m-d') }} —
+                                                            متبقي {{ number_format($row['balance'], 2) }}
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endif
+                            @endcan
+                        @empty
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">
+                                    لا توجد أجزاء بعد. أضف جزءًا بالأسفل لبدء البيع بالتقسيط/الكاش على جزء من الأرض.
+                                </td>
+                            </tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @can('land-trading.manage')
+                <div class="card-footer">
+                    <div class="fw-semibold mb-2">إضافة جزء للبيع</div>
+                    <form method="post" action="{{ route('land-trading.parts.store', $parcel) }}" class="row g-2 align-items-end">
+                        @csrf
+                        <div class="col-md-2">
+                            <label class="form-label small">اسم الجزء</label>
+                            <input name="name" class="form-control form-control-sm @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="مثال: قطعة أمامية" required>
+                            @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small">مساحة م²</label>
+                            <input type="number" step="0.01" min="0" name="area_size" class="form-control form-control-sm" value="{{ old('area_size') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">المشتري</label>
+                            <input name="sold_to" class="form-control form-control-sm" value="{{ old('sold_to') }}">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small">سعر البيع</label>
+                            <input type="number" step="0.01" min="0.01" name="sale_price" class="form-control form-control-sm font-monospace" value="{{ old('sale_price') }}" required>
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small">طريقة</label>
+                            <select name="sale_payment_type" id="part_sale_payment_type" class="form-select form-select-sm" required>
+                                <option value="cash" @selected(old('sale_payment_type', 'cash') === 'cash')>كاش</option>
+                                <option value="installment" @selected(old('sale_payment_type') === 'installment')>أقساط</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small">مقدم</label>
+                            <input type="number" step="0.01" min="0" name="sale_down_payment" class="form-control form-control-sm" value="{{ old('sale_down_payment') }}">
+                        </div>
+                        <div class="col-md-1 part-installment-fields">
+                            <label class="form-label small">شهور</label>
+                            <input type="number" min="1" name="sale_installment_months" class="form-control form-control-sm" value="{{ old('sale_installment_months') }}">
+                        </div>
+                        <div class="col-md-1 part-installment-fields">
+                            <label class="form-label small">نظام</label>
+                            <select name="sale_installment_schedule" class="form-select form-select-sm">
+                                <option value="monthly">شهري</option>
+                                <option value="quarterly">كل 3</option>
+                                <option value="semiannual">كل 6</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 part-installment-fields">
+                            <label class="form-label small">بداية</label>
+                            <input type="date" name="sale_installment_start_date" class="form-control form-control-sm" value="{{ old('sale_installment_start_date') }}">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small">حالة</label>
+                            <select name="status" class="form-select form-select-sm" required>
+                                @foreach (\App\Models\LandParcelPart::STATUSES as $k => $v)
+                                    <option value="{{ $k }}" @selected(old('status', 'available') === $k)>{{ $v }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">إضافة</button>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">تاريخ البيع</label>
+                            <input type="date" name="sale_date" class="form-control form-control-sm" value="{{ old('sale_date', now()->toDateString()) }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">هاتف المشتري</label>
+                            <input name="sale_phone" class="form-control form-control-sm" value="{{ old('sale_phone') }}">
+                        </div>
+                    </form>
+                </div>
+            @endcan
+        </div>
+        @push('scripts')
+        <script>
+        (function () {
+            function togglePartInstallment() {
+                var type = document.getElementById('part_sale_payment_type')?.value;
+                document.querySelectorAll('.part-installment-fields').forEach(function (el) {
+                    el.style.display = type === 'installment' ? '' : 'none';
+                });
+            }
+            document.getElementById('part_sale_payment_type')?.addEventListener('change', togglePartInstallment);
+            togglePartInstallment();
+        })();
+        </script>
+        @endpush
+    @endif
+
     @if (!empty($paymentsReady))
         <div class="row g-3 mb-3">
             <div class="col-lg-6">
@@ -232,7 +462,10 @@
 
             <div class="col-lg-6">
                 <div class="card app-surface h-100">
-                    <div class="card-header"><h6 class="mb-0">جدول أقساط / تحصيل البيع</h6></div>
+                    <div class="card-header">
+                        <h6 class="mb-0">بيع كامل الأرض (اختياري)</h6>
+                        <div class="small text-body-secondary">لو بتبيع الأرض دفعة واحدة. للأجزاء استخدم القسم أعلاه.</div>
+                    </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-sm align-middle mb-0">
@@ -318,6 +551,7 @@
                         <tr>
                             <th>التاريخ</th>
                             <th>الجانب</th>
+                            <th>الجزء</th>
                             <th>النوع</th>
                             <th class="text-end">المبلغ</th>
                             <th>الطريقة</th>
@@ -335,6 +569,7 @@
                                         {{ $payment->sideLabel() }}
                                     </span>
                                 </td>
+                                <td class="small">{{ $payment->part?->name ?? '—' }}</td>
                                 <td>{{ $payment->kindLabel() }}</td>
                                 <td class="text-end font-monospace">{{ number_format((float) $payment->amount, 2) }}</td>
                                 <td class="small">{{ $payment->payment_method }}</td>
@@ -351,7 +586,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="text-center text-muted py-4">لا توجد دفعات مسجّلة بعد.</td></tr>
+                            <tr><td colspan="9" class="text-center text-muted py-4">لا توجد دفعات مسجّلة بعد.</td></tr>
                         @endforelse
                         </tbody>
                     </table>

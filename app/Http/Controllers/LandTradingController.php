@@ -276,9 +276,13 @@ class LandTradingController extends Controller
             return back()->with('error', 'قاعدة البيانات غير محدّثة. شغّل: php artisan migrate --force');
         }
 
+        $partIdRules = Schema::hasTable('land_parcel_parts')
+            ? ['nullable', 'integer', 'exists:land_parcel_parts,id']
+            : ['nullable'];
+
         $data = $request->validate([
             'side' => ['required', 'in:purchase,sale'],
-            'land_parcel_part_id' => ['nullable', 'integer', 'exists:land_parcel_parts,id'],
+            'land_parcel_part_id' => $partIdRules,
             'kind' => ['required', 'in:down_payment,installment,secondary,other'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'paid_at' => ['required', 'date'],
