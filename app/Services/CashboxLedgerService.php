@@ -147,13 +147,16 @@ class CashboxLedgerService
 
     public function syncFromLandParcelPayment(LandParcelPayment $payment): void
     {
-        $payment->loadMissing('landParcel:id,name');
+        $payment->loadMissing(['landParcel:id,name', 'part:id,name']);
         $parcelName = $payment->landParcel?->name ?? ('أرض #'.$payment->land_parcel_id);
+        $partName = $payment->part?->name;
         $isPurchase = $payment->side === LandParcelPayment::SIDE_PURCHASE;
         $type = $isPurchase ? 'expense' : 'revenue';
         $label = $isPurchase
             ? 'دفعة شراء أرض — '.$parcelName.' — '.$payment->kindLabel()
-            : 'تحصيل بيع أرض — '.$parcelName.' — '.$payment->kindLabel();
+            : 'تحصيل بيع أرض — '.$parcelName
+                .($partName ? ' / جزء: '.$partName : '')
+                .' — '.$payment->kindLabel();
 
         TreasuryTransaction::withoutProjectScope()->updateOrCreate(
             [

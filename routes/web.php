@@ -149,6 +149,17 @@ Route::middleware('auth')->group(function (): void {
                 ->whereNumber('parcel')
                 ->whereNumber('payment')
                 ->name('land-trading.payments.destroy');
+            Route::post('{parcel}/parts', [LandTradingController::class, 'storePart'])
+                ->whereNumber('parcel')
+                ->name('land-trading.parts.store');
+            Route::put('{parcel}/parts/{part}', [LandTradingController::class, 'updatePart'])
+                ->whereNumber('parcel')
+                ->whereNumber('part')
+                ->name('land-trading.parts.update');
+            Route::delete('{parcel}/parts/{part}', [LandTradingController::class, 'destroyPart'])
+                ->whereNumber('parcel')
+                ->whereNumber('part')
+                ->name('land-trading.parts.destroy');
             Route::get('{parcel}', [LandTradingController::class, 'show'])->whereNumber('parcel')->name('land-trading.show');
             Route::get('{parcel}/edit', [LandTradingController::class, 'edit'])->whereNumber('parcel')->name('land-trading.edit');
             Route::put('{parcel}', [LandTradingController::class, 'update'])->whereNumber('parcel')->name('land-trading.update');

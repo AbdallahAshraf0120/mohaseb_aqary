@@ -146,6 +146,9 @@ return [
     'land-trading.destroy' => 'land-trading.destroy',
     'land-trading.payments.store' => 'land-trading.manage',
     'land-trading.payments.destroy' => 'land-trading.manage',
+    'land-trading.parts.store' => 'land-trading.manage',
+    'land-trading.parts.update' => 'land-trading.manage',
+    'land-trading.parts.destroy' => 'land-trading.manage',
 
     'tasks.index' => 'tasks.index',
     'tasks.mine' => 'tasks.view',

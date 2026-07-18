@@ -148,21 +148,48 @@ class LandParcel extends Model
         return round(((float) $investment / $capital) * 100, 2);
     }
 
-    public function approvedPaidTotal(string $side): float
+    public function approvedPaidTotal(string $side, ?int $partId = null): float
     {
-        return round((float) $this->payments()
+        $query = $this->payments()
             ->where('side', $side)
-            ->where('approval_status', 'approved')
-            ->sum('amount'), 2);
+            ->where('approval_status', 'approved');
+
+        if ($side === LandParcelPayment::SIDE_SALE) {
+            if ($partId !== null) {
+                $query->where('land_parcel_part_id', $partId);
+            } else {
+                $query->whereNull('land_parcel_part_id');
+            }
+        }
+
+        return round((float) $query->sum('amount'), 2);
     }
 
-    public function remainingTotal(string $side): float
+    public function remainingTotal(string $side, ?int $partId = null): float
     {
+        if ($side === LandParcelPayment::SIDE_SALE && $partId !== null) {
+            $part = $this->parts()->whereKey($partId)->first();
+            if (! $part instanceof LandParcelPart) {
+                return 0.0;
+            }
+
+            return $part->remainingTotal();
+        }
+
         $price = $side === LandParcelPayment::SIDE_PURCHASE
             ? (float) $this->purchase_price
             : (float) ($this->sale_price ?? 0);
 
-        return round(max(0, $price - $this->approvedPaidTotal($side)), 2);
+        return round(max(0, $price - $this->approvedPaidTotal($side, $partId)), 2);
+    }
+
+    /** إجمالي محصّل البيع (بيع كامل + أجزاء). */
+    public function allSaleCollectedTotal(): float
+    {
+        return round((float) $this->payments()
+            ->where('side', LandParcelPayment::SIDE_SALE)
+            ->where('approval_status', 'approved')
+            ->sum('amount'), 2);
     }
 
     /**
@@ -252,7 +279,7 @@ class LandParcel extends Model
             return [];
         }
 
-        $paidPool = $this->approvedPaidTotal($side);
+        $paidPool = $this->approvedPaidTotal($side, null);
         $out = [];
         foreach ($schedule as $row) {
             $due = (float) $row['amount'];

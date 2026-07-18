@@ -72,12 +72,18 @@
         </div>
     </div>
 
-    <x-partials.module-kpis :items="[
+    <x-partials.module-kpis :items="array_values(array_filter([
         ['label' => 'مدفوع شراء', 'value' => number_format((float) $purchasePaid, 2) . ' ج.م'],
         ['label' => 'متبقي شراء', 'value' => number_format((float) $purchaseRemaining, 2) . ' ج.م'],
         ['label' => 'محصّل بيع', 'value' => number_format((float) $salePaid, 2) . ' ج.م'],
         ['label' => 'متبقي بيع', 'value' => number_format((float) $saleRemaining, 2) . ' ج.م'],
-    ]" />
+        !empty($partsReady) && $parcel->area_size !== null
+            ? ['label' => 'مساحة متبقية', 'value' => number_format((float) ($remainingArea ?? 0), 2) . ' م²']
+            : null,
+        !empty($partsReady)
+            ? ['label' => 'أجزاء البيع', 'value' => (int) ($parts?->count() ?? 0)]
+            : null,
+    ]))" />
 
     <div class="row g-3 mb-3">
         <div class="col-lg-6">

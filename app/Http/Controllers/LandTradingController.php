@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LandParcel;
+use App\Models\LandParcelPart;
 use App\Models\LandParcelPayment;
 use App\Models\LandParcelShareholder;
 use App\Services\LandParcelPaymentService;
@@ -204,9 +205,24 @@ class LandTradingController extends Controller
             : collect();
 
         $paymentsReady = Schema::hasTable('land_parcel_payments');
-        $payments = $paymentsReady
-            ? $parcel->payments()->with('creator:id,name')->orderByDesc('paid_at')->orderByDesc('id')->get()
+        $partsReady = Schema::hasTable('land_parcel_parts');
+        $parts = $partsReady
+            ? $parcel->parts()->orderBy('id')->get()
             : collect();
+
+        $payments = $paymentsReady
+            ? $parcel->payments()->with(['creator:id,name', 'part:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->get()
+            : collect();
+
+        $partsSaleTotal = $partsReady ? (float) $parts->sum(fn (LandParcelPart $p) => (float) $p->sale_price) : 0.0;
+        $partsCollected = $paymentsReady && $partsReady ? $parcel->partsCollectedTotal() : 0.0;
+        $wholeSaleCollected = $paymentsReady ? $parcel->approvedPaidTotal(LandParcelPayment::SIDE_SALE) : 0.0;
+        $salePaid = $partsReady && $parts->isNotEmpty()
+            ? $partsCollected + $wholeSaleCollected
+            : $wholeSaleCollected;
+        $saleTarget = $partsReady && $parts->isNotEmpty()
+            ? $partsSaleTotal + (float) ($parcel->sale_price ?? 0)
+            : (float) ($parcel->sale_price ?? 0);
 
         return view('land-trading.show', [
             'title' => $parcel->name.' | أراضي البيع والشراء',
@@ -215,12 +231,15 @@ class LandTradingController extends Controller
             'parcelShareholders' => $shareholders,
             'payments' => $payments,
             'paymentsReady' => $paymentsReady,
+            'partsReady' => $partsReady,
+            'parts' => $parts,
             'purchaseSchedule' => $paymentsReady ? $parcel->installmentScheduleWithPaymentSummary(LandParcelPayment::SIDE_PURCHASE) : [],
             'saleSchedule' => $paymentsReady ? $parcel->installmentScheduleWithPaymentSummary(LandParcelPayment::SIDE_SALE) : [],
             'purchasePaid' => $paymentsReady ? $parcel->approvedPaidTotal(LandParcelPayment::SIDE_PURCHASE) : 0.0,
             'purchaseRemaining' => $paymentsReady ? $parcel->remainingTotal(LandParcelPayment::SIDE_PURCHASE) : (float) $parcel->purchase_price,
-            'salePaid' => $paymentsReady ? $parcel->approvedPaidTotal(LandParcelPayment::SIDE_SALE) : 0.0,
-            'saleRemaining' => $paymentsReady ? $parcel->remainingTotal(LandParcelPayment::SIDE_SALE) : (float) ($parcel->sale_price ?? 0),
+            'salePaid' => $salePaid,
+            'saleRemaining' => round(max(0, $saleTarget - $salePaid), 2),
+            'remainingArea' => $partsReady ? $parcel->remainingArea() : null,
         ]);
     }
 
@@ -259,12 +278,20 @@ class LandTradingController extends Controller
 
         $data = $request->validate([
             'side' => ['required', 'in:purchase,sale'],
+            'land_parcel_part_id' => ['nullable', 'integer', 'exists:land_parcel_parts,id'],
             'kind' => ['required', 'in:down_payment,installment,secondary,other'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'paid_at' => ['required', 'date'],
             'payment_method' => ['required', 'in:cash,bank_transfer,check'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        if (($data['side'] ?? '') === 'sale' && empty($data['land_parcel_part_id']) && Schema::hasTable('land_parcel_parts')) {
+            // بيع جزء إلزامي إذا وُجدت أجزاء — وإلا يبقى البيع الكامل
+            if ($parcel->parts()->exists() && (float) ($parcel->sale_price ?? 0) <= 0) {
+                return back()->withInput()->with('error', 'اختر الجزء المراد تحصيله.');
+            }
+        }
 
         try {
             $this->paymentService->create($parcel, $data, $request->user());
@@ -290,6 +317,93 @@ class LandTradingController extends Controller
         return redirect()
             ->route('land-trading.show', $parcel)
             ->with('success', 'تم حذف الدفعة وإلغاء حركتها من الصندوق.');
+    }
+
+    public function storePart(Request $request, LandParcel $parcel): RedirectResponse
+    {
+        if (! Schema::hasTable('land_parcel_parts')) {
+            return back()->with('error', 'قاعدة البيانات غير محدّثة. شغّل: php artisan migrate --force');
+        }
+
+        $data = $this->validatedPart($request);
+        $part = $parcel->parts()->create($data);
+
+        if ($parcel->status === 'owned') {
+            $parcel->update(['status' => 'for_sale']);
+        }
+
+        return redirect()
+            ->route('land-trading.show', $parcel)
+            ->with('success', 'تم إضافة جزء بيع «'.$part->name.'». يمكنك تحصيل أقساطه مع استمرار سداد شراء الأرض.');
+    }
+
+    public function updatePart(Request $request, LandParcel $parcel, LandParcelPart $part): RedirectResponse
+    {
+        if ((int) $part->land_parcel_id !== (int) $parcel->id) {
+            abort(404);
+        }
+
+        $part->update($this->validatedPart($request));
+
+        return redirect()
+            ->route('land-trading.show', $parcel)
+            ->with('success', 'تم تحديث بيانات الجزء.');
+    }
+
+    public function destroyPart(LandParcel $parcel, LandParcelPart $part): RedirectResponse
+    {
+        if ((int) $part->land_parcel_id !== (int) $parcel->id) {
+            abort(404);
+        }
+
+        if ($part->payments()->exists()) {
+            return back()->with('error', 'لا يمكن حذف جزء عليه تحصيلات. احذف التحصيلات أولاً.');
+        }
+
+        $part->delete();
+
+        return redirect()
+            ->route('land-trading.show', $parcel)
+            ->with('success', 'تم حذف الجزء.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validatedPart(Request $request): array
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'area_size' => ['nullable', 'numeric', 'min:0'],
+            'status' => ['required', 'string', Rule::in(array_keys(LandParcelPart::STATUSES))],
+            'sale_price' => ['required', 'numeric', 'min:0.01'],
+            'sale_date' => ['nullable', 'date'],
+            'sold_to' => ['nullable', 'string', 'max:255'],
+            'sale_phone' => ['nullable', 'string', 'max:50'],
+            'sale_payment_type' => ['required', 'in:cash,installment'],
+            'sale_down_payment' => ['nullable', 'numeric', 'min:0'],
+            'sale_installment_months' => ['nullable', 'integer', 'min:1', 'required_if:sale_payment_type,installment'],
+            'sale_installment_schedule' => ['nullable', 'in:monthly,quarterly,semiannual', 'required_if:sale_payment_type,installment'],
+            'sale_installment_start_date' => ['nullable', 'date', 'required_if:sale_payment_type,installment'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $built = LandInstallmentPlanBuilder::build(
+            (string) $data['sale_payment_type'],
+            (float) $data['sale_price'],
+            $data['sale_down_payment'] ?? null,
+            $data['sale_installment_months'] ?? null,
+            $data['sale_installment_schedule'] ?? null,
+            $data['sale_installment_start_date'] ?? null,
+        );
+        $data['sale_payment_type'] = $built['payment_type'];
+        $data['sale_down_payment'] = $built['down_payment'];
+        $data['sale_installment_months'] = $built['installment_months'];
+        $data['sale_installment_schedule'] = $built['installment_schedule'];
+        $data['sale_installment_start_date'] = $built['installment_start_date'];
+        $data['sale_installment_plan'] = $built['installment_plan'];
+
+        return $data;
     }
 
     /**
@@ -326,11 +440,16 @@ class LandTradingController extends Controller
         ]);
 
         if (($data['status'] ?? '') === 'sold' && empty($data['sale_price'])) {
-            $request->validate([
-                'sale_price' => ['required', 'numeric', 'min:0'],
-            ], [
-                'sale_price.required' => 'سعر البيع مطلوب عند حالة «مباعة».',
-            ]);
+            $hasParts = Schema::hasTable('land_parcel_parts')
+                && $request->route('parcel') instanceof LandParcel
+                && $request->route('parcel')->parts()->exists();
+            if (! $hasParts) {
+                $request->validate([
+                    'sale_price' => ['required', 'numeric', 'min:0'],
+                ], [
+                    'sale_price.required' => 'سعر البيع مطلوب عند حالة «مباعة» (أو أضف أجزاء بيع من صفحة الأرض).',
+                ]);
+            }
         }
 
         $purchaseBuilt = LandInstallmentPlanBuilder::build(
