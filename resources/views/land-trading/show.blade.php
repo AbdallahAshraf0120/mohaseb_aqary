@@ -68,6 +68,18 @@
                         @endif
                     </div>
                 </div>
+                <div class="col-md-4">
+                    <div class="small text-body-secondary">سعر متر الشراء</div>
+                    <div class="fw-semibold font-monospace">
+                        {{ $parcel->purchase_price_per_m2 !== null ? number_format((float) $parcel->purchase_price_per_m2, 2).' ج.م' : '—' }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="small text-body-secondary">سعر متر البيع</div>
+                    <div class="fw-semibold font-monospace">
+                        {{ $parcel->sale_price_per_m2 !== null ? number_format((float) $parcel->sale_price_per_m2, 2).' ج.م' : '—' }}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -357,7 +369,11 @@
                         </div>
                         <div class="col-md-1">
                             <label class="form-label small">سعر البيع</label>
-                            <input type="number" step="0.01" min="0.01" name="sale_price" class="form-control form-control-sm font-monospace" value="{{ old('sale_price') }}" required>
+                            <input type="number" step="0.01" min="0.01" name="sale_price" id="part_sale_price"
+                                   class="form-control form-control-sm font-monospace" value="{{ old('sale_price') }}" required>
+                            @if (($parcel->sale_price_per_m2 ?? 0) > 0)
+                                <div class="form-text" id="part_sale_price_hint">= مساحة × {{ number_format((float) $parcel->sale_price_per_m2, 2) }}</div>
+                            @endif
                         </div>
                         <div class="col-md-1">
                             <label class="form-label small">طريقة</label>
@@ -423,9 +439,11 @@
 
             var totalArea = {{ json_encode($totalAreaJs ?? 0) }};
             var remainingArea = {{ json_encode($remainingAreaJs ?? 0) }};
+            var salePerM2 = {{ json_encode((float) ($parcel->sale_price_per_m2 ?? 0)) }};
             var areaInput = document.getElementById('part_area_size');
             var percentEl = document.getElementById('part_area_percent');
             var errEl = document.getElementById('part_area_client_error');
+            var partSalePrice = document.getElementById('part_sale_price');
             var form = document.getElementById('add-part-form');
 
             function updatePartAreaPercent() {
@@ -439,6 +457,9 @@
                 }
                 var pct = (val / totalArea) * 100;
                 percentEl.textContent = pct.toFixed(2) + '%';
+                if (salePerM2 > 0 && partSalePrice) {
+                    partSalePrice.value = (val * salePerM2).toFixed(2);
+                }
                 var over = remainingArea > 0 && val > remainingArea + 0.0001;
                 if (over) {
                     areaInput.classList.add('is-invalid');

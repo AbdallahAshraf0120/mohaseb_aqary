@@ -438,6 +438,14 @@ class LandTradingController extends Controller
             'area_size.min' => 'أدخل مساحة أكبر من صفر.',
         ]);
 
+        $partArea = isset($data['area_size']) && $data['area_size'] !== null && $data['area_size'] !== ''
+            ? (float) $data['area_size']
+            : 0.0;
+        $salePerM2 = (float) ($parcel->sale_price_per_m2 ?? 0);
+        if ($partArea > 0 && $salePerM2 > 0) {
+            $data['sale_price'] = round($partArea * $salePerM2, 2);
+        }
+
         $built = LandInstallmentPlanBuilder::build(
             (string) $data['sale_payment_type'],
             (float) $data['sale_price'],
@@ -466,6 +474,8 @@ class LandTradingController extends Controller
             'location' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
             'area_size' => ['nullable', 'numeric', 'min:0'],
+            'purchase_price_per_m2' => ['nullable', 'numeric', 'min:0'],
+            'sale_price_per_m2' => ['nullable', 'numeric', 'min:0'],
             'deed_number' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'string', Rule::in(array_keys(LandParcel::STATUSES))],
             'purchase_price' => ['required', 'numeric', 'min:0'],
@@ -488,6 +498,23 @@ class LandTradingController extends Controller
             'sale_installment_start_date' => ['nullable', 'date', 'required_if:sale_payment_type,installment'],
             'notes' => ['nullable', 'string'],
         ]);
+
+        $area = isset($data['area_size']) && $data['area_size'] !== null && $data['area_size'] !== ''
+            ? (float) $data['area_size']
+            : 0.0;
+        $buyPerM2 = isset($data['purchase_price_per_m2']) && $data['purchase_price_per_m2'] !== null && $data['purchase_price_per_m2'] !== ''
+            ? (float) $data['purchase_price_per_m2']
+            : 0.0;
+        $salePerM2 = isset($data['sale_price_per_m2']) && $data['sale_price_per_m2'] !== null && $data['sale_price_per_m2'] !== ''
+            ? (float) $data['sale_price_per_m2']
+            : 0.0;
+
+        if ($area > 0 && $buyPerM2 > 0) {
+            $data['purchase_price'] = round($area * $buyPerM2, 2);
+        }
+        if ($area > 0 && $salePerM2 > 0) {
+            $data['sale_price'] = round($area * $salePerM2, 2);
+        }
 
         if (($data['status'] ?? '') === 'sold' && empty($data['sale_price'])) {
             $hasParts = Schema::hasTable('land_parcel_parts')

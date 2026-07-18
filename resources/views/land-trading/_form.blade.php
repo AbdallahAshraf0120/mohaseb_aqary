@@ -27,7 +27,7 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">المساحة (م²)</label>
-        <input type="number" step="0.01" min="0" name="area_size"
+        <input type="number" step="0.01" min="0" name="area_size" id="area_size"
                value="{{ old('area_size', $parcel->area_size) }}"
                class="form-control @error('area_size') is-invalid @enderror">
         @error('area_size') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -54,15 +54,48 @@
 
     <div class="col-12 mt-2">
         <hr class="my-2">
+        <h6 class="text-body-secondary mb-0">سعر المتر</h6>
+        <div class="form-text mb-2">حدّد سعر المتر، والناتج = المساحة × سعر المتر.</div>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">سعر متر الشراء</label>
+        <input type="number" step="0.01" min="0" name="purchase_price_per_m2" id="purchase_price_per_m2"
+               value="{{ old('purchase_price_per_m2', $parcel->purchase_price_per_m2) }}"
+               class="form-control font-monospace @error('purchase_price_per_m2') is-invalid @enderror">
+        @error('purchase_price_per_m2') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">سعر متر البيع</label>
+        <input type="number" step="0.01" min="0" name="sale_price_per_m2" id="sale_price_per_m2"
+               value="{{ old('sale_price_per_m2', $parcel->sale_price_per_m2) }}"
+               class="form-control font-monospace @error('sale_price_per_m2') is-invalid @enderror">
+        @error('sale_price_per_m2') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">ناتج شراء (تلقائي)</label>
+        <input type="text" id="purchase_total_preview" class="form-control font-monospace" readonly tabindex="-1"
+               value="">
+        <div class="form-text">المساحة × سعر متر الشراء</div>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">ناتج بيع (تلقائي)</label>
+        <input type="text" id="sale_total_preview" class="form-control font-monospace" readonly tabindex="-1"
+               value="">
+        <div class="form-text">المساحة × سعر متر البيع</div>
+    </div>
+
+    <div class="col-12 mt-2">
+        <hr class="my-2">
         <h6 class="text-body-secondary mb-0">بيانات الشراء والدفع للبائع</h6>
     </div>
 
     <div class="col-md-3">
-        <label class="form-label">سعر الشراء</label>
-        <input type="number" step="0.01" min="0" name="purchase_price"
+        <label class="form-label">سعر الشراء الإجمالي</label>
+        <input type="number" step="0.01" min="0" name="purchase_price" id="purchase_price"
                value="{{ old('purchase_price', $parcel->purchase_price ?? 0) }}"
-               class="form-control @error('purchase_price') is-invalid @enderror" required>
+               class="form-control font-monospace @error('purchase_price') is-invalid @enderror" required>
         @error('purchase_price') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        <div class="form-text">يُحدَّث تلقائيًا من سعر المتر (يمكن تعديله يدويًا).</div>
     </div>
     <div class="col-md-3">
         <label class="form-label">تاريخ الشراء</label>
@@ -132,11 +165,12 @@
     </div>
 
     <div class="col-md-3">
-        <label class="form-label">سعر البيع</label>
+        <label class="form-label">سعر البيع الإجمالي</label>
         <input type="number" step="0.01" min="0" name="sale_price" id="sale_price"
                value="{{ old('sale_price', $parcel->sale_price) }}"
-               class="form-control @error('sale_price') is-invalid @enderror">
+               class="form-control font-monospace @error('sale_price') is-invalid @enderror">
         @error('sale_price') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        <div class="form-text">يُحدَّث تلقائيًا من سعر متر البيع عند تحديده.</div>
     </div>
     <div class="col-md-3">
         <label class="form-label">تاريخ البيع</label>
@@ -224,6 +258,34 @@
     document.getElementById('sale_payment_type')?.addEventListener('change', toggleSale);
     togglePurchase();
     toggleSale();
+
+    function num(el) {
+        var v = parseFloat(el?.value);
+        return isFinite(v) ? v : 0;
+    }
+    function fmt(n) {
+        return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function recalcTotals() {
+        var area = num(document.getElementById('area_size'));
+        var buyRate = num(document.getElementById('purchase_price_per_m2'));
+        var saleRate = num(document.getElementById('sale_price_per_m2'));
+        var buyTotal = area > 0 && buyRate > 0 ? area * buyRate : 0;
+        var saleTotal = area > 0 && saleRate > 0 ? area * saleRate : 0;
+        var buyPreview = document.getElementById('purchase_total_preview');
+        var salePreview = document.getElementById('sale_total_preview');
+        var buyInput = document.getElementById('purchase_price');
+        var saleInput = document.getElementById('sale_price');
+        if (buyPreview) buyPreview.value = buyTotal > 0 ? fmt(buyTotal) + ' ج.م' : '—';
+        if (salePreview) salePreview.value = saleTotal > 0 ? fmt(saleTotal) + ' ج.م' : '—';
+        if (buyTotal > 0 && buyInput) buyInput.value = buyTotal.toFixed(2);
+        if (saleTotal > 0 && saleInput) saleInput.value = saleTotal.toFixed(2);
+    }
+    ['area_size', 'purchase_price_per_m2', 'sale_price_per_m2'].forEach(function (id) {
+        document.getElementById(id)?.addEventListener('input', recalcTotals);
+        document.getElementById(id)?.addEventListener('change', recalcTotals);
+    });
+    recalcTotals();
 })();
 </script>
 @endpush
