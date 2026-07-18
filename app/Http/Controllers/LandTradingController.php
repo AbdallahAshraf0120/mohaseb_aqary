@@ -84,9 +84,13 @@ class LandTradingController extends Controller
 
         $query = LandParcel::query()
             ->where(function ($q): void {
-                $q->whereNotNull('sale_price')
-                    ->where('sale_price', '>', 0)
+                $q->where(function ($sale): void {
+                    $sale->whereNotNull('sale_price')->where('sale_price', '>', 0);
+                })
                     ->orWhereIn('status', ['for_sale', 'reserved', 'sold']);
+                if (Schema::hasTable('land_parcel_parts')) {
+                    $q->orWhereHas('parts');
+                }
             });
 
         if (Schema::hasTable('land_parcel_payments')) {
@@ -127,8 +131,12 @@ class LandTradingController extends Controller
         $kpiBase = (clone $query);
         // sum/count مع having قد يفشل؛ نحسب من المعرّفات بعد الفلتر
         $parcelIds = (clone $kpiBase)->pluck('id');
-        $totalSales = (float) LandParcel::query()->whereIn('id', $parcelIds)->whereNotNull('sale_price')->sum('sale_price');
-        $purchaseOfSales = (float) LandParcel::query()->whereIn('id', $parcelIds)->whereNotNull('sale_price')->sum('purchase_price');
+        $wholeSales = (float) LandParcel::query()->whereIn('id', $parcelIds)->whereNotNull('sale_price')->sum('sale_price');
+        $partsSales = Schema::hasTable('land_parcel_parts') && $parcelIds->isNotEmpty()
+            ? (float) LandParcelPart::query()->whereIn('land_parcel_id', $parcelIds)->sum('sale_price')
+            : 0.0;
+        $totalSales = $wholeSales + $partsSales;
+        $purchaseOfSales = (float) LandParcel::query()->whereIn('id', $parcelIds)->sum('purchase_price');
         $count = $parcelIds->count();
         $soldCount = (int) LandParcel::query()->whereIn('id', $parcelIds)->where('status', 'sold')->count();
 
