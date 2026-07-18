@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (! Schema::hasTable('shareholder_ledger_entries')) {
+        if (! Schema::hasTable('shareholder_ledger_entries') || ! Schema::hasTable('land_parcel_payments')) {
             return;
         }
 
@@ -19,7 +19,6 @@ return new class extends Migration
                     ->after('land_parcel_id')
                     ->constrained('land_parcel_payments')
                     ->nullOnDelete();
-                $table->index('land_parcel_payment_id');
             }
         });
     }

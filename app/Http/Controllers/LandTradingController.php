@@ -311,7 +311,9 @@ class LandTradingController extends Controller
             return back()->withInput()->with('error', $e->getMessage());
         }
 
-        $msg = $data['side'] === 'purchase' ? 'تم تسجيل دفعة الشراء وتحديث صندوق الأراضي.' : 'تم تسجيل تحصيل البيع وتحديث صندوق الأراضي.';
+        $msg = $data['side'] === 'purchase'
+            ? 'تم تسجيل دفعة الشراء وتحديث صندوق الأراضي.'
+            : 'تم تسجيل تحصيل البيع وتحديث الصندوق، وتوزيع المبلغ على مساهمي الأرض حسب النسبة.';
 
         return redirect()
             ->route('land-trading.show', $parcel)

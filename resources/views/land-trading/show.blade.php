@@ -785,7 +785,10 @@
 
     <div class="card app-surface mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h6 class="mb-0">مساهمو الأرض</h6>
+            <div>
+                <h6 class="mb-0">مساهمو الأرض</h6>
+                <div class="small text-body-secondary">كل تحصيل بيع يُوزَّع تلقائيًا على جاري المساهمين حسب النسبة (الصندوق يستلم المبلغ مرة واحدة).</div>
+            </div>
             @can('shareholders.manage')
                 <a href="{{ route('shareholders.index') }}" class="btn btn-outline-primary btn-sm">إدارة المساهمين</a>
             @endcan

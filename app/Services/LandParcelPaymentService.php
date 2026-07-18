@@ -5,6 +5,9 @@ namespace App\Services;
 use App\Models\LandParcel;
 use App\Models\LandParcelPart;
 use App\Models\LandParcelPayment;
+use App\Models\LandParcelShareholder;
+use App\Models\Shareholder;
+use App\Models\ShareholderLedgerEntry;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -13,6 +16,7 @@ class LandParcelPaymentService
 {
     public function __construct(
         private readonly CashboxLedgerService $cashboxLedgerService,
+        private readonly ShareholderLedgerService $shareholderLedgerService,
     ) {}
 
     /**
@@ -79,6 +83,12 @@ class LandParcelPaymentService
             }
             $this->maybeMarkParcelSold($parcel->fresh() ?? $parcel);
 
+            if ($side === LandParcelPayment::SIDE_SALE
+                && ($payment->approval_status ?? '') === 'approved') {
+                $payment->loadMissing('part:id,name');
+                $this->distributeSaleToShareholders($parcel, $payment, $user);
+            }
+
             return $payment->fresh(['landParcel', 'part', 'creator']) ?? $payment;
         });
     }
@@ -89,6 +99,9 @@ class LandParcelPaymentService
             $id = (int) $payment->id;
             $partId = $payment->land_parcel_part_id;
             $parcelId = (int) $payment->land_parcel_id;
+
+            $this->removeShareholderDistributions($id);
+
             $payment->delete();
             $this->cashboxLedgerService->removeLandParcelPayment($id);
 
@@ -104,6 +117,106 @@ class LandParcelPaymentService
                 $this->maybeMarkParcelSold($parcel);
             }
         });
+    }
+
+    /**
+     * توزيع تحصيل البيع على مساهمي الأرض حسب النسبة (بدون تكرار حركة الصندوق).
+     */
+    private function distributeSaleToShareholders(LandParcel $parcel, LandParcelPayment $payment, ?User $user): void
+    {
+        if (! Schema::hasTable('land_parcel_shareholder')) {
+            return;
+        }
+
+        $members = LandParcelShareholder::query()
+            ->with('shareholder:id,name')
+            ->where('land_parcel_id', (int) $parcel->id)
+            ->where('share_percentage', '>', 0)
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (LandParcelShareholder $m) => $m->shareholder !== null)
+            ->values();
+
+        if ($members->isEmpty()) {
+            return;
+        }
+
+        $totalPct = round((float) $members->sum('share_percentage'), 4);
+        if ($totalPct <= 0) {
+            return;
+        }
+
+        $amount = round((float) $payment->amount, 2);
+        $allocated = 0.0;
+        $lastIndex = $members->count() - 1;
+        $partLabel = $payment->part?->name;
+        if ($partLabel === null && $payment->land_parcel_part_id) {
+            $partLabel = LandParcelPart::query()->whereKey((int) $payment->land_parcel_part_id)->value('name');
+        }
+
+        foreach ($members as $index => $membership) {
+            /** @var LandParcelShareholder $membership */
+            $shareholder = $membership->shareholder;
+            if (! $shareholder instanceof Shareholder) {
+                continue;
+            }
+
+            if ($index === $lastIndex) {
+                $shareAmount = round($amount - $allocated, 2);
+            } else {
+                $shareAmount = round($amount * ((float) $membership->share_percentage / $totalPct), 2);
+                $allocated += $shareAmount;
+            }
+
+            if ($shareAmount <= 0) {
+                continue;
+            }
+
+            $note = sprintf(
+                'توزيع تحصيل بيع أرض «%s»%s — نسبة %.2f%% — دفعة #%d',
+                $parcel->name,
+                $partLabel ? ' / جزء: '.$partLabel : '',
+                (float) $membership->share_percentage,
+                (int) $payment->id
+            );
+
+            $payload = [
+                'land_parcel_id' => (int) $parcel->id,
+                'type' => ShareholderLedgerEntry::TYPE_ADJUSTMENT,
+                'direction' => ShareholderLedgerEntry::DIRECTION_CREDIT,
+                'amount' => $shareAmount,
+                'entry_date' => $payment->paid_at?->toDateString() ?? now()->toDateString(),
+                'notes' => $note,
+                'skip_cashbox' => true,
+            ];
+
+            if (Schema::hasColumn('shareholder_ledger_entries', 'land_parcel_payment_id')) {
+                $payload['land_parcel_payment_id'] = (int) $payment->id;
+            }
+
+            $this->shareholderLedgerService->create($shareholder, $payload, $user);
+        }
+    }
+
+    private function removeShareholderDistributions(int $paymentId): void
+    {
+        if (! Schema::hasTable('shareholder_ledger_entries')) {
+            return;
+        }
+
+        $query = ShareholderLedgerEntry::withoutProjectScope();
+
+        if (Schema::hasColumn('shareholder_ledger_entries', 'land_parcel_payment_id')) {
+            $query->where('land_parcel_payment_id', $paymentId);
+        } else {
+            $query->where('notes', 'like', '%دفعة #'.$paymentId.'%')
+                ->where('type', ShareholderLedgerEntry::TYPE_ADJUSTMENT);
+        }
+
+        $entries = $query->get();
+        foreach ($entries as $entry) {
+            $this->shareholderLedgerService->delete($entry);
+        }
     }
 
     private function maybeMarkPartSold(LandParcelPart $part): void
