@@ -23,11 +23,16 @@
                     <span class="badge text-bg-primary">فلاتر نشطة</span>
                 @endif
             </div>
-            @can('land-trading.manage')
-                <a href="{{ route('land-trading.create') }}" class="btn btn-primary btn-sm">
-                    <i class="fa-solid fa-circle-plus ms-1"></i> إضافة أرض
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('land-trading.sales') }}" class="btn btn-outline-success btn-sm">
+                    <i class="fa-solid fa-handshake ms-1"></i> مبيعات الأراضي
                 </a>
-            @endcan
+                @can('land-trading.manage')
+                    <a href="{{ route('land-trading.create') }}" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-circle-plus ms-1"></i> إضافة أرض
+                    </a>
+                @endcan
+            </div>
         </div>
         <div class="card-body">
             @if (session('success'))

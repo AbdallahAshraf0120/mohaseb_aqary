@@ -72,6 +72,99 @@ class LandTradingController extends Controller
         ]);
     }
 
+    /**
+     * سكشن مبيعات الأراضي: أراضٍ عليها سعر بيع / للبيع / محجوزة / مباعة.
+     */
+    public function sales(Request $request): View
+    {
+        $filters = ListingFilters::fromRequest($request);
+        $status = trim((string) $request->query('status', ''));
+        $collection = trim((string) $request->query('collection', ''));
+
+        $query = LandParcel::query()
+            ->where(function ($q): void {
+                $q->whereNotNull('sale_price')
+                    ->where('sale_price', '>', 0)
+                    ->orWhereIn('status', ['for_sale', 'reserved', 'sold']);
+            });
+
+        if (Schema::hasTable('land_parcel_payments')) {
+            $query->withSum([
+                'payments as sale_collected' => function ($q): void {
+                    $q->where('side', LandParcelPayment::SIDE_SALE)
+                        ->where('approval_status', 'approved');
+                },
+            ], 'amount');
+        }
+
+        if ($filters->q !== '') {
+            $like = '%'.$filters->likeTerm().'%';
+            $query->where(function ($q) use ($like): void {
+                $q->where('name', 'like', $like)
+                    ->orWhere('location', 'like', $like)
+                    ->orWhere('city', 'like', $like)
+                    ->orWhere('deed_number', 'like', $like)
+                    ->orWhere('sold_to', 'like', $like)
+                    ->orWhere('sale_phone', 'like', $like);
+            });
+        }
+
+        if ($status !== '' && array_key_exists($status, LandParcel::STATUSES)) {
+            $query->where('status', $status);
+        }
+
+        $filters->applyWhereDate($query, 'sale_date');
+
+        if ($collection === 'remaining' && Schema::hasTable('land_parcel_payments')) {
+            $query->havingRaw('COALESCE(sale_collected, 0) < COALESCE(sale_price, 0) - 0.01');
+        } elseif ($collection === 'paid' && Schema::hasTable('land_parcel_payments')) {
+            $query->havingRaw('COALESCE(sale_collected, 0) >= COALESCE(sale_price, 0) - 0.01')
+                ->whereNotNull('sale_price')
+                ->where('sale_price', '>', 0);
+        }
+
+        $kpiBase = (clone $query);
+        // sum/count مع having قد يفشل؛ نحسب من المعرّفات بعد الفلتر
+        $parcelIds = (clone $kpiBase)->pluck('id');
+        $totalSales = (float) LandParcel::query()->whereIn('id', $parcelIds)->whereNotNull('sale_price')->sum('sale_price');
+        $purchaseOfSales = (float) LandParcel::query()->whereIn('id', $parcelIds)->whereNotNull('sale_price')->sum('purchase_price');
+        $count = $parcelIds->count();
+        $soldCount = (int) LandParcel::query()->whereIn('id', $parcelIds)->where('status', 'sold')->count();
+
+        $totalCollected = 0.0;
+        if (Schema::hasTable('land_parcel_payments') && $parcelIds->isNotEmpty()) {
+            $totalCollected = (float) LandParcelPayment::query()
+                ->whereIn('land_parcel_id', $parcelIds)
+                ->where('side', LandParcelPayment::SIDE_SALE)
+                ->where('approval_status', 'approved')
+                ->sum('amount');
+        }
+
+        $parcels = $query
+            ->orderByRaw("case status when 'for_sale' then 0 when 'reserved' then 1 when 'sold' then 2 else 3 end")
+            ->orderByDesc('sale_date')
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('land-trading.sales', [
+            'title' => 'مبيعات الأراضي | Mohaseb Aqary',
+            'pageTitle' => 'مبيعات الأراضي',
+            'parcels' => $parcels,
+            'status' => $status,
+            'collection' => $collection,
+            'saleTotals' => [
+                'count' => $count,
+                'sold_count' => $soldCount,
+                'total_sales' => $totalSales,
+                'total_collected' => $totalCollected,
+                'total_remaining' => round(max(0, $totalSales - $totalCollected), 2),
+                'profit' => round($totalSales - $purchaseOfSales, 2),
+            ],
+            'paymentsReady' => Schema::hasTable('land_parcel_payments'),
+        ]);
+    }
+
     public function create(): View
     {
         return view('land-trading.create', [

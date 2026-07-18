@@ -237,9 +237,16 @@
                         @can('land-trading.view')
                             <li class="nav-item">
                                 <a href="{{ route('land-trading.index') }}"
-                                   class="nav-link {{ request()->routeIs('land-trading.*') ? 'active' : '' }}">
+                                   class="nav-link {{ request()->routeIs('land-trading.index') || request()->routeIs('land-trading.create') || request()->routeIs('land-trading.edit') || request()->routeIs('land-trading.show') ? 'active' : '' }}">
                                     <i class="nav-icon fa-solid fa-map"></i>
                                     <p>أراضي البيع والشراء</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('land-trading.sales') }}"
+                                   class="nav-link {{ request()->routeIs('land-trading.sales') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-handshake"></i>
+                                    <p>مبيعات الأراضي</p>
                                 </a>
                             </li>
                         @endcan

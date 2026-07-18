@@ -139,6 +139,7 @@ Route::middleware('auth')->group(function (): void {
         // أراضي البيع والشراء (برا المشاريع)
         Route::prefix('land-trading')->group(function (): void {
             Route::get('/', [LandTradingController::class, 'index'])->name('land-trading.index');
+            Route::get('sales', [LandTradingController::class, 'sales'])->name('land-trading.sales');
             Route::get('create', [LandTradingController::class, 'create'])->name('land-trading.create');
             Route::post('/', [LandTradingController::class, 'store'])->name('land-trading.store');
             Route::post('{parcel}/payments', [LandTradingController::class, 'storePayment'])

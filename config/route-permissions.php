@@ -137,6 +137,7 @@ return [
     'crm-leads.activities.store' => 'crm-leads.activities.store',
 
     'land-trading.index' => 'land-trading.index',
+    'land-trading.sales' => 'land-trading.view',
     'land-trading.create' => 'land-trading.create',
     'land-trading.store' => 'land-trading.store',
     'land-trading.show' => 'land-trading.show',
