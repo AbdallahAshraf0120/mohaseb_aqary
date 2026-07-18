@@ -6,6 +6,7 @@ use App\Models\LandParcel;
 use App\Models\LandParcelPart;
 use App\Models\LandParcelPayment;
 use App\Models\LandParcelShareholder;
+use App\Models\ShareholderLedgerEntry;
 use App\Services\LandParcelPaymentService;
 use App\Support\LandInstallmentPlanBuilder;
 use App\Support\ListingFilters;
@@ -232,11 +233,30 @@ class LandTradingController extends Controller
             ? $partsSaleTotal + (float) ($parcel->sale_price ?? 0)
             : (float) ($parcel->sale_price ?? 0);
 
+        $saleDistributions = Schema::hasTable('shareholder_ledger_entries')
+            ? ShareholderLedgerEntry::withoutProjectScope()
+                ->with(['shareholder:id,name'])
+                ->where('land_parcel_id', (int) $parcel->id)
+                ->where('type', ShareholderLedgerEntry::TYPE_ADJUSTMENT)
+                ->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT)
+                ->where(function ($q): void {
+                    $q->where('notes', 'like', 'توزيع تحصيل بيع%');
+                    if (Schema::hasColumn('shareholder_ledger_entries', 'land_parcel_payment_id')) {
+                        $q->orWhereNotNull('land_parcel_payment_id');
+                    }
+                })
+                ->orderByDesc('entry_date')
+                ->orderByDesc('id')
+                ->limit(100)
+                ->get()
+            : collect();
+
         return view('land-trading.show', [
             'title' => $parcel->name.' | أراضي البيع والشراء',
             'pageTitle' => $parcel->name,
             'parcel' => $parcel,
             'parcelShareholders' => $shareholders,
+            'saleDistributions' => $saleDistributions,
             'payments' => $payments,
             'paymentsReady' => $paymentsReady,
             'partsReady' => $partsReady,

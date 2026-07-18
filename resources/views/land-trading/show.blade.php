@@ -827,6 +827,54 @@
         </div>
     </div>
 
+    <div class="card app-surface mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-0">توزيع تحصيلات البيع على المساهمين</h6>
+                <div class="small text-body-secondary">نفس الحركات تظهر أيضًا في دفتر جاري كل مساهم (نوع: تسوية / دائن).</div>
+            </div>
+            <span class="badge text-bg-light">
+                إجمالي موزّع: {{ number_format((float) ($saleDistributions ?? collect())->sum('amount'), 2) }} ج.م
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>المساهم</th>
+                        <th class="text-end">المبلغ</th>
+                        <th>التفاصيل</th>
+                        <th class="text-end">الجاري</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @forelse ($saleDistributions ?? [] as $dist)
+                        <tr>
+                            <td class="font-monospace small">{{ $dist->entry_date?->format('Y-m-d') }}</td>
+                            <td class="fw-semibold">{{ $dist->shareholder?->name ?? '—' }}</td>
+                            <td class="text-end font-monospace text-success-emphasis">+{{ number_format((float) $dist->amount, 2) }}</td>
+                            <td class="small">{{ $dist->notes ?: '—' }}</td>
+                            <td class="text-end">
+                                @if ($dist->shareholder)
+                                    <a href="{{ route('shareholders.show', $dist->shareholder) }}" class="btn btn-outline-info btn-sm">فتح الجاري</a>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                لا توجد توزيعات بعد. بعد ربط المساهمين وتسجيل تحصيل بيع، تظهر هنا حصص كل مساهم.
+                            </td>
+                        </tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     @if ($parcel->notes)
         <div class="card app-surface mb-3">
             <div class="card-header"><h6 class="mb-0">ملاحظات</h6></div>
