@@ -131,18 +131,31 @@ class ShareholderController extends Controller
 
     public function show(Shareholder $shareholder): View
     {
+        if (! Schema::hasTable('project_shareholder')) {
+            abort(503, 'قاعدة البيانات غير محدّثة. شغّل على السيرفر: php artisan migrate --force');
+        }
+
         $shareholder = $this->shareholderService->findOrFail((int) $shareholder->id);
         $memberships = $shareholder->projectMemberships()->with('project:id,name,capital')->orderBy('project_id')->get();
-        $landMemberships = $shareholder->landMemberships()->with('landParcel:id,name,purchase_price,status')->orderBy('land_parcel_id')->get();
+
+        $landsReady = Schema::hasTable('land_parcel_shareholder')
+            && Schema::hasColumn('shareholder_ledger_entries', 'land_parcel_id');
+
+        $landMemberships = $landsReady
+            ? $shareholder->landMemberships()->with('landParcel:id,name,purchase_price,status')->orderBy('land_parcel_id')->get()
+            : collect();
 
         $participations = $this->shareholderService->propertyParticipationsFor($shareholder);
+        $ledgerWith = [
+            'creator:id,name',
+            'treasuryTransaction:id,approval_status,type',
+            'project:id,name',
+        ];
+        if ($landsReady) {
+            $ledgerWith[] = 'landParcel:id,name';
+        }
         $ledgerEntries = $shareholder->ledgerEntries()
-            ->with([
-                'creator:id,name',
-                'treasuryTransaction:id,approval_status,type',
-                'project:id,name',
-                'landParcel:id,name',
-            ])
+            ->with($ledgerWith)
             ->orderByDesc('entry_date')
             ->orderByDesc('id')
             ->get();
@@ -191,11 +204,13 @@ class ShareholderController extends Controller
             ->get(['id', 'name', 'capital']);
 
         $attachedLandIds = $landMemberships->pluck('land_parcel_id')->all();
-        $availableLands = LandParcel::query()
-            ->whereNotIn('id', $attachedLandIds)
-            ->where('purchase_price', '>', 0)
-            ->orderBy('name')
-            ->get(['id', 'name', 'purchase_price', 'status']);
+        $availableLands = $landsReady
+            ? LandParcel::query()
+                ->whereNotIn('id', $attachedLandIds)
+                ->where('purchase_price', '>', 0)
+                ->orderBy('name')
+                ->get(['id', 'name', 'purchase_price', 'status'])
+            : collect();
 
         return view('shareholders.show', [
             'title' => 'بروفايل المساهم | Mohaseb Aqary',
@@ -211,6 +226,7 @@ class ShareholderController extends Controller
             'capitalDepositsTotal' => $shareholder->capitalDepositsTotal(),
             'availableProjects' => $availableProjects,
             'availableLands' => $availableLands,
+            'landsSchemaReady' => $landsReady,
         ]);
     }
 

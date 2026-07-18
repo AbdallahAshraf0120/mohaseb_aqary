@@ -7,6 +7,12 @@
     @if (session('error'))
         <div class="alert alert-danger">{{ session('error') }}</div>
     @endif
+    @if (empty($landsSchemaReady))
+        <div class="alert alert-warning">
+            ميزة أراضي البيع/شراء تحتاج تحديث قاعدة البيانات على السيرفر:
+            <code class="mx-1">php artisan migrate --force</code>
+        </div>
+    @endif
 
     <x-partials.module-kpis :items="[
         ['label' => 'رصيد الجاري الموحّد', 'value' => number_format((float) $ledgerBalance, 2) . ' ج.م'],

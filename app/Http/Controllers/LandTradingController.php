@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LandParcel;
 use App\Models\LandParcelShareholder;
 use App\Support\ListingFilters;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -90,12 +91,14 @@ class LandTradingController extends Controller
     public function show(LandParcel $parcel): View
     {
         $parcel->load(['creator:id,name']);
-        $shareholders = LandParcelShareholder::query()
-            ->with('shareholder:id,name')
-            ->where('land_parcel_id', (int) $parcel->id)
-            ->get()
-            ->filter(fn (LandParcelShareholder $m) => $m->shareholder !== null)
-            ->values();
+        $shareholders = Schema::hasTable('land_parcel_shareholder')
+            ? LandParcelShareholder::query()
+                ->with('shareholder:id,name')
+                ->where('land_parcel_id', (int) $parcel->id)
+                ->get()
+                ->filter(fn (LandParcelShareholder $m) => $m->shareholder !== null)
+                ->values()
+            : collect();
 
         return view('land-trading.show', [
             'title' => $parcel->name.' | أراضي البيع والشراء',
