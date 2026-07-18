@@ -129,7 +129,7 @@ class ShareholderController extends Controller
             'title' => 'إضافة مساهم | Mohaseb Aqary',
             'pageTitle' => 'إضافة مساهم',
             'shareholder' => new Shareholder,
-            'projects' => Project::query()->listed()->orderBy('name')->get(['id', 'name']),
+            'projects' => Project::query()->listed()->orderBy('name')->get(['id', 'name', 'capital']),
             'modules' => $this->modules(),
         ]);
     }
@@ -217,7 +217,7 @@ class ShareholderController extends Controller
     public function edit(Shareholder $shareholder): View
     {
         $shareholder = $this->shareholderService->findOrFail((int) $shareholder->id);
-        $shareholder->load('project:id,name');
+        $shareholder->load('project:id,name,capital');
 
         return view('shareholders.edit', [
             'title' => 'تعديل المساهم | Mohaseb Aqary',

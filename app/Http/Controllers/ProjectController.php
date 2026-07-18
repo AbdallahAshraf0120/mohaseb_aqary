@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Facing;
 use App\Models\Project;
+use App\Models\Shareholder;
 use App\Models\TreasuryTransaction;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -112,7 +113,9 @@ class ProjectController extends Controller
         }
 
         $project->update($payload);
-        $this->syncProjectCapitalCashbox($project->fresh(), $request->user());
+        $project = $project->fresh();
+        $this->syncProjectCapitalCashbox($project, $request->user());
+        $this->recalculateShareholderPercentages($project);
 
         return redirect()->route('projects.index')->with('success', 'تم تحديث بيانات المشروع.');
     }
@@ -175,6 +178,23 @@ class ProjectController extends Controller
     private function projectsHaveCapitalColumn(): bool
     {
         return Schema::hasColumn('projects', 'capital');
+    }
+
+    /** يعيد حساب نسب المساهمين عند تغيّر رأس مال المشروع. */
+    private function recalculateShareholderPercentages(Project $project): void
+    {
+        if (! $this->projectsHaveCapitalColumn()) {
+            return;
+        }
+
+        Shareholder::withoutProjectScope()
+            ->where('project_id', (int) $project->id)
+            ->get()
+            ->each(function (Shareholder $shareholder) use ($project): void {
+                $shareholder->update([
+                    'share_percentage' => $project->shareholderPercentageForInvestment((float) $shareholder->total_investment),
+                ]);
+            });
     }
 
     /**

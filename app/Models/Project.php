@@ -76,6 +76,17 @@ class Project extends Model
         return $query->where('is_active', true)->where('is_draft', false);
     }
 
+    /** نسبة المساهم من رأس مال المشروع: (تمويل المساهم ÷ رأس مال المشروع) × 100. */
+    public function shareholderPercentageForInvestment(float|int|string $investment): float
+    {
+        $capital = round((float) $this->capital, 2);
+        if ($capital <= 0) {
+            return 0.0;
+        }
+
+        return round(((float) $investment / $capital) * 100, 2);
+    }
+
     public function areas(): HasMany
     {
         return $this->hasMany(Area::class);
