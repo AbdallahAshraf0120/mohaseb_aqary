@@ -25,7 +25,8 @@ class ShareholderLedgerService
      *     entry_date: string,
      *     notes?: string|null,
      *     direction?: string|null,
-     *     skip_cashbox?: bool
+     *     skip_cashbox?: bool,
+     *     land_parcel_payment_id?: int|null
      * }  $data
      */
     public function create(Shareholder $shareholder, array $data, ?User $user = null): ShareholderLedgerEntry
@@ -106,6 +107,7 @@ class ShareholderLedgerService
             $entry = ShareholderLedgerEntry::withoutProjectScope()->create([
                 'project_id' => $projectId,
                 'land_parcel_id' => $landParcelId,
+                'land_parcel_payment_id' => isset($data['land_parcel_payment_id']) ? (int) $data['land_parcel_payment_id'] : null,
                 'shareholder_id' => (int) $shareholder->id,
                 'type' => $type,
                 'direction' => $direction,
