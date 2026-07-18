@@ -2,36 +2,29 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Shareholder extends Model
 {
-    use BelongsToProject;
+    protected $fillable = ['name'];
 
-    protected $fillable = ['project_id', 'name', 'share_percentage', 'total_investment', 'profit_amount'];
-
-    protected function casts(): array
+    public function projectMemberships(): HasMany
     {
-        return [
-            'share_percentage' => 'decimal:2',
-            'total_investment' => 'decimal:2',
-            'profit_amount' => 'decimal:2',
-        ];
+        return $this->hasMany(ProjectShareholder::class);
     }
 
-    public function project(): BelongsTo
+    public function projects(): BelongsToMany
     {
-        return $this->belongsTo(Project::class);
+        return $this->belongsToMany(Project::class, 'project_shareholder')
+            ->withPivot(['share_percentage', 'total_investment'])
+            ->withTimestamps();
     }
 
-    public function resolveRouteBinding($value, $field = null)
+    public function membershipFor(int $projectId): ?ProjectShareholder
     {
-        return static::withoutProjectScope()
-            ->where($field ?? $this->getRouteKeyName(), $value)
-            ->firstOrFail();
+        return $this->projectMemberships()->where('project_id', $projectId)->first();
     }
 
     public function ledgerEntries(): HasMany
@@ -47,22 +40,25 @@ class Shareholder extends Model
         return $this->hasMany(ShareholderLedgerEntry::class)->withoutGlobalScope('project');
     }
 
-    public function ledgerBalance(): float
+    public function ledgerBalance(?int $projectId = null): float
     {
-        $credit = (float) $this->ledgerEntries()
-            ->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT)
-            ->sum('amount');
-        $debit = (float) $this->ledgerEntries()
-            ->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT)
-            ->sum('amount');
+        $query = $this->ledgerEntries();
+        if ($projectId !== null) {
+            $query->where('project_id', $projectId);
+        }
+        $credit = (float) (clone $query)->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT)->sum('amount');
+        $debit = (float) (clone $query)->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT)->sum('amount');
 
         return round($credit - $debit, 2);
     }
 
-    public function capitalDepositsTotal(): float
+    public function capitalDepositsTotal(?int $projectId = null): float
     {
-        return round((float) $this->ledgerEntries()
-            ->where('type', ShareholderLedgerEntry::TYPE_CAPITAL)
-            ->sum('amount'), 2);
+        $query = $this->ledgerEntries()->where('type', ShareholderLedgerEntry::TYPE_CAPITAL);
+        if ($projectId !== null) {
+            $query->where('project_id', $projectId);
+        }
+
+        return round((float) $query->sum('amount'), 2);
     }
 }

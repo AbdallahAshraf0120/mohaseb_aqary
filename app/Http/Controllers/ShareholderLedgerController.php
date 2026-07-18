@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ProjectShareholder;
 use App\Models\Shareholder;
 use App\Models\ShareholderLedgerEntry;
 use App\Services\ShareholderLedgerService;
@@ -18,9 +19,13 @@ class ShareholderLedgerController extends Controller
 
     public function store(Request $request, Shareholder $shareholder): RedirectResponse
     {
-        app(CurrentProject::class)->force((int) $shareholder->project_id);
+        $linkedProjectIds = ProjectShareholder::query()
+            ->where('shareholder_id', (int) $shareholder->id)
+            ->pluck('project_id')
+            ->all();
 
         $data = $request->validate([
+            'project_id' => ['required', 'integer', Rule::in($linkedProjectIds)],
             'type' => ['required', 'string', Rule::in(array_keys(ShareholderLedgerEntry::TYPES))],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'entry_date' => ['required', 'date'],
@@ -36,13 +41,14 @@ class ShareholderLedgerController extends Controller
             ],
         ]);
 
+        app(CurrentProject::class)->force((int) $data['project_id']);
         $this->ledgerService->create($shareholder, $data, $request->user());
 
         return redirect()
             ->route('shareholders.show', $shareholder)
             ->with('success', 'تم تسجيل حركة الجاري'.(
                 ShareholderLedgerEntry::affectsCashbox((string) $data['type'])
-                    ? ' وربطها بالصندوق.'
+                    ? ' وربطها بصندوق المشروع المحدد.'
                     : '.'
             ));
     }
@@ -50,10 +56,8 @@ class ShareholderLedgerController extends Controller
     public function destroy(Shareholder $shareholder, ShareholderLedgerEntry $ledger): RedirectResponse
     {
         abort_unless((int) $ledger->shareholder_id === (int) $shareholder->id, 404);
-        abort_unless((int) $ledger->project_id === (int) $shareholder->project_id, 404);
 
-        app(CurrentProject::class)->force((int) $shareholder->project_id);
-
+        app(CurrentProject::class)->force((int) $ledger->project_id);
         $this->ledgerService->delete($ledger);
 
         return redirect()

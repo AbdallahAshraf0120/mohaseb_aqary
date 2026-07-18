@@ -124,17 +124,23 @@ class DatabaseSeeder extends Seeder
             );
         });
 
-        $shareholders = collect(range(1, $counts['shareholders']))->map(function (int $i) use ($pid, $slug) {
-            $share = \fake()->numberBetween(3, 22);
-
-            return Shareholder::query()->firstOrCreate(
-                ['project_id' => $pid, 'name' => "مساهم {$slug}-{$i}"],
+        $shareholders = collect(range(1, $counts['shareholders']))->map(function (int $i) use ($pid, $slug, $project) {
+            $investment = (float) \fake()->numberBetween(400_000, 12_000_000);
+            $shareholder = Shareholder::query()->firstOrCreate(
+                ['name' => "مساهم {$slug}-{$i}"]
+            );
+            \App\Models\ProjectShareholder::query()->updateOrCreate(
                 [
-                    'share_percentage' => $share,
-                    'total_investment' => \fake()->numberBetween(400_000, 12_000_000),
-                    'profit_amount' => \fake()->numberBetween(40_000, 1_200_000),
+                    'project_id' => $pid,
+                    'shareholder_id' => (int) $shareholder->id,
+                ],
+                [
+                    'total_investment' => $investment,
+                    'share_percentage' => $project->shareholderPercentageForInvestment($investment),
                 ]
             );
+
+            return $shareholder;
         });
 
         $properties = collect(range(1, $counts['properties']))->map(function (int $i) use ($areas, $shareholders, $admin, $pid, $project) {

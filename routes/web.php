@@ -95,8 +95,10 @@ Route::middleware('auth')->group(function (): void {
         // الصندوق الشامل (برا المشاريع) — مراقبة حركات كل المشاريع
         Route::get('global-cashbox', [GlobalCashboxController::class, 'index'])->name('global-cashbox.index');
 
-        // إدارة المساهمين (برا المشاريع)
+        // إدارة المساهمين (برا المشاريع) — مساهم عام يمكن ربطه بعدة مشاريع
         Route::resource('shareholders', ShareholderController::class);
+        Route::post('shareholders/{shareholder}/projects', [ShareholderController::class, 'attachProject'])
+            ->name('shareholders.projects.attach');
         Route::post('shareholders/{shareholder}/ledger', [ShareholderLedgerController::class, 'store'])
             ->name('shareholders.ledger.store');
         Route::delete('shareholders/{shareholder}/ledger/{ledger}', [ShareholderLedgerController::class, 'destroy'])

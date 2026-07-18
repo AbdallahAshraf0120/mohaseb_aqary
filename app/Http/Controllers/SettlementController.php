@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Expense;
 use App\Models\Project;
+use App\Models\ProjectShareholder;
 use App\Models\Revenue;
 use App\Models\Shareholder;
 use App\Models\ShareholderLedgerEntry;
@@ -36,21 +37,35 @@ class SettlementController extends Controller
         $revenues = (float) (clone $revQ)->sum('amount');
         $expenses = (float) (clone $expQ)->sum('amount');
 
-        $shareholders = Shareholder::query()
-            ->withSum([
-                'ledgerEntries as ledger_credit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT),
-                'ledgerEntries as ledger_debit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT),
-                'ledgerEntries as capital_deposits_sum' => fn ($q) => $q->where('type', ShareholderLedgerEntry::TYPE_CAPITAL),
-            ], 'amount')
-            ->orderBy('name')
+        $shareholders = ProjectShareholder::query()
+            ->with('shareholder:id,name')
+            ->where('project_id', (int) $project->id)
             ->get()
-            ->map(function (Shareholder $sh) {
-                $balance = round((float) ($sh->ledger_credit_sum ?? 0) - (float) ($sh->ledger_debit_sum ?? 0), 2);
-                $sh->setAttribute('ledger_balance', $balance);
-                $sh->setAttribute('capital_deposits_total', round((float) ($sh->capital_deposits_sum ?? 0), 2));
+            ->filter(fn (ProjectShareholder $m) => $m->shareholder !== null)
+            ->map(function (ProjectShareholder $m) use ($project) {
+                /** @var Shareholder $sh */
+                $sh = $m->shareholder;
+                $credit = (float) $sh->ledgerEntries()
+                    ->where('project_id', (int) $project->id)
+                    ->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT)
+                    ->sum('amount');
+                $debit = (float) $sh->ledgerEntries()
+                    ->where('project_id', (int) $project->id)
+                    ->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT)
+                    ->sum('amount');
+                $capital = (float) $sh->ledgerEntries()
+                    ->where('project_id', (int) $project->id)
+                    ->where('type', ShareholderLedgerEntry::TYPE_CAPITAL)
+                    ->sum('amount');
+
+                $sh->setAttribute('ledger_balance', round($credit - $debit, 2));
+                $sh->setAttribute('capital_deposits_total', round($capital, 2));
+                $sh->setAttribute('share_percentage', (float) $m->share_percentage);
 
                 return $sh;
-            });
+            })
+            ->sortBy('name', SORT_NATURAL)
+            ->values();
 
         return view('settlements.index', [
             'title' => 'التسويات | Mohaseb Aqary',

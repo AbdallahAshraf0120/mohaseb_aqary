@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Activitylog\LogOptions;
@@ -124,9 +125,16 @@ class Project extends Model
         return $this->hasMany(Client::class);
     }
 
-    public function shareholders(): HasMany
+    public function projectShareholders(): HasMany
     {
-        return $this->hasMany(Shareholder::class);
+        return $this->hasMany(ProjectShareholder::class);
+    }
+
+    public function shareholders(): BelongsToMany
+    {
+        return $this->belongsToMany(Shareholder::class, 'project_shareholder')
+            ->withPivot(['share_percentage', 'total_investment'])
+            ->withTimestamps();
     }
 
     public function facings(): HasMany

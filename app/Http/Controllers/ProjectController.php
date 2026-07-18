@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Facing;
 use App\Models\Project;
-use App\Models\Shareholder;
+use App\Models\ProjectShareholder;
 use App\Models\TreasuryTransaction;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -187,12 +187,12 @@ class ProjectController extends Controller
             return;
         }
 
-        Shareholder::withoutProjectScope()
+        ProjectShareholder::query()
             ->where('project_id', (int) $project->id)
             ->get()
-            ->each(function (Shareholder $shareholder) use ($project): void {
-                $shareholder->update([
-                    'share_percentage' => $project->shareholderPercentageForInvestment((float) $shareholder->total_investment),
+            ->each(function (ProjectShareholder $membership) use ($project): void {
+                $membership->update([
+                    'share_percentage' => $project->shareholderPercentageForInvestment((float) $membership->total_investment),
                 ]);
             });
     }

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Project;
+use App\Models\ProjectShareholder;
 use App\Models\Property;
 use App\Models\Shareholder;
 use App\Repositories\Contracts\ShareholderRepositoryInterface;
@@ -24,12 +26,12 @@ class ShareholderService
 
     public function create(array $data): Shareholder
     {
-        return $this->shareholders->create($data);
+        return $this->shareholders->create(['name' => $data['name']]);
     }
 
     public function update(Shareholder $shareholder, array $data): Shareholder
     {
-        return $this->shareholders->update($shareholder, $data);
+        return $this->shareholders->update($shareholder, ['name' => $data['name']]);
     }
 
     public function delete(Shareholder $shareholder): bool
@@ -38,17 +40,42 @@ class ShareholderService
     }
 
     /**
+     * يربط المساهم بمشروع (أو يحدّث التمويل/النسبة).
+     */
+    public function attachToProject(Shareholder $shareholder, Project $project, float $investment): ProjectShareholder
+    {
+        $percentage = $project->shareholderPercentageForInvestment($investment);
+
+        return ProjectShareholder::query()->updateOrCreate(
+            [
+                'shareholder_id' => (int) $shareholder->id,
+                'project_id' => (int) $project->id,
+            ],
+            [
+                'total_investment' => round($investment, 2),
+                'share_percentage' => $percentage,
+            ]
+        );
+    }
+
+    /**
      * @return Collection<int, object{property: Property, percentage: float, allocation: array<string, mixed>}>
      */
-    public function propertyParticipationsFor(Shareholder $shareholder): Collection
+    public function propertyParticipationsFor(Shareholder $shareholder, ?int $projectId = null): Collection
     {
         $id = (int) $shareholder->id;
         $name = (string) $shareholder->name;
-        $projectId = (int) $shareholder->project_id;
+        $projectIds = $projectId !== null
+            ? collect([$projectId])
+            : $shareholder->projectMemberships()->pluck('project_id');
+
+        if ($projectIds->isEmpty()) {
+            return collect();
+        }
 
         return Property::withoutProjectScope()
-            ->with('area:id,name')
-            ->where('project_id', $projectId)
+            ->with(['area:id,name', 'project:id,name'])
+            ->whereIn('project_id', $projectIds)
             ->whereNotNull('shareholder_allocations')
             ->orderBy('name')
             ->get()

@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AttachShareholderProjectRequest;
 use App\Http\Requests\StoreShareholderRequest;
 use App\Http\Requests\UpdateShareholderRequest;
 use App\Models\Project;
+use App\Models\ProjectShareholder;
 use App\Models\Shareholder;
 use App\Models\ShareholderLedgerEntry;
 use App\Services\ShareholderAttributedFlowService;
@@ -15,7 +17,6 @@ use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 
 class ShareholderController extends Controller
 {
@@ -30,9 +31,9 @@ class ShareholderController extends Controller
         $filters = ListingFilters::fromRequest($request);
         $projectId = $request->filled('project_id') ? (int) $request->query('project_id') : null;
 
-        $query = Shareholder::withoutProjectScope()->with('project:id,name');
+        $query = Shareholder::query()->with(['projectMemberships.project:id,name']);
         if ($projectId) {
-            $query->where('project_id', $projectId);
+            $query->whereHas('projectMemberships', fn ($q) => $q->where('project_id', $projectId));
         }
         if ($filters->q !== '') {
             $like = '%'.$filters->likeTerm().'%';
@@ -44,40 +45,17 @@ class ShareholderController extends Controller
             'ledgerEntries as ledger_credit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT),
             'ledgerEntries as ledger_debit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT),
             'ledgerEntries as capital_deposits_sum' => fn ($q) => $q->where('type', ShareholderLedgerEntry::TYPE_CAPITAL),
-        ], 'amount')->get();
-
-        [$financialsByProject, $costsByProject, $projectsById] = $this->projectAttributedCaches($shareholdersForKpis);
-
-        $attributedOperatingTotal = 0.0;
-        $attributedCostTotal = 0.0;
-        $approxCurrentAccountTotal = 0.0;
-        foreach ($shareholdersForKpis as $sh) {
-            $pid = (int) $sh->project_id;
-            $project = $projectsById->get($pid);
-            if (! $project instanceof Project) {
-                continue;
-            }
-            $financials = $financialsByProject[$pid] ?? [];
-            $costs = $costsByProject[$pid] ?? [];
-            $op = $this->attributedFlowService->attributedOperatingFlow($sh, $project, $financials);
-            $cost = $this->attributedFlowService->attributedDevelopmentCostShare($sh, $project, $costs);
-            $attributedOperatingTotal += $op;
-            $attributedCostTotal += $cost;
-            $approxCurrentAccountTotal += $this->attributedFlowService->shareholderCurrentAccountApprox($op, $cost);
-        }
-
-        $ledgerBalanceTotal = (float) $shareholdersForKpis->sum(
-            fn ($sh) => round((float) ($sh->ledger_credit_sum ?? 0) - (float) ($sh->ledger_debit_sum ?? 0), 2)
-        );
+        ], 'amount')->withSum('projectMemberships as projects_count', 'id')->get();
 
         $shareholderKpis = [
             'count' => (clone $query)->count(),
             'total_investment' => (float) $shareholdersForKpis->sum(fn ($sh) => (float) ($sh->capital_deposits_sum ?? 0)),
-            'share_percentage' => (float) (clone $query)->sum('share_percentage'),
-            'attributed_operating_total' => round($attributedOperatingTotal, 2),
-            'attributed_cost_total' => round($attributedCostTotal, 2),
-            'ledger_balance_total' => $ledgerBalanceTotal,
-            'approx_current_account_total' => round($approxCurrentAccountTotal, 2),
+            'ledger_balance_total' => (float) $shareholdersForKpis->sum(
+                fn ($sh) => round((float) ($sh->ledger_credit_sum ?? 0) - (float) ($sh->ledger_debit_sum ?? 0), 2)
+            ),
+            'memberships_count' => (float) ProjectShareholder::query()
+                ->when($projectId, fn ($q) => $q->where('project_id', $projectId))
+                ->count(),
         ];
 
         $shareholders = $query
@@ -86,27 +64,16 @@ class ShareholderController extends Controller
                 'ledgerEntries as ledger_debit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT),
                 'ledgerEntries as capital_deposits_sum' => fn ($q) => $q->where('type', ShareholderLedgerEntry::TYPE_CAPITAL),
             ], 'amount')
+            ->withCount('projectMemberships')
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
-        $shareholders->getCollection()->transform(function (Shareholder $sh) use ($financialsByProject, $costsByProject, $projectsById): Shareholder {
-            $pid = (int) $sh->project_id;
-            $project = $projectsById->get($pid);
-            $operating = 0.0;
-            $cost = 0.0;
-            if ($project instanceof Project) {
-                $operating = $this->attributedFlowService->attributedOperatingFlow($sh, $project, $financialsByProject[$pid] ?? []);
-                $cost = $this->attributedFlowService->attributedDevelopmentCostShare($sh, $project, $costsByProject[$pid] ?? []);
-            }
-            $ledgerBalance = round((float) ($sh->ledger_credit_sum ?? 0) - (float) ($sh->ledger_debit_sum ?? 0), 2);
-            $sh->setAttribute('attributed_operating_flow', $operating);
-            $sh->setAttribute('attributed_development_cost_share', $cost);
+        $shareholders->getCollection()->transform(function (Shareholder $sh): Shareholder {
             $sh->setAttribute(
-                'shareholder_current_account_approx',
-                $this->attributedFlowService->shareholderCurrentAccountApprox($operating, $cost)
+                'ledger_balance',
+                round((float) ($sh->ledger_credit_sum ?? 0) - (float) ($sh->ledger_debit_sum ?? 0), 2)
             );
-            $sh->setAttribute('ledger_balance', $ledgerBalance);
             $sh->setAttribute('capital_deposits_total', round((float) ($sh->capital_deposits_sum ?? 0), 2));
 
             return $sh;
@@ -117,9 +84,8 @@ class ShareholderController extends Controller
             'pageTitle' => 'إدارة المساهمين',
             'shareholderKpis' => $shareholderKpis,
             'shareholders' => $shareholders,
-            'projects' => Project::query()->listed()->orderBy('name')->get(['id', 'name']),
+            'projects' => Project::query()->listed()->orderBy('name')->get(['id', 'name', 'capital']),
             'selectedProjectId' => $projectId,
-            'modules' => $this->modules(),
         ]);
     }
 
@@ -130,100 +96,94 @@ class ShareholderController extends Controller
             'pageTitle' => 'إضافة مساهم',
             'shareholder' => new Shareholder,
             'projects' => Project::query()->listed()->orderBy('name')->get(['id', 'name', 'capital']),
-            'modules' => $this->modules(),
         ]);
     }
 
     public function store(StoreShareholderRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        app(CurrentProject::class)->force((int) $data['project_id']);
+        $project = Project::query()->findOrFail((int) $data['project_id']);
+        $investment = round((float) $data['total_investment'], 2);
 
         $shareholder = $this->shareholderService->create($data);
+        $this->shareholderService->attachToProject($shareholder, $project, $investment);
 
-        $initialCapital = round((float) ($data['total_investment'] ?? 0), 2);
-        if ($initialCapital > 0) {
+        app(CurrentProject::class)->force((int) $project->id);
+        if ($investment > 0) {
             $this->ledgerService->create($shareholder, [
+                'project_id' => (int) $project->id,
                 'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
-                'amount' => $initialCapital,
+                'amount' => $investment,
                 'entry_date' => now()->toDateString(),
-                'notes' => 'إيداع رأس مال عند تسجيل المساهم',
+                'notes' => 'إيداع رأس مال عند تسجيل المساهم في المشروع',
             ], $request->user());
         }
 
-        return redirect()->route('shareholders.index')->with('success', 'تم إضافة المساهم بنجاح.');
+        return redirect()->route('shareholders.show', $shareholder)->with('success', 'تم إضافة المساهم وربطه بالمشروع بنجاح.');
     }
 
     public function show(Shareholder $shareholder): View
     {
         $shareholder = $this->shareholderService->findOrFail((int) $shareholder->id);
-        $project = Project::query()->findOrFail((int) $shareholder->project_id);
-        app(CurrentProject::class)->force((int) $project->id);
+        $memberships = $shareholder->projectMemberships()->with('project:id,name,capital')->orderBy('project_id')->get();
 
         $participations = $this->shareholderService->propertyParticipationsFor($shareholder);
-        $propertyFinancials = $this->attributedFlowService->propertyFinancials($project);
-        $attributedOperatingTotal = $this->attributedFlowService->attributedOperatingFlow(
-            $shareholder,
-            $project,
-            $propertyFinancials
-        );
-        $attributedSaleVolumeShare = $this->attributedFlowService->attributedSaleVolumeShare(
-            $shareholder,
-            $project,
-            $propertyFinancials
-        );
-        $propertyDevelopmentCosts = $this->attributedFlowService->propertyDevelopmentCosts($project);
-        $attributedDevelopmentCostShare = $this->attributedFlowService->attributedDevelopmentCostShare(
-            $shareholder,
-            $project,
-            $propertyDevelopmentCosts
-        );
-        $shareholderCurrentAccountApprox = $this->attributedFlowService->shareholderCurrentAccountApprox(
-            $attributedOperatingTotal,
-            $attributedDevelopmentCostShare
-        );
-        $participationFinancialBreakdown = $this->attributedFlowService->participationFinancialBreakdown(
-            $participations,
-            $propertyFinancials,
-            $propertyDevelopmentCosts
-        );
         $ledgerEntries = $shareholder->ledgerEntries()
-            ->with(['creator:id,name', 'treasuryTransaction:id,approval_status,type'])
+            ->with(['creator:id,name', 'treasuryTransaction:id,approval_status,type', 'project:id,name'])
             ->orderByDesc('entry_date')
             ->orderByDesc('id')
             ->get();
-        $ledgerBalance = $shareholder->ledgerBalance();
-        $capitalDepositsTotal = $shareholder->capitalDepositsTotal();
+
+        $projectBreakdown = [];
+        foreach ($memberships as $membership) {
+            $project = $membership->project;
+            if (! $project instanceof Project) {
+                continue;
+            }
+            $propertyFinancials = $this->attributedFlowService->propertyFinancials($project);
+            $propertyDevelopmentCosts = $this->attributedFlowService->propertyDevelopmentCosts($project);
+            $op = $this->attributedFlowService->attributedOperatingFlow($shareholder, $project, $propertyFinancials);
+            $cost = $this->attributedFlowService->attributedDevelopmentCostShare($shareholder, $project, $propertyDevelopmentCosts);
+            $projectBreakdown[] = (object) [
+                'membership' => $membership,
+                'project' => $project,
+                'ledger_balance' => $shareholder->ledgerBalance((int) $project->id),
+                'capital_deposits' => $shareholder->capitalDepositsTotal((int) $project->id),
+                'attributed_operating' => $op,
+                'attributed_cost' => $cost,
+                'approx_current' => $this->attributedFlowService->shareholderCurrentAccountApprox($op, $cost),
+            ];
+        }
+
+        $attachedProjectIds = $memberships->pluck('project_id')->all();
+        $availableProjects = Project::query()
+            ->listed()
+            ->whereNotIn('id', $attachedProjectIds)
+            ->orderBy('name')
+            ->get(['id', 'name', 'capital']);
 
         return view('shareholders.show', [
             'title' => 'بروفايل المساهم | Mohaseb Aqary',
             'pageTitle' => 'بروفايل المساهم',
-            'project' => $project,
             'shareholder' => $shareholder,
+            'memberships' => $memberships,
+            'projectBreakdown' => $projectBreakdown,
             'participations' => $participations,
-            'propertyFinancials' => $propertyFinancials,
-            'attributedOperatingTotal' => $attributedOperatingTotal,
-            'attributedSaleVolumeShare' => $attributedSaleVolumeShare,
-            'attributedDevelopmentCostShare' => $attributedDevelopmentCostShare,
-            'shareholderCurrentAccountApprox' => $shareholderCurrentAccountApprox,
-            'participationFinancialBreakdown' => $participationFinancialBreakdown,
             'ledgerEntries' => $ledgerEntries,
-            'ledgerBalance' => $ledgerBalance,
-            'capitalDepositsTotal' => $capitalDepositsTotal,
-            'modules' => $this->modules(),
+            'ledgerBalance' => $shareholder->ledgerBalance(),
+            'capitalDepositsTotal' => $shareholder->capitalDepositsTotal(),
+            'availableProjects' => $availableProjects,
         ]);
     }
 
     public function edit(Shareholder $shareholder): View
     {
         $shareholder = $this->shareholderService->findOrFail((int) $shareholder->id);
-        $shareholder->load('project:id,name,capital');
 
         return view('shareholders.edit', [
             'title' => 'تعديل المساهم | Mohaseb Aqary',
             'pageTitle' => 'تعديل المساهم',
             'shareholder' => $shareholder,
-            'modules' => $this->modules(),
         ]);
     }
 
@@ -231,7 +191,7 @@ class ShareholderController extends Controller
     {
         $this->shareholderService->update($shareholder, $request->validated());
 
-        return redirect()->route('shareholders.show', $shareholder)->with('success', 'تم تحديث المساهم بنجاح.');
+        return redirect()->route('shareholders.show', $shareholder)->with('success', 'تم تحديث بيانات المساهم بنجاح.');
     }
 
     public function destroy(Shareholder $shareholder): RedirectResponse
@@ -241,30 +201,24 @@ class ShareholderController extends Controller
         return redirect()->route('shareholders.index')->with('success', 'تم حذف المساهم بنجاح.');
     }
 
-    /**
-     * @param  Collection<int, Shareholder>  $shareholders
-     * @return array{0: array<int, array>, 1: array<int, array>, 2: Collection<int, Project>}
-     */
-    private function projectAttributedCaches(Collection $shareholders): array
+    public function attachProject(AttachShareholderProjectRequest $request, Shareholder $shareholder): RedirectResponse
     {
-        $projectIds = $shareholders->pluck('project_id')->unique()->filter()->map(fn ($id) => (int) $id)->values();
-        $projectsById = Project::query()->whereIn('id', $projectIds)->get()->keyBy('id');
+        $data = $request->validated();
+        $project = Project::query()->findOrFail((int) $data['project_id']);
+        $investment = round((float) $data['total_investment'], 2);
 
-        $financialsByProject = [];
-        $costsByProject = [];
-        foreach ($projectsById as $pid => $project) {
-            $financialsByProject[(int) $pid] = $this->attributedFlowService->propertyFinancials($project);
-            $costsByProject[(int) $pid] = $this->attributedFlowService->propertyDevelopmentCosts($project);
-        }
+        $this->shareholderService->attachToProject($shareholder, $project, $investment);
+        app(CurrentProject::class)->force((int) $project->id);
+        $this->ledgerService->create($shareholder, [
+            'project_id' => (int) $project->id,
+            'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
+            'amount' => $investment,
+            'entry_date' => now()->toDateString(),
+            'notes' => 'إيداع رأس مال عند الربط بمشروع جديد',
+        ], $request->user());
 
-        return [$financialsByProject, $costsByProject, $projectsById];
-    }
-
-    private function modules(): array
-    {
-        return [
-            'projects' => ['label' => 'المشاريع', 'icon' => 'fa-diagram-project', 'route' => 'projects.index'],
-            'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'shareholders.index'],
-        ];
+        return redirect()
+            ->route('shareholders.show', $shareholder)
+            ->with('success', 'تم ربط المساهم بالمشروع وتسجيل رأس المال في الجاري.');
     }
 }

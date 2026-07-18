@@ -9,7 +9,7 @@ use App\Models\Facing;
 use App\Models\Land;
 use App\Models\Project;
 use App\Models\Property;
-use App\Models\Shareholder;
+use App\Models\ProjectShareholder;
 use App\Services\PropertyService;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
@@ -67,7 +67,7 @@ class PropertyController extends Controller
             'property' => new Property,
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
             'lands' => $this->landsSelectableForProperty(new Property),
-            'shareholders' => Shareholder::query()->select('id', 'name', 'share_percentage')->orderBy('name')->get(),
+            'shareholders' => $this->shareholdersForProject($project),
             'facings' => Facing::query()->orderBy('sort_order')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
@@ -101,10 +101,29 @@ class PropertyController extends Controller
             'property' => $this->propertyService->findOrFail((int) $property->id),
             'areas' => Area::query()->select('id', 'name')->orderBy('name')->get(),
             'lands' => $this->landsSelectableForProperty($property),
-            'shareholders' => Shareholder::query()->select('id', 'name', 'share_percentage')->orderBy('name')->get(),
+            'shareholders' => $this->shareholdersForProject($project),
             'facings' => Facing::query()->orderBy('sort_order')->orderBy('name')->get(),
             'modules' => $this->modules(),
         ]);
+    }
+
+    /** @return Collection<int, object{id:int,name:string,share_percentage:float}> */
+    private function shareholdersForProject(Project $project): Collection
+    {
+        return ProjectShareholder::query()
+            ->with('shareholder:id,name')
+            ->where('project_id', (int) $project->id)
+            ->get()
+            ->filter(fn (ProjectShareholder $m) => $m->shareholder !== null)
+            ->map(function (ProjectShareholder $m) {
+                return (object) [
+                    'id' => (int) $m->shareholder_id,
+                    'name' => (string) $m->shareholder->name,
+                    'share_percentage' => (float) $m->share_percentage,
+                ];
+            })
+            ->sortBy('name', SORT_NATURAL)
+            ->values();
     }
 
     public function update(UpdatePropertyRequest $request, Project $project, Property $property): RedirectResponse
