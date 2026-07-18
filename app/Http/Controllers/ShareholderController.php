@@ -17,6 +17,7 @@ use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class ShareholderController extends Controller
 {
@@ -28,6 +29,10 @@ class ShareholderController extends Controller
 
     public function index(Request $request): View
     {
+        if (! Schema::hasTable('project_shareholder')) {
+            abort(503, 'قاعدة البيانات غير محدّثة. شغّل على السيرفر: php artisan migrate --force');
+        }
+
         $filters = ListingFilters::fromRequest($request);
         $projectId = $request->filled('project_id') ? (int) $request->query('project_id') : null;
 
@@ -45,7 +50,7 @@ class ShareholderController extends Controller
             'ledgerEntries as ledger_credit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT),
             'ledgerEntries as ledger_debit_sum' => fn ($q) => $q->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT),
             'ledgerEntries as capital_deposits_sum' => fn ($q) => $q->where('type', ShareholderLedgerEntry::TYPE_CAPITAL),
-        ], 'amount')->withSum('projectMemberships as projects_count', 'id')->get();
+        ], 'amount')->get();
 
         $shareholderKpis = [
             'count' => (clone $query)->count(),
