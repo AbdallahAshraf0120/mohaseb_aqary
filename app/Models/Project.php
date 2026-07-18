@@ -15,6 +15,7 @@ class Project extends Model
     protected $fillable = [
         'name',
         'code',
+        'capital',
         'is_active',
         'is_draft',
         'contract_template_path',
@@ -23,6 +24,7 @@ class Project extends Model
     protected function casts(): array
     {
         return [
+            'capital' => 'decimal:2',
             'is_active' => 'boolean',
             'is_draft' => 'boolean',
         ];
@@ -45,7 +47,7 @@ class Project extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'code', 'is_active', 'is_draft'])
+            ->logOnly(['name', 'code', 'capital', 'is_active', 'is_draft'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->useLogName('projects')

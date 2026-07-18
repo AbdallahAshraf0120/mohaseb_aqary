@@ -26,6 +26,11 @@
                                         @if ($p->code)
                                             <span class="text-body-secondary small ms-2">{{ $p->code }}</span>
                                         @endif
+                                        @if ((float) $p->capital > 0)
+                                            <div class="small text-success-emphasis mt-1">
+                                                رأس المال: <span class="font-monospace fw-semibold">{{ number_format((float) $p->capital, 2) }}</span> ج.م
+                                            </div>
+                                        @endif
                                         <div class="small text-body-secondary mt-1">
                                             لوحة التحكم من جذر الموقع: <code class="user-select-all">/{{ $p->id }}/properties</code>
                                             <span class="d-block mt-1">ليس <code>/projects/{{ $p->id }}</code> — استخدم «فتح لوحة التحكم».</span>
@@ -122,6 +127,14 @@
                                 @error('code')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="project-capital">رأس مال المشروع (ج.م)</label>
+                                <input type="number" step="0.01" min="0" class="form-control font-monospace @error('capital') is-invalid @enderror" id="project-capital" name="capital" value="{{ old('capital', '0') }}" placeholder="0.00">
+                                @error('capital')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">يُسجَّل كحركة قبض معتمدة في صندوق المشروع.</div>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">إنشاء</button>
                         </form>

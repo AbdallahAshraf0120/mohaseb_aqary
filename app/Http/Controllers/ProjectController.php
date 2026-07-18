@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Facing;
 use App\Models\Project;
+use App\Models\TreasuryTransaction;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,12 +46,15 @@ class ProjectController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:50', 'unique:projects,code'],
+            'capital' => ['nullable', 'numeric', 'min:0'],
         ]);
+        $data['capital'] = round((float) ($data['capital'] ?? 0), 2);
         $data['is_active'] = true;
         $data['is_draft'] = false;
 
         $project = Project::query()->create($data);
         Facing::seedDefaultsForProject((int) $project->id);
+        $this->syncProjectCapitalCashbox($project, $request->user());
         session(['current_project_id' => (int) $project->id]);
 
         return redirect()->route('properties.index', $project)->with('success', 'تم إنشاء المشروع. يمكنك الآن إدارة بياناته بشكل منفصل.');
@@ -71,6 +75,7 @@ class ProjectController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:50', Rule::unique('projects', 'code')->ignore($project->id)],
+            'capital' => ['nullable', 'numeric', 'min:0'],
             'contract_template' => ['nullable', 'file', 'mimes:docx', 'max:20480'],
             'remove_contract_template' => ['nullable', 'in:0,1'],
         ]);
@@ -79,7 +84,11 @@ class ProjectController extends Controller
             $code = 'default';
         }
 
-        $payload = ['name' => $data['name'], 'code' => $code];
+        $payload = [
+            'name' => $data['name'],
+            'code' => $code,
+            'capital' => round((float) ($data['capital'] ?? 0), 2),
+        ];
 
         $remove = $request->boolean('remove_contract_template');
         if ($remove && ! $request->hasFile('contract_template')) {
@@ -96,6 +105,7 @@ class ProjectController extends Controller
         }
 
         $project->update($payload);
+        $this->syncProjectCapitalCashbox($project->fresh(), $request->user());
 
         return redirect()->route('projects.index')->with('success', 'تم تحديث بيانات المشروع.');
     }
@@ -153,6 +163,46 @@ class ProjectController extends Controller
         Facing::seedDefaultsForProject((int) $draftProject->id);
 
         return redirect()->route('projects.index')->with('success', 'تم إرجاع المشروع من المسودة وظهوره في القائمة.');
+    }
+
+    /**
+     * يزامن حركة قبض معتمدة في الصندوق بعنوان «رأس مال المشروع».
+     */
+    private function syncProjectCapitalCashbox(Project $project, mixed $user = null): void
+    {
+        $capital = round((float) $project->capital, 2);
+        $existing = TreasuryTransaction::withoutProjectScope()
+            ->where('project_id', (int) $project->id)
+            ->where('reference_type', 'project_capital')
+            ->where('reference_id', (int) $project->id)
+            ->first();
+
+        if ($capital <= 0) {
+            $existing?->delete();
+
+            return;
+        }
+
+        $payload = [
+            'project_id' => (int) $project->id,
+            'type' => 'revenue',
+            'amount' => $capital,
+            'description' => 'رأس مال المشروع',
+            'reference_type' => 'project_capital',
+            'reference_id' => (int) $project->id,
+            'approval_status' => 'approved',
+            'approved_at' => $existing?->approved_at ?? now(),
+            'approved_by' => $user instanceof \App\Models\User ? (int) $user->id : ($existing?->approved_by),
+            'rejected_at' => null,
+            'rejected_by' => null,
+            'rejection_reason' => null,
+        ];
+
+        if ($existing) {
+            $existing->update($payload);
+        } else {
+            TreasuryTransaction::withoutProjectScope()->create($payload);
+        }
     }
 
     private function modules(): array
