@@ -171,13 +171,17 @@
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <h6 class="mb-0">بيع أجزاء من الأرض</h6>
-                    <div class="small text-body-secondary">يمكنك بيع أجزاء وتحصيلها بينما ما زلت تسدد أقساط الشراء.</div>
+                    <div class="small text-body-secondary">بيع أجزاء وتحصيلها مع استمرار سداد أقساط الشراء.</div>
                 </div>
                 @if ($parcel->area_size !== null)
-                    <span class="badge text-bg-light">
-                        متبقي مساحة: {{ number_format((float) ($remainingArea ?? 0), 2) }} م²
-                        من {{ number_format((float) $parcel->area_size, 2) }}
-                    </span>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge text-bg-light border">
+                            إجمالي: <span class="font-monospace">{{ number_format((float) $parcel->area_size, 2) }}</span> م²
+                        </span>
+                        <span class="badge text-bg-success-subtle text-success border border-success-subtle">
+                            متبقي: <span class="font-monospace">{{ number_format((float) ($remainingArea ?? 0), 2) }}</span> م²
+                        </span>
+                    </div>
                 @endif
             </div>
             <div class="card-body p-0">
@@ -186,14 +190,14 @@
                         <thead>
                         <tr>
                             <th>الجزء</th>
-                            <th>المساحة</th>
+                            <th>المساحة / النسبة</th>
                             <th>المشتري</th>
-                            <th>التحصيل</th>
+                            <th>تاريخ البيع</th>
                             <th class="text-end">سعر البيع</th>
                             <th class="text-end">محصّل</th>
                             <th class="text-end">متبقي</th>
                             <th>الحالة</th>
-                            <th class="text-end">تحصيل</th>
+                            <th class="text-end">إجراء</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -333,93 +337,134 @@
                 </div>
             </div>
             @can('land-trading.manage')
-                <div class="card-footer">
-                    <div class="fw-semibold mb-2">إضافة جزء للبيع</div>
-                    <form method="post" action="{{ route('land-trading.parts.store', $parcel) }}" class="row g-2 align-items-end" id="add-part-form">
+                <div class="card-footer bg-body-tertiary bg-opacity-50 border-top">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <div>
+                            <div class="fw-semibold">إضافة جزء للبيع</div>
+                            <div class="small text-body-secondary">املأ البيانات بالترتيب — السعر يُحسب من مساحة الجزء × سعر متر البيع.</div>
+                        </div>
+                        @if (($parcel->sale_price_per_m2 ?? 0) > 0)
+                            <span class="badge text-bg-primary">سعر متر البيع: {{ number_format((float) $parcel->sale_price_per_m2, 2) }} ج.م</span>
+                        @else
+                            <a href="{{ route('land-trading.edit', $parcel) }}" class="btn btn-outline-warning btn-sm">حدّد سعر متر البيع من تعديل الأرض</a>
+                        @endif
+                    </div>
+
+                    <form method="post" action="{{ route('land-trading.parts.store', $parcel) }}" id="add-part-form">
                         @csrf
-                        <div class="col-md-2">
-                            <label class="form-label small">اسم الجزء</label>
-                            <input name="name" class="form-control form-control-sm @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="مثال: قطعة أمامية" required>
-                            @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label small">مساحة م²</label>
-                            <div class="input-group input-group-sm">
-                                <input type="number" step="0.01" min="0.01"
-                                       @if ($parcel->area_size !== null) max="{{ $remainingAreaJs }}" @endif
-                                       name="area_size" id="part_area_size"
-                                       class="form-control font-monospace @error('area_size') is-invalid @enderror"
-                                       value="{{ old('area_size') }}"
-                                       @if ($parcel->area_size !== null) required @endif
-                                       placeholder="أمتار">
-                                <span class="input-group-text fw-semibold text-primary" id="part_area_percent" style="min-width: 4.5rem;">0%</span>
-                            </div>
-                            @error('area_size') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                            @if ($parcel->area_size !== null)
-                                <div class="form-text" id="part_area_hint">
-                                    المتاح: {{ number_format($remainingAreaJs, 2) }} م² —
-                                    النسبة من إجمالي الأرض ({{ number_format($totalAreaJs, 2) }} م²)
+                        <input type="hidden" name="status" value="{{ old('status', 'available') }}">
+
+                        <div class="border rounded-3 p-3 mb-3 bg-body">
+                            <div class="small text-body-secondary fw-semibold mb-2">1) بيانات الجزء والمشتري</div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">اسم الجزء</label>
+                                    <input name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="مثال: أمامية / خلفية" required>
+                                    @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
-                                <div class="invalid-feedback d-none" id="part_area_client_error">المساحة أكبر من المتاح.</div>
-                            @endif
+                                <div class="col-md-3">
+                                    <label class="form-label">المشتري</label>
+                                    <input name="sold_to" class="form-control" value="{{ old('sold_to') }}" placeholder="اسم المشتري">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">هاتف المشتري</label>
+                                    <input name="sale_phone" class="form-control font-monospace" value="{{ old('sale_phone') }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">تاريخ البيع</label>
+                                    <input type="date" name="sale_date" class="form-control" value="{{ old('sale_date', now()->toDateString()) }}">
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label small">المشتري</label>
-                            <input name="sold_to" class="form-control form-control-sm" value="{{ old('sold_to') }}">
+
+                        <div class="border rounded-3 p-3 mb-3 bg-body">
+                            <div class="small text-body-secondary fw-semibold mb-2">2) المساحة والسعر</div>
+                            <div class="row g-3 align-items-start">
+                                <div class="col-md-4">
+                                    <label class="form-label">المساحة (م²)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0.01"
+                                               @if ($parcel->area_size !== null) max="{{ $remainingAreaJs }}" @endif
+                                               name="area_size" id="part_area_size"
+                                               class="form-control font-monospace @error('area_size') is-invalid @enderror"
+                                               value="{{ old('area_size') }}"
+                                               @if ($parcel->area_size !== null) required @endif
+                                               placeholder="0.00">
+                                        <span class="input-group-text fw-semibold text-primary" id="part_area_percent" style="min-width: 5rem;">0%</span>
+                                    </div>
+                                    @error('area_size') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                                    @if ($parcel->area_size !== null)
+                                        <div class="form-text mb-0">
+                                            متاح للبيع: <span class="font-monospace">{{ number_format($remainingAreaJs, 2) }}</span> م²
+                                            من أصل <span class="font-monospace">{{ number_format($totalAreaJs, 2) }}</span>
+                                        </div>
+                                        <div class="invalid-feedback d-none" id="part_area_client_error">المساحة أكبر من المتاح.</div>
+                                    @endif
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">سعر البيع الإجمالي</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0.01" name="sale_price" id="part_sale_price"
+                                               class="form-control font-monospace" value="{{ old('sale_price') }}" required>
+                                        <span class="input-group-text">ج.م</span>
+                                    </div>
+                                    <div class="form-text mb-0" id="part_sale_price_hint">
+                                        @if (($parcel->sale_price_per_m2 ?? 0) > 0)
+                                            يُحسب تلقائيًا: المساحة × {{ number_format((float) $parcel->sale_price_per_m2, 2) }}
+                                        @else
+                                            أدخل السعر يدويًا أو حدّد سعر المتر من تعديل الأرض
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">معاينة سريعة</label>
+                                    <div class="rounded-3 border px-3 py-2 h-100">
+                                        <div class="small text-body-secondary">النسبة من الأرض</div>
+                                        <div class="fs-5 fw-bold text-primary" id="part_area_percent_large">0%</div>
+                                        <div class="small text-body-secondary mt-1">الناتج المتوقع</div>
+                                        <div class="fw-semibold font-monospace" id="part_sale_total_preview">—</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-1">
-                            <label class="form-label small">سعر البيع</label>
-                            <input type="number" step="0.01" min="0.01" name="sale_price" id="part_sale_price"
-                                   class="form-control form-control-sm font-monospace" value="{{ old('sale_price') }}" required>
-                            @if (($parcel->sale_price_per_m2 ?? 0) > 0)
-                                <div class="form-text" id="part_sale_price_hint">= مساحة × {{ number_format((float) $parcel->sale_price_per_m2, 2) }}</div>
-                            @endif
+
+                        <div class="border rounded-3 p-3 mb-3 bg-body">
+                            <div class="small text-body-secondary fw-semibold mb-2">3) طريقة التحصيل</div>
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label">الطريقة</label>
+                                    <select name="sale_payment_type" id="part_sale_payment_type" class="form-select" required>
+                                        <option value="cash" @selected(old('sale_payment_type', 'cash') === 'cash')>كاش (تحصيل كامل فورًا)</option>
+                                        <option value="installment" @selected(old('sale_payment_type') === 'installment')>أقساط</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 part-installment-fields">
+                                    <label class="form-label">المقدم</label>
+                                    <input type="number" step="0.01" min="0" name="sale_down_payment" class="form-control font-monospace" value="{{ old('sale_down_payment') }}">
+                                </div>
+                                <div class="col-md-2 part-installment-fields">
+                                    <label class="form-label">مدة (شهر)</label>
+                                    <input type="number" min="1" name="sale_installment_months" class="form-control" value="{{ old('sale_installment_months') }}">
+                                </div>
+                                <div class="col-md-2 part-installment-fields">
+                                    <label class="form-label">نظام القسط</label>
+                                    <select name="sale_installment_schedule" class="form-select">
+                                        <option value="monthly">شهري</option>
+                                        <option value="quarterly">كل 3 شهور</option>
+                                        <option value="semiannual">كل 6 شهور</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 part-installment-fields">
+                                    <label class="form-label">بداية الأقساط</label>
+                                    <input type="date" name="sale_installment_start_date" class="form-control" value="{{ old('sale_installment_start_date') }}">
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-1">
-                            <label class="form-label small">طريقة</label>
-                            <select name="sale_payment_type" id="part_sale_payment_type" class="form-select form-select-sm" required>
-                                <option value="cash" @selected(old('sale_payment_type', 'cash') === 'cash')>كاش</option>
-                                <option value="installment" @selected(old('sale_payment_type') === 'installment')>أقساط</option>
-                            </select>
-                        </div>
-                        <div class="col-md-1">
-                            <label class="form-label small">مقدم</label>
-                            <input type="number" step="0.01" min="0" name="sale_down_payment" class="form-control form-control-sm" value="{{ old('sale_down_payment') }}">
-                        </div>
-                        <div class="col-md-1 part-installment-fields">
-                            <label class="form-label small">شهور</label>
-                            <input type="number" min="1" name="sale_installment_months" class="form-control form-control-sm" value="{{ old('sale_installment_months') }}">
-                        </div>
-                        <div class="col-md-1 part-installment-fields">
-                            <label class="form-label small">نظام</label>
-                            <select name="sale_installment_schedule" class="form-select form-select-sm">
-                                <option value="monthly">شهري</option>
-                                <option value="quarterly">كل 3</option>
-                                <option value="semiannual">كل 6</option>
-                            </select>
-                        </div>
-                        <div class="col-md-1 part-installment-fields">
-                            <label class="form-label small">بداية</label>
-                            <input type="date" name="sale_installment_start_date" class="form-control form-control-sm" value="{{ old('sale_installment_start_date') }}">
-                        </div>
-                        <div class="col-md-1">
-                            <label class="form-label small">حالة</label>
-                            <select name="status" class="form-select form-select-sm" required>
-                                @foreach (\App\Models\LandParcelPart::STATUSES as $k => $v)
-                                    <option value="{{ $k }}" @selected(old('status', 'available') === $k)>{{ $v }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-1">
-                            <button type="submit" class="btn btn-primary btn-sm w-100">إضافة</button>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label small">تاريخ البيع</label>
-                            <input type="date" name="sale_date" class="form-control form-control-sm" value="{{ old('sale_date', now()->toDateString()) }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label small">هاتف المشتري</label>
-                            <input name="sale_phone" class="form-control form-control-sm" value="{{ old('sale_phone') }}">
+
+                        <div class="d-flex flex-wrap gap-2 justify-content-end">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fa-solid fa-plus ms-1"></i> إضافة الجزء
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -446,19 +491,35 @@
             var partSalePrice = document.getElementById('part_sale_price');
             var form = document.getElementById('add-part-form');
 
+            var percentLarge = document.getElementById('part_area_percent_large');
+            var totalPreview = document.getElementById('part_sale_total_preview');
+
             function updatePartAreaPercent() {
                 if (!areaInput || !percentEl) return;
                 var val = parseFloat(areaInput.value);
                 if (!isFinite(val) || val <= 0 || totalArea <= 0) {
                     percentEl.textContent = '0%';
+                    if (percentLarge) percentLarge.textContent = '0%';
+                    if (totalPreview) totalPreview.textContent = '—';
                     areaInput.classList.remove('is-invalid');
                     if (errEl) errEl.classList.add('d-none');
                     return;
                 }
                 var pct = (val / totalArea) * 100;
-                percentEl.textContent = pct.toFixed(2) + '%';
+                var pctText = pct.toFixed(2) + '%';
+                percentEl.textContent = pctText;
+                if (percentLarge) percentLarge.textContent = pctText;
+                var total = 0;
                 if (salePerM2 > 0 && partSalePrice) {
-                    partSalePrice.value = (val * salePerM2).toFixed(2);
+                    total = val * salePerM2;
+                    partSalePrice.value = total.toFixed(2);
+                } else {
+                    total = parseFloat(partSalePrice?.value) || 0;
+                }
+                if (totalPreview) {
+                    totalPreview.textContent = total > 0
+                        ? total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.م'
+                        : '—';
                 }
                 var over = remainingArea > 0 && val > remainingArea + 0.0001;
                 if (over) {
@@ -472,6 +533,15 @@
                     if (errEl) errEl.classList.add('d-none');
                 }
             }
+            partSalePrice?.addEventListener('input', function () {
+                if (salePerM2 > 0) return;
+                var total = parseFloat(partSalePrice.value) || 0;
+                if (totalPreview) {
+                    totalPreview.textContent = total > 0
+                        ? total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.م'
+                        : '—';
+                }
+            });
 
             areaInput?.addEventListener('input', updatePartAreaPercent);
             areaInput?.addEventListener('change', updatePartAreaPercent);
