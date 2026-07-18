@@ -99,6 +99,8 @@ Route::middleware('auth')->group(function (): void {
         Route::resource('shareholders', ShareholderController::class);
         Route::post('shareholders/{shareholder}/projects', [ShareholderController::class, 'attachProject'])
             ->name('shareholders.projects.attach');
+        Route::post('shareholders/{shareholder}/lands', [ShareholderController::class, 'attachLand'])
+            ->name('shareholders.lands.attach');
         Route::post('shareholders/{shareholder}/ledger', [ShareholderLedgerController::class, 'store'])
             ->name('shareholders.ledger.store');
         Route::delete('shareholders/{shareholder}/ledger/{ledger}', [ShareholderLedgerController::class, 'destroy'])

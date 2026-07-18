@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\LandParcel;
+use App\Models\LandParcelShareholder;
 use App\Models\Project;
 use App\Models\ProjectShareholder;
 use App\Models\Property;
@@ -50,6 +52,25 @@ class ShareholderService
             [
                 'shareholder_id' => (int) $shareholder->id,
                 'project_id' => (int) $project->id,
+            ],
+            [
+                'total_investment' => round($investment, 2),
+                'share_percentage' => $percentage,
+            ]
+        );
+    }
+
+    /**
+     * يربط المساهم بأرض بيع/شراء.
+     */
+    public function attachToLandParcel(Shareholder $shareholder, LandParcel $parcel, float $investment): LandParcelShareholder
+    {
+        $percentage = $parcel->shareholderPercentageForInvestment($investment);
+
+        return LandParcelShareholder::query()->updateOrCreate(
+            [
+                'shareholder_id' => (int) $shareholder->id,
+                'land_parcel_id' => (int) $parcel->id,
             ],
             [
                 'total_investment' => round($investment, 2),

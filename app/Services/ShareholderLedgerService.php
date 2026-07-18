@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\LandParcel;
+use App\Models\LandParcelShareholder;
 use App\Models\Project;
 use App\Models\ProjectShareholder;
 use App\Models\Shareholder;
@@ -16,7 +18,8 @@ class ShareholderLedgerService
 {
     /**
      * @param  array{
-     *     project_id: int,
+     *     project_id?: int|null,
+     *     land_parcel_id?: int|null,
      *     type: string,
      *     amount: float|int|string,
      *     entry_date: string,
@@ -32,17 +35,33 @@ class ShareholderLedgerService
             throw new InvalidArgumentException('نوع حركة الجاري غير صالح.');
         }
 
-        $projectId = (int) ($data['project_id'] ?? 0);
-        if ($projectId <= 0) {
-            throw new InvalidArgumentException('يجب اختيار المشروع الذي تُوجَّه إليه الحركة.');
+        $projectId = isset($data['project_id']) && $data['project_id'] !== null && $data['project_id'] !== ''
+            ? (int) $data['project_id']
+            : null;
+        $landParcelId = isset($data['land_parcel_id']) && $data['land_parcel_id'] !== null && $data['land_parcel_id'] !== ''
+            ? (int) $data['land_parcel_id']
+            : null;
+
+        if (($projectId === null) === ($landParcelId === null)) {
+            throw new InvalidArgumentException('يجب اختيار مشروع أو أرض (واحد فقط) كوجهة للحركة.');
         }
 
-        $membership = ProjectShareholder::query()
-            ->where('shareholder_id', (int) $shareholder->id)
-            ->where('project_id', $projectId)
-            ->first();
-        if ($membership === null) {
-            throw new InvalidArgumentException('هذا المساهم غير مرتبط بالمشروع المحدد.');
+        if ($projectId !== null) {
+            $membership = ProjectShareholder::query()
+                ->where('shareholder_id', (int) $shareholder->id)
+                ->where('project_id', $projectId)
+                ->first();
+            if ($membership === null) {
+                throw new InvalidArgumentException('هذا المساهم غير مرتبط بالمشروع المحدد.');
+            }
+        } else {
+            $membership = LandParcelShareholder::query()
+                ->where('shareholder_id', (int) $shareholder->id)
+                ->where('land_parcel_id', $landParcelId)
+                ->first();
+            if ($membership === null) {
+                throw new InvalidArgumentException('هذا المساهم غير مرتبط بالأرض المحددة.');
+            }
         }
 
         $amount = round((float) $data['amount'], 2);
@@ -62,13 +81,31 @@ class ShareholderLedgerService
         }
 
         $skipCashbox = (bool) ($data['skip_cashbox'] ?? false);
-        $affectCashbox = ! $skipCashbox && ShareholderLedgerEntry::affectsCashbox($type);
+        // الصندوق مرتبط بالمشاريع فقط؛ حركات الأراضي لا تُنشئ حركة خزينة مشروع
+        $affectCashbox = $projectId !== null
+            && ! $skipCashbox
+            && ShareholderLedgerEntry::affectsCashbox($type);
 
-        return DB::transaction(function () use ($shareholder, $projectId, $type, $direction, $amount, $data, $user, $affectCashbox): ShareholderLedgerEntry {
-            app(CurrentProject::class)->force($projectId);
+        return DB::transaction(function () use (
+            $shareholder,
+            $projectId,
+            $landParcelId,
+            $type,
+            $direction,
+            $amount,
+            $data,
+            $user,
+            $affectCashbox
+        ): ShareholderLedgerEntry {
+            if ($projectId !== null) {
+                app(CurrentProject::class)->force($projectId);
+            } else {
+                app(CurrentProject::class)->force(null);
+            }
 
             $entry = ShareholderLedgerEntry::withoutProjectScope()->create([
                 'project_id' => $projectId,
+                'land_parcel_id' => $landParcelId,
                 'shareholder_id' => (int) $shareholder->id,
                 'type' => $type,
                 'direction' => $direction,
@@ -78,7 +115,7 @@ class ShareholderLedgerService
                 'created_by' => $user?->id,
             ]);
 
-            if ($affectCashbox) {
+            if ($affectCashbox && $projectId !== null) {
                 $cashboxType = ShareholderLedgerEntry::cashboxTypeFor($type, $direction);
                 $isAdmin = $user instanceof User && $user->isAdmin();
                 $tx = TreasuryTransaction::withoutProjectScope()->create([
@@ -100,10 +137,14 @@ class ShareholderLedgerService
             }
 
             if ($type === ShareholderLedgerEntry::TYPE_CAPITAL) {
-                $this->syncProjectInvestment($shareholder, $projectId);
+                if ($projectId !== null) {
+                    $this->syncProjectInvestment($shareholder, $projectId);
+                } else {
+                    $this->syncLandInvestment($shareholder, (int) $landParcelId);
+                }
             }
 
-            return $entry->fresh(['treasuryTransaction', 'creator', 'project:id,name']) ?? $entry;
+            return $entry->fresh(['treasuryTransaction', 'creator', 'project:id,name', 'landParcel:id,name']) ?? $entry;
         });
     }
 
@@ -111,11 +152,14 @@ class ShareholderLedgerService
     {
         DB::transaction(function () use ($entry): void {
             $shareholder = $entry->shareholder()->first();
-            $projectId = (int) $entry->project_id;
+            $projectId = $entry->project_id !== null ? (int) $entry->project_id : null;
+            $landParcelId = $entry->land_parcel_id !== null ? (int) $entry->land_parcel_id : null;
             $wasCapital = $entry->type === ShareholderLedgerEntry::TYPE_CAPITAL;
             $treasuryId = $entry->treasury_transaction_id;
 
-            app(CurrentProject::class)->force($projectId);
+            if ($projectId !== null) {
+                app(CurrentProject::class)->force($projectId);
+            }
             $entry->delete();
 
             if ($treasuryId) {
@@ -126,14 +170,18 @@ class ShareholderLedgerService
             }
 
             if ($wasCapital && $shareholder) {
-                $this->syncProjectInvestment($shareholder, $projectId);
+                if ($projectId !== null) {
+                    $this->syncProjectInvestment($shareholder, $projectId);
+                } elseif ($landParcelId !== null) {
+                    $this->syncLandInvestment($shareholder, $landParcelId);
+                }
             }
         });
     }
 
     public function syncProjectInvestment(Shareholder $shareholder, int $projectId): void
     {
-        $total = $shareholder->capitalDepositsTotal($projectId);
+        $total = $shareholder->capitalDepositsTotal($projectId, null);
         $project = Project::query()->find($projectId);
         $percentage = $project
             ? $project->shareholderPercentageForInvestment($total)
@@ -143,6 +191,26 @@ class ShareholderLedgerService
             [
                 'shareholder_id' => (int) $shareholder->id,
                 'project_id' => $projectId,
+            ],
+            [
+                'total_investment' => $total,
+                'share_percentage' => $percentage,
+            ]
+        );
+    }
+
+    public function syncLandInvestment(Shareholder $shareholder, int $landParcelId): void
+    {
+        $total = $shareholder->capitalDepositsTotal(null, $landParcelId);
+        $parcel = LandParcel::query()->find($landParcelId);
+        $percentage = $parcel
+            ? $parcel->shareholderPercentageForInvestment($total)
+            : 0.0;
+
+        LandParcelShareholder::query()->updateOrCreate(
+            [
+                'shareholder_id' => (int) $shareholder->id,
+                'land_parcel_id' => $landParcelId,
             ],
             [
                 'total_investment' => $total,

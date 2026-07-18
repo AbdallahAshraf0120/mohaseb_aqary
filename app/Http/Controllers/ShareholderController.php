@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AttachShareholderLandRequest;
 use App\Http\Requests\AttachShareholderProjectRequest;
 use App\Http\Requests\StoreShareholderRequest;
 use App\Http\Requests\UpdateShareholderRequest;
+use App\Models\LandParcel;
 use App\Models\Project;
 use App\Models\ProjectShareholder;
 use App\Models\Shareholder;
@@ -131,10 +133,16 @@ class ShareholderController extends Controller
     {
         $shareholder = $this->shareholderService->findOrFail((int) $shareholder->id);
         $memberships = $shareholder->projectMemberships()->with('project:id,name,capital')->orderBy('project_id')->get();
+        $landMemberships = $shareholder->landMemberships()->with('landParcel:id,name,purchase_price,status')->orderBy('land_parcel_id')->get();
 
         $participations = $this->shareholderService->propertyParticipationsFor($shareholder);
         $ledgerEntries = $shareholder->ledgerEntries()
-            ->with(['creator:id,name', 'treasuryTransaction:id,approval_status,type', 'project:id,name'])
+            ->with([
+                'creator:id,name',
+                'treasuryTransaction:id,approval_status,type',
+                'project:id,name',
+                'landParcel:id,name',
+            ])
             ->orderByDesc('entry_date')
             ->orderByDesc('id')
             ->get();
@@ -160,6 +168,21 @@ class ShareholderController extends Controller
             ];
         }
 
+        $landBreakdown = $landMemberships->map(function ($membership) use ($shareholder) {
+            $parcel = $membership->landParcel;
+
+            return (object) [
+                'membership' => $membership,
+                'parcel' => $parcel,
+                'ledger_balance' => $parcel
+                    ? $shareholder->ledgerBalance(null, (int) $parcel->id)
+                    : 0.0,
+                'capital_deposits' => $parcel
+                    ? $shareholder->capitalDepositsTotal(null, (int) $parcel->id)
+                    : 0.0,
+            ];
+        });
+
         $attachedProjectIds = $memberships->pluck('project_id')->all();
         $availableProjects = Project::query()
             ->listed()
@@ -167,17 +190,27 @@ class ShareholderController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'capital']);
 
+        $attachedLandIds = $landMemberships->pluck('land_parcel_id')->all();
+        $availableLands = LandParcel::query()
+            ->whereNotIn('id', $attachedLandIds)
+            ->where('purchase_price', '>', 0)
+            ->orderBy('name')
+            ->get(['id', 'name', 'purchase_price', 'status']);
+
         return view('shareholders.show', [
             'title' => 'بروفايل المساهم | Mohaseb Aqary',
             'pageTitle' => 'بروفايل المساهم',
             'shareholder' => $shareholder,
             'memberships' => $memberships,
+            'landMemberships' => $landMemberships,
             'projectBreakdown' => $projectBreakdown,
+            'landBreakdown' => $landBreakdown,
             'participations' => $participations,
             'ledgerEntries' => $ledgerEntries,
             'ledgerBalance' => $shareholder->ledgerBalance(),
             'capitalDepositsTotal' => $shareholder->capitalDepositsTotal(),
             'availableProjects' => $availableProjects,
+            'availableLands' => $availableLands,
         ]);
     }
 
@@ -225,5 +258,27 @@ class ShareholderController extends Controller
         return redirect()
             ->route('shareholders.show', $shareholder)
             ->with('success', 'تم ربط المساهم بالمشروع وتسجيل رأس المال في الجاري.');
+    }
+
+    public function attachLand(AttachShareholderLandRequest $request, Shareholder $shareholder): RedirectResponse
+    {
+        $data = $request->validated();
+        $parcel = LandParcel::query()->findOrFail((int) $data['land_parcel_id']);
+        $investment = round((float) $data['total_investment'], 2);
+
+        $this->shareholderService->attachToLandParcel($shareholder, $parcel, $investment);
+        app(CurrentProject::class)->force(null);
+        $this->ledgerService->create($shareholder, [
+            'project_id' => null,
+            'land_parcel_id' => (int) $parcel->id,
+            'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
+            'amount' => $investment,
+            'entry_date' => now()->toDateString(),
+            'notes' => 'إيداع رأس مال عند الربط بأرض بيع/شراء',
+        ], $request->user());
+
+        return redirect()
+            ->route('shareholders.show', $shareholder)
+            ->with('success', 'تم ربط المساهم بالأرض وتسجيل رأس المال في الجاري.');
     }
 }

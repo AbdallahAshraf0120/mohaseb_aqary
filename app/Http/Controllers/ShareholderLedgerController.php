@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LandParcelShareholder;
 use App\Models\ProjectShareholder;
 use App\Models\Shareholder;
 use App\Models\ShareholderLedgerEntry;
@@ -22,10 +23,16 @@ class ShareholderLedgerController extends Controller
         $linkedProjectIds = ProjectShareholder::query()
             ->where('shareholder_id', (int) $shareholder->id)
             ->pluck('project_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        $linkedLandIds = LandParcelShareholder::query()
+            ->where('shareholder_id', (int) $shareholder->id)
+            ->pluck('land_parcel_id')
+            ->map(fn ($id) => (int) $id)
             ->all();
 
         $data = $request->validate([
-            'project_id' => ['required', 'integer', Rule::in($linkedProjectIds)],
+            'destination' => ['required', 'string', 'regex:/^(project|land):\d+$/'],
             'type' => ['required', 'string', Rule::in(array_keys(ShareholderLedgerEntry::TYPES))],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'entry_date' => ['required', 'date'],
@@ -41,23 +48,42 @@ class ShareholderLedgerController extends Controller
             ],
         ]);
 
-        app(CurrentProject::class)->force((int) $data['project_id']);
+        [$kind, $id] = explode(':', $data['destination'], 2);
+        $id = (int) $id;
+        unset($data['destination']);
+
+        if ($kind === 'project') {
+            abort_unless(in_array($id, $linkedProjectIds, true), 422, 'المساهم غير مرتبط بهذا المشروع.');
+            $data['project_id'] = $id;
+            $data['land_parcel_id'] = null;
+            app(CurrentProject::class)->force($id);
+        } else {
+            abort_unless(in_array($id, $linkedLandIds, true), 422, 'المساهم غير مرتبط بهذه الأرض.');
+            $data['project_id'] = null;
+            $data['land_parcel_id'] = $id;
+            app(CurrentProject::class)->force(null);
+        }
+
         $this->ledgerService->create($shareholder, $data, $request->user());
+
+        $cashboxNote = $kind === 'project' && ShareholderLedgerEntry::affectsCashbox((string) $data['type'])
+            ? ' وربطها بصندوق المشروع.'
+            : ($kind === 'land' ? ' (بدون صندوق مشروع — وجهة أرض).' : '.');
 
         return redirect()
             ->route('shareholders.show', $shareholder)
-            ->with('success', 'تم تسجيل حركة الجاري'.(
-                ShareholderLedgerEntry::affectsCashbox((string) $data['type'])
-                    ? ' وربطها بصندوق المشروع المحدد.'
-                    : '.'
-            ));
+            ->with('success', 'تم تسجيل حركة الجاري'.$cashboxNote);
     }
 
     public function destroy(Shareholder $shareholder, ShareholderLedgerEntry $ledger): RedirectResponse
     {
         abort_unless((int) $ledger->shareholder_id === (int) $shareholder->id, 404);
 
-        app(CurrentProject::class)->force((int) $ledger->project_id);
+        if ($ledger->project_id !== null) {
+            app(CurrentProject::class)->force((int) $ledger->project_id);
+        } else {
+            app(CurrentProject::class)->force(null);
+        }
         $this->ledgerService->delete($ledger);
 
         return redirect()

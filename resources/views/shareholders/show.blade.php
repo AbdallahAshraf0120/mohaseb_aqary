@@ -10,33 +10,31 @@
 
     <x-partials.module-kpis :items="[
         ['label' => 'رصيد الجاري الموحّد', 'value' => number_format((float) $ledgerBalance, 2) . ' ج.م'],
-        ['label' => 'رأس المال (كل المشاريع)', 'value' => number_format((float) $capitalDepositsTotal, 2) . ' ج.م'],
-        ['label' => 'عدد المشاريع', 'value' => $memberships->count()],
-        ['label' => 'عقارات ضمن التوزيع', 'value' => $participations->count()],
+        ['label' => 'رأس المال (دفتر)', 'value' => number_format((float) $capitalDepositsTotal, 2) . ' ج.م'],
+        ['label' => 'مشاريع', 'value' => $memberships->count()],
+        ['label' => 'أراضي بيع/شراء', 'value' => $landMemberships->count()],
     ]" />
 
     <div class="row g-3 mb-3">
-        <div class="col-lg-7">
+        <div class="col-lg-6">
             <div class="card app-surface h-100">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <h5 class="mb-0">البيانات الأساسية</h5>
+                    <h5 class="mb-0">{{ $shareholder->name }}</h5>
                     <div class="d-flex gap-2">
                         <a href="{{ route('shareholders.edit', $shareholder) }}" class="btn btn-outline-warning btn-sm">تعديل الاسم</a>
-                        <a href="{{ route('shareholders.index') }}" class="btn btn-outline-secondary btn-sm">قائمة المساهمين</a>
+                        <a href="{{ route('shareholders.index') }}" class="btn btn-outline-secondary btn-sm">رجوع</a>
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="text-muted small mb-1">اسم المساهم</div>
-                    <div class="fw-semibold fs-5 mb-3">{{ $shareholder->name }}</div>
                     <div class="text-muted small mb-2">المشاريع المرتبطة</div>
-                    <div class="table-responsive">
+                    <div class="table-responsive mb-4">
                         <table class="table table-sm align-middle mb-0">
                             <thead>
                             <tr>
                                 <th>المشروع</th>
                                 <th class="text-end">التمويل</th>
                                 <th class="text-end">النسبة</th>
-                                <th class="text-end">جاري المشروع</th>
+                                <th class="text-end">جاري</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -50,7 +48,41 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="text-muted text-center">لا توجد مشاريع مرتبطة.</td></tr>
+                                <tr><td colspan="4" class="text-muted text-center">لا توجد مشاريع.</td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="text-muted small mb-2">أراضي البيع والشراء المرتبطة</div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>الأرض</th>
+                                <th class="text-end">التمويل</th>
+                                <th class="text-end">النسبة</th>
+                                <th class="text-end">جاري</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @forelse ($landBreakdown as $row)
+                                <tr>
+                                    <td class="fw-semibold">
+                                        @if ($row->parcel)
+                                            <a href="{{ route('land-trading.show', $row->parcel) }}">{{ $row->parcel->name }}</a>
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
+                                    <td class="text-end font-monospace">{{ number_format((float) $row->membership->total_investment, 2) }}</td>
+                                    <td class="text-end">{{ number_format((float) $row->membership->share_percentage, 2) }}%</td>
+                                    <td class="text-end font-monospace {{ $row->ledger_balance >= 0 ? 'text-success' : 'text-danger' }}">
+                                        {{ number_format((float) $row->ledger_balance, 2) }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="4" class="text-muted text-center">لا توجد أراضي.</td></tr>
                             @endforelse
                             </tbody>
                         </table>
@@ -58,39 +90,68 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-5">
+        <div class="col-lg-6">
             @can('shareholders.manage')
-                <div class="card app-surface h-100">
-                    <div class="card-header">
-                        <h5 class="mb-0">ربط بمشروع إضافي</h5>
-                    </div>
+                <div class="card app-surface mb-3">
+                    <div class="card-header"><h5 class="mb-0">ربط بمشروع</h5></div>
                     <div class="card-body">
                         @if ($availableProjects->isEmpty())
-                            <p class="text-muted small mb-0">المساهم مرتبط بكل المشاريع المتاحة أو لا توجد مشاريع برأس مال.</p>
+                            <p class="text-muted small mb-0">لا توجد مشاريع متاحة للربط.</p>
                         @else
-                            <form method="post" action="{{ route('shareholders.projects.attach', $shareholder) }}">
+                            <form method="post" action="{{ route('shareholders.projects.attach', $shareholder) }}" class="row g-2 align-items-end">
                                 @csrf
-                                <div class="mb-3">
+                                <div class="col-md-5">
                                     <label class="form-label">المشروع</label>
                                     <select name="project_id" class="form-select @error('project_id') is-invalid @enderror" required>
                                         <option value="">اختر…</option>
                                         @foreach ($availableProjects as $p)
-                                            <option value="{{ $p->id }}" @selected(old('project_id') == $p->id)>
-                                                {{ $p->name }} — رأس المال {{ number_format((float) $p->capital, 2) }}
-                                            </option>
+                                            <option value="{{ $p->id }}">{{ $p->name }}</option>
                                         @endforeach
                                     </select>
                                     @error('project_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">التمويل في المشروع (ج.م)</label>
-                                    <input type="number" step="0.01" min="0.01" name="total_investment"
-                                           class="form-control font-monospace @error('total_investment') is-invalid @enderror"
-                                           value="{{ old('total_investment') }}" required>
+                                <div class="col-md-4">
+                                    <label class="form-label">التمويل</label>
+                                    <input type="number" step="0.01" min="0.01" name="total_investment" class="form-control font-monospace @error('total_investment') is-invalid @enderror" required>
                                     @error('total_investment') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
-                                <button type="submit" class="btn btn-primary w-100">ربط وتسجيل رأس المال</button>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-primary w-100">ربط</button>
+                                </div>
                             </form>
+                        @endif
+                    </div>
+                </div>
+                <div class="card app-surface">
+                    <div class="card-header"><h5 class="mb-0">ربط بأرض بيع/شراء</h5></div>
+                    <div class="card-body">
+                        @if ($availableLands->isEmpty())
+                            <p class="text-muted small mb-0">لا توجد أراضي بسعر شراء متاحة للربط. سجّل سعر الشراء من شاشة الأرض أولاً.</p>
+                        @else
+                            <form method="post" action="{{ route('shareholders.lands.attach', $shareholder) }}" class="row g-2 align-items-end">
+                                @csrf
+                                <div class="col-md-5">
+                                    <label class="form-label">الأرض</label>
+                                    <select name="land_parcel_id" class="form-select @error('land_parcel_id') is-invalid @enderror" required>
+                                        <option value="">اختر…</option>
+                                        @foreach ($availableLands as $land)
+                                            <option value="{{ $land->id }}">
+                                                {{ $land->name }} — شراء {{ number_format((float) $land->purchase_price, 2) }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('land_parcel_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">التمويل</label>
+                                    <input type="number" step="0.01" min="0.01" name="total_investment" class="form-control font-monospace @error('total_investment') is-invalid @enderror" required>
+                                    @error('total_investment') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-primary w-100">ربط</button>
+                                </div>
+                            </form>
+                            <div class="form-text mt-2">النسبة = التمويل ÷ سعر شراء الأرض × 100.</div>
                         @endif
                     </div>
                 </div>
@@ -107,24 +168,37 @@
         </div>
         <div class="card-body">
             @can('shareholders.manage')
-                @if ($memberships->isEmpty())
-                    <div class="alert alert-warning">اربط المساهم بمشروع أولاً قبل تسجيل حركات الجاري.</div>
+                @if ($memberships->isEmpty() && $landMemberships->isEmpty())
+                    <div class="alert alert-warning">اربط المساهم بمشروع أو أرض أولاً قبل تسجيل حركات الجاري.</div>
                 @else
                     <form method="post" action="{{ route('shareholders.ledger.store', $shareholder) }}" class="border rounded-3 p-3 mb-4 bg-body-tertiary bg-opacity-50">
                         @csrf
                         <div class="row g-3 align-items-end">
                             <div class="col-md-3">
-                                <label class="form-label">المشروع المستهدف</label>
-                                <select name="project_id" class="form-select @error('project_id') is-invalid @enderror" required>
-                                    <option value="">اختر المشروع…</option>
-                                    @foreach ($memberships as $m)
-                                        <option value="{{ $m->project_id }}" @selected((string) old('project_id') === (string) $m->project_id)>
-                                            {{ $m->project?->name ?? ('#'.$m->project_id) }}
-                                        </option>
-                                    @endforeach
+                                <label class="form-label">الوجهة (مشروع / أرض)</label>
+                                <select name="destination" class="form-select @error('destination') is-invalid @enderror" required>
+                                    <option value="">اختر…</option>
+                                    @if ($memberships->isNotEmpty())
+                                        <optgroup label="مشاريع">
+                                            @foreach ($memberships as $m)
+                                                <option value="project:{{ $m->project_id }}" @selected(old('destination') === 'project:'.$m->project_id)>
+                                                    {{ $m->project?->name ?? ('مشروع #'.$m->project_id) }}
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endif
+                                    @if ($landMemberships->isNotEmpty())
+                                        <optgroup label="أراضي بيع/شراء">
+                                            @foreach ($landMemberships as $m)
+                                                <option value="land:{{ $m->land_parcel_id }}" @selected(old('destination') === 'land:'.$m->land_parcel_id)>
+                                                    {{ $m->landParcel?->name ?? ('أرض #'.$m->land_parcel_id) }}
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endif
                                 </select>
-                                @error('project_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                                <div class="form-text">تحدد صندوق أي مشروع تتأثر به الحركة.</div>
+                                @error('destination') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                <div class="form-text">المشروع يحدّث صندوقه — الأرض تُسجَّل في الجاري فقط.</div>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">نوع الحركة</label>
@@ -161,7 +235,7 @@
                                 <button type="submit" class="btn btn-primary">تسجيل الحركة</button>
                             </div>
                         </div>
-                        <div class="form-text mt-2">عند الإيداع/السحب يُحدَّث <strong>صندوق المشروع المختار</strong> فقط.</div>
+                        <div class="form-text mt-2">اختر مشروعًا أو أرضًا كوجهة للفلوس.</div>
                     </form>
                 @endif
             @endcan
@@ -171,7 +245,7 @@
                     <thead>
                     <tr>
                         <th>التاريخ</th>
-                        <th>المشروع</th>
+                        <th>الوجهة</th>
                         <th>النوع</th>
                         <th>الاتجاه</th>
                         <th class="text-end">المبلغ</th>
@@ -184,7 +258,15 @@
                     @forelse ($ledgerEntries as $entry)
                         <tr>
                             <td class="font-monospace small">{{ $entry->entry_date?->format('Y-m-d') }}</td>
-                            <td class="small fw-semibold">{{ $entry->project?->name ?? '—' }}</td>
+                            <td class="small fw-semibold">
+                                @if ($entry->project)
+                                    <span class="badge text-bg-primary">مشروع</span> {{ $entry->project->name }}
+                                @elseif ($entry->landParcel)
+                                    <span class="badge text-bg-warning">أرض</span> {{ $entry->landParcel->name }}
+                                @else
+                                    —
+                                @endif
+                            </td>
                             <td>{{ $entry->typeLabel() }}</td>
                             <td>
                                 @if ($entry->direction === 'credit')

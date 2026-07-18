@@ -22,6 +22,18 @@ class Shareholder extends Model
             ->withTimestamps();
     }
 
+    public function landMemberships(): HasMany
+    {
+        return $this->hasMany(LandParcelShareholder::class);
+    }
+
+    public function landParcels(): BelongsToMany
+    {
+        return $this->belongsToMany(LandParcel::class, 'land_parcel_shareholder', 'shareholder_id', 'land_parcel_id')
+            ->withPivot(['share_percentage', 'total_investment'])
+            ->withTimestamps();
+    }
+
     public function membershipFor(int $projectId): ?ProjectShareholder
     {
         return $this->projectMemberships()->where('project_id', $projectId)->first();
@@ -40,11 +52,14 @@ class Shareholder extends Model
         return $this->hasMany(ShareholderLedgerEntry::class)->withoutGlobalScope('project');
     }
 
-    public function ledgerBalance(?int $projectId = null): float
+    public function ledgerBalance(?int $projectId = null, ?int $landParcelId = null): float
     {
         $query = $this->ledgerEntries();
         if ($projectId !== null) {
             $query->where('project_id', $projectId);
+        }
+        if ($landParcelId !== null) {
+            $query->where('land_parcel_id', $landParcelId);
         }
         $credit = (float) (clone $query)->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT)->sum('amount');
         $debit = (float) (clone $query)->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT)->sum('amount');
@@ -52,11 +67,14 @@ class Shareholder extends Model
         return round($credit - $debit, 2);
     }
 
-    public function capitalDepositsTotal(?int $projectId = null): float
+    public function capitalDepositsTotal(?int $projectId = null, ?int $landParcelId = null): float
     {
         $query = $this->ledgerEntries()->where('type', ShareholderLedgerEntry::TYPE_CAPITAL);
         if ($projectId !== null) {
             $query->where('project_id', $projectId);
+        }
+        if ($landParcelId !== null) {
+            $query->where('land_parcel_id', $landParcelId);
         }
 
         return round((float) $query->sum('amount'), 2);

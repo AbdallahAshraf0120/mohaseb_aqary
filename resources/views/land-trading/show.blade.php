@@ -121,6 +121,52 @@
             </div>
         </div>
 
+        <div class="col-12">
+            <div class="card app-surface">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h6 class="mb-0">مساهمو الأرض</h6>
+                    @can('shareholders.manage')
+                        <a href="{{ route('shareholders.index') }}" class="btn btn-outline-primary btn-sm">إدارة المساهمين</a>
+                    @endcan
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>المساهم</th>
+                                <th class="text-end">التمويل</th>
+                                <th class="text-end">النسبة</th>
+                                <th class="text-end">بروفايل</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @forelse ($parcelShareholders ?? [] as $row)
+                                <tr>
+                                    <td class="fw-semibold">{{ $row->shareholder->name }}</td>
+                                    <td class="text-end font-monospace">{{ number_format((float) $row->total_investment, 2) }}</td>
+                                    <td class="text-end">{{ number_format((float) $row->share_percentage, 2) }}%</td>
+                                    <td class="text-end">
+                                        <a href="{{ route('shareholders.show', $row->shareholder) }}" class="btn btn-outline-info btn-sm">فتح</a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        لا يوجد مساهمون على هذه الأرض بعد. اربطهم من بروفايل المساهم ← «ربط بأرض بيع/شراء».
+                                    </td>
+                                </tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="px-3 py-2 small text-body-secondary">
+                        أساس النسبة = سعر شراء الأرض ({{ number_format((float) $parcel->purchase_price, 2) }} ج.م).
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @if ($parcel->notes)
             <div class="col-12">
                 <div class="card app-surface">

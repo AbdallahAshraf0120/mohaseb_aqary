@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LandParcel extends Model
 {
@@ -50,6 +52,18 @@ class LandParcel extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function parcelShareholders(): HasMany
+    {
+        return $this->hasMany(LandParcelShareholder::class, 'land_parcel_id');
+    }
+
+    public function shareholders(): BelongsToMany
+    {
+        return $this->belongsToMany(Shareholder::class, 'land_parcel_shareholder', 'land_parcel_id', 'shareholder_id')
+            ->withPivot(['share_percentage', 'total_investment'])
+            ->withTimestamps();
+    }
+
     public function statusLabel(): string
     {
         return self::STATUSES[$this->status] ?? (string) $this->status;
@@ -62,5 +76,16 @@ class LandParcel extends Model
         }
 
         return (float) $this->sale_price - (float) $this->purchase_price;
+    }
+
+    /** أساس النسبة: سعر شراء الأرض (مثل رأس مال المشروع). */
+    public function shareholderPercentageForInvestment(float|int|string $investment): float
+    {
+        $capital = round((float) $this->purchase_price, 2);
+        if ($capital <= 0) {
+            return 0.0;
+        }
+
+        return round(((float) $investment / $capital) * 100, 2);
     }
 }

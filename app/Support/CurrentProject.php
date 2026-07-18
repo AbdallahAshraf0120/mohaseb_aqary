@@ -7,16 +7,25 @@ namespace App\Support;
  */
 class CurrentProject
 {
+    private bool $forced = false;
+
     private ?int $forcedId = null;
 
     public function force(?int $projectId): void
     {
+        $this->forced = true;
         $this->forcedId = $projectId;
+    }
+
+    public function clearForce(): void
+    {
+        $this->forced = false;
+        $this->forcedId = null;
     }
 
     public function id(): ?int
     {
-        if ($this->forcedId !== null) {
+        if ($this->forced) {
             return $this->forcedId;
         }
 

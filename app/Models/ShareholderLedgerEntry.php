@@ -34,6 +34,7 @@ class ShareholderLedgerEntry extends Model
 
     protected $fillable = [
         'project_id',
+        'land_parcel_id',
         'shareholder_id',
         'type',
         'direction',
@@ -55,6 +56,11 @@ class ShareholderLedgerEntry extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function landParcel(): BelongsTo
+    {
+        return $this->belongsTo(LandParcel::class, 'land_parcel_id');
     }
 
     public function resolveRouteBinding($value, $field = null)
