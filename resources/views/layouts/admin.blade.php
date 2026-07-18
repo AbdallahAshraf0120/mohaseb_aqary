@@ -278,6 +278,15 @@
                                 </li>
                             @endcan
                         @endcan
+                        @can('cashbox.view')
+                            <li class="nav-item">
+                                <a href="{{ route('global-cashbox.index') }}"
+                                   class="nav-link {{ request()->routeIs('global-cashbox.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-vault"></i>
+                                    <p>الصندوق الشامل</p>
+                                </a>
+                            </li>
+                        @endcan
                         @can('shareholders.view')
                             <li class="nav-item">
                                 <a href="{{ route('shareholders.index') }}"

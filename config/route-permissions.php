@@ -94,6 +94,7 @@ return [
 
     'cashbox.index' => 'cashbox.index',
     'cashbox.store' => 'cashbox.store',
+    'global-cashbox.index' => 'cashbox.view',
 
     'approvals.index' => 'approvals.index',
     'approvals.approve' => 'approvals.approve',

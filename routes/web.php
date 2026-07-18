@@ -5,6 +5,7 @@ use App\Http\Controllers\ApprovalsController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CashboxController;
+use App\Http\Controllers\GlobalCashboxController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DashboardController;
@@ -90,6 +91,9 @@ Route::middleware('auth')->group(function (): void {
         Route::resource('users', UserController::class)->except(['show']);
 
         Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
+
+        // الصندوق الشامل (برا المشاريع) — مراقبة حركات كل المشاريع
+        Route::get('global-cashbox', [GlobalCashboxController::class, 'index'])->name('global-cashbox.index');
 
         // إدارة المساهمين (برا المشاريع)
         Route::resource('shareholders', ShareholderController::class);
