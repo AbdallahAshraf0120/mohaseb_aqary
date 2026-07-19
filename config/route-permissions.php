@@ -45,6 +45,13 @@ return [
     'facings.update' => 'facings.update',
     'facings.destroy' => 'facings.destroy',
 
+    'expense-types.index' => 'expense-types.index',
+    'expense-types.create' => 'expense-types.create',
+    'expense-types.store' => 'expense-types.store',
+    'expense-types.edit' => 'expense-types.edit',
+    'expense-types.update' => 'expense-types.update',
+    'expense-types.destroy' => 'expense-types.destroy',
+
     'lands.index' => 'lands.index',
     'lands.create' => 'lands.create',
     'lands.store' => 'lands.store',

@@ -146,6 +146,7 @@ class AppServiceProvider extends ServiceProvider
                 'permission' => 'expenses.view',
                 'create_permission' => 'expenses.manage',
             ],
+            ['route' => 'expense-types.index', 'label' => 'أنواع المصروفات', 'icon' => 'fa-tags', 'active' => ['expense-types.*'], 'permission' => 'expense-types.manage'],
             [
                 'route' => 'debts.index',
                 'label' => 'ذمم دائنة',

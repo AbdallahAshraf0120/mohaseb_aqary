@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ExpenseType;
 use App\Models\Facing;
 use App\Models\OwnershipSnapshot;
 use App\Models\Project;
@@ -71,6 +72,7 @@ class ProjectController extends Controller
 
         $project = Project::query()->create($data);
         Facing::seedDefaultsForProject((int) $project->id);
+        ExpenseType::seedDefaultsForProject((int) $project->id);
         $this->syncProjectCapitalCashbox($project, $request->user());
         session(['current_project_id' => (int) $project->id]);
 
@@ -208,6 +210,7 @@ class ProjectController extends Controller
     {
         $draftProject->update(['is_draft' => false]);
         Facing::seedDefaultsForProject((int) $draftProject->id);
+        ExpenseType::seedDefaultsForProject((int) $draftProject->id);
 
         return redirect()->route('projects.index')->with('success', 'تم إرجاع المشروع من المسودة وظهوره في القائمة.');
     }

@@ -8,7 +8,7 @@
     ]" />
 
     <x-listing.filters
-        :placeholder="'فئة، وصف…'"
+        :placeholder="'جهة صرف، وصف…'"
         :help="'التصفية حسب تاريخ الصرف (وليس تاريخ الإدخال على النظام).'"
     />
 
@@ -28,7 +28,7 @@
                         <th>#</th>
                         <th>تاريخ الصرف</th>
                         <th>تاريخ الإدخال</th>
-                        <th>الفئة</th>
+                        <th>جهة الصرف</th>
                         <th>القيمة</th>
                         <th>الوصف</th>
                         <th>الحالة</th>
@@ -41,7 +41,7 @@
                             <td>{{ $expenses->firstItem() + $loop->index }}</td>
                             <td class="font-monospace">{{ $expense->spent_at?->format('Y-m-d') ?? '—' }}</td>
                             <td class="font-monospace small text-body-secondary">{{ $expense->created_at?->format('Y-m-d H:i') ?? '—' }}</td>
-                            <td>{{ $expense->category }}</td>
+                            <td>{{ $expense->expenseType?->name ?: ($expense->category ?: '—') }}</td>
                             <td>{{ number_format((float) $expense->amount, 2) }}</td>
                             <td>{{ $expense->description ?: '-' }}</td>
                             <td>

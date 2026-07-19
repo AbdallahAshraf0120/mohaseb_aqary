@@ -12,6 +12,7 @@ class Expense extends Model
 
     protected $fillable = [
         'project_id',
+        'expense_type_id',
         'amount',
         'category',
         'description',
@@ -31,5 +32,10 @@ class Expense extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function expenseType(): BelongsTo
+    {
+        return $this->belongsTo(ExpenseType::class);
     }
 }

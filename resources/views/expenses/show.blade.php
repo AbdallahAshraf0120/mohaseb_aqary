@@ -43,8 +43,8 @@
                 </div>
                 <div class="col-md-8">
                     <dl class="row mb-0 small">
-                        <dt class="col-sm-3 text-body-secondary">الفئة</dt>
-                        <dd class="col-sm-9 fw-semibold">{{ $expense->category }}</dd>
+                        <dt class="col-sm-3 text-body-secondary">جهة الصرف</dt>
+                        <dd class="col-sm-9 fw-semibold">{{ $expense->expenseType?->name ?: ($expense->category ?: '—') }}</dd>
 
                         <dt class="col-sm-3 text-body-secondary">الوصف</dt>
                         <dd class="col-sm-9">{{ $expense->description ?: '—' }}</dd>

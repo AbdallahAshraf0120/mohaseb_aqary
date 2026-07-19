@@ -1,8 +1,19 @@
 @csrf
+@php
+    $selectedTypeId = old('expense_type_id', $expense->expense_type_id ?? '');
+@endphp
 <div class="row g-3">
     <div class="col-md-3">
-        <label class="form-label">الفئة</label>
-        <input name="category" class="form-control" required value="{{ old('category', $expense->category ?? '') }}">
+        <label class="form-label">جهة الصرف</label>
+        <select name="expense_type_id" class="form-select" required>
+            <option value="">اختر جهة الصرف…</option>
+            @foreach (($expenseTypes ?? []) as $type)
+                <option value="{{ $type->id }}" @selected((string) $selectedTypeId === (string) $type->id)>{{ $type->name }}</option>
+            @endforeach
+        </select>
+        <div class="form-text">
+            <a href="{{ route('expense-types.index') }}">إدارة أنواع المصروفات</a>
+        </div>
     </div>
     <div class="col-md-3">
         <label class="form-label">القيمة</label>

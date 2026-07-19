@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Models\ExpenseType;
 use App\Models\Project;
 use App\Services\CashboxLedgerService;
+use App\Support\CurrentProject;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ExpenseController extends Controller
 {
@@ -25,7 +28,8 @@ class ExpenseController extends Controller
             $like = '%'.$filters->likeTerm().'%';
             $query->where(function ($w) use ($like): void {
                 $w->where('category', 'like', $like)
-                    ->orWhere('description', 'like', $like);
+                    ->orWhere('description', 'like', $like)
+                    ->orWhereHas('expenseType', fn ($t) => $t->where('name', 'like', $like));
             });
         }
         $filters->applyWhereDate($query, 'spent_at');
@@ -42,7 +46,7 @@ class ExpenseController extends Controller
             'pageTitle' => 'المصروفات',
             'project' => $project,
             'expenseStats' => $expenseStats,
-            'expenses' => $query->latest()->paginate(15)->withQueryString(),
+            'expenses' => $query->with('expenseType')->latest()->paginate(15)->withQueryString(),
             'modules' => $this->modules(),
         ]);
     }
@@ -52,18 +56,14 @@ class ExpenseController extends Controller
         return view('expenses.create', [
             'title' => 'إضافة مصروف | Mohaseb Aqary',
             'pageTitle' => 'إضافة مصروف',
+            'expenseTypes' => $this->expenseTypes(),
             'modules' => $this->modules(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'amount' => ['required', 'numeric', 'min:1'],
-            'category' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'spent_at' => ['required', 'date'],
-        ]);
+        $data = $this->validatedExpenseData($request);
 
         $user = $request->user();
         $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
@@ -80,6 +80,8 @@ class ExpenseController extends Controller
 
     public function show(Project $project, Expense $expense): View
     {
+        $expense->load('expenseType');
+
         return view('expenses.show', [
             'title' => 'تفاصيل المصروف | Mohaseb Aqary',
             'pageTitle' => 'تفاصيل المصروف',
@@ -96,18 +98,14 @@ class ExpenseController extends Controller
             'pageTitle' => 'تعديل المصروف',
             'project' => $project,
             'expense' => $expense,
+            'expenseTypes' => $this->expenseTypes(),
             'modules' => $this->modules(),
         ]);
     }
 
     public function update(Request $request, Project $project, Expense $expense): RedirectResponse
     {
-        $data = $request->validate([
-            'amount' => ['required', 'numeric', 'min:1'],
-            'category' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'spent_at' => ['required', 'date'],
-        ]);
+        $data = $this->validatedExpenseData($request);
 
         $wasApproved = ($expense->approval_status ?? 'approved') === 'approved';
         if ($wasApproved) {
@@ -147,11 +145,40 @@ class ExpenseController extends Controller
         return redirect()->route('expenses.index')->with('success', $message);
     }
 
+    /**
+     * @return array{expense_type_id: int, category: string, amount: float|int|string, description: ?string, spent_at: string}
+     */
+    private function validatedExpenseData(Request $request): array
+    {
+        $projectId = (int) app(CurrentProject::class)->id();
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:1'],
+            'expense_type_id' => [
+                'required',
+                'integer',
+                Rule::exists('expense_types', 'id')->where(fn ($q) => $q->where('project_id', $projectId)),
+            ],
+            'description' => ['nullable', 'string'],
+            'spent_at' => ['required', 'date'],
+        ]);
+
+        $type = ExpenseType::query()->findOrFail((int) $data['expense_type_id']);
+        $data['category'] = (string) $type->name;
+
+        return $data;
+    }
+
+    private function expenseTypes()
+    {
+        return ExpenseType::query()->orderBy('sort_order')->orderBy('name')->get();
+    }
+
     private function modules(): array
     {
         return [
             'projects' => ['label' => 'المشاريع', 'icon' => 'fa-diagram-project', 'route' => 'projects.index'],
             'areas' => ['label' => 'المناطق', 'icon' => 'fa-location-dot', 'route' => 'areas.index'],
+            'expense-types' => ['label' => 'أنواع المصروفات', 'icon' => 'fa-tags', 'route' => 'expense-types.index'],
             'shareholders' => ['label' => 'المساهمين', 'icon' => 'fa-people-group', 'route' => 'shareholders.index'],
             'properties' => ['label' => 'عقارات', 'icon' => 'fa-building', 'route' => 'properties.index'],
             'clients' => ['label' => 'عملاء', 'icon' => 'fa-users', 'route' => 'clients.index'],
