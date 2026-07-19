@@ -169,7 +169,8 @@ class LandParcelPaymentService
     }
 
     /**
-     * يسجّل سداد الشراء في جاري المساهم كرأس مال (بدون تكرار حركة الصندوق).
+     * يسجّل سداد الشراء كسحب من جاري المساهم (خرج من حسابه) بدون تكرار حركة الصندوق.
+     * التمويل الفعلي يُحسب من إسناد الدفعة (paid_by) وليس كإيداع رأس مال.
      */
     private function postPurchaseToShareholderLedger(
         LandParcel $parcel,
@@ -191,7 +192,7 @@ class LandParcelPaymentService
 
         $payload = [
             'land_parcel_id' => (int) $parcel->id,
-            'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
+            'type' => ShareholderLedgerEntry::TYPE_WITHDRAWAL,
             'amount' => round((float) $payment->amount, 2),
             'entry_date' => $payment->paid_at?->toDateString() ?? now()->toDateString(),
             'notes' => $note,

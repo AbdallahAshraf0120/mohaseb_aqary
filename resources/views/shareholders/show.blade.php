@@ -227,7 +227,7 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <h5 class="mb-0"><i class="fa-solid fa-map-location-dot text-warning ms-1"></i> حركات أراضي البيع/الشراء</h5>
-                <div class="small text-body-secondary">سداد خرج من حسابه · تحصيل دخل حسابه</div>
+                <div class="small text-body-secondary">سداد = يخصم من الجاري · تحصيل = يضيف للجاري</div>
             </div>
             <span class="badge text-bg-light">{{ ($landPayments ?? collect())->count() }} حركة</span>
         </div>

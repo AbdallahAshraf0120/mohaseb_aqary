@@ -599,7 +599,15 @@
         <div class="row g-3 mb-3">
             <div class="col-lg-6">
                 <div class="card app-surface h-100">
-                    <div class="card-header"><h6 class="mb-0">جدول أقساط / دفعات الشراء</h6></div>
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <h6 class="mb-0">جدول أقساط / دفعات الشراء</h6>
+                            <div class="small text-body-secondary">عمود «مدفوع» يتحدث تلقائيًا من السدادات في السجل بالأسفل</div>
+                        </div>
+                        <span class="badge text-bg-danger">
+                            مدفوع إجمالي: {{ number_format((float) ($purchasePaid ?? 0), 2) }} ج.م
+                        </span>
+                    </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-sm align-middle mb-0">
@@ -678,7 +686,7 @@
                                     </div>
                                     <div class="col-12">
                                         <input name="notes" class="form-control form-control-sm" placeholder="ملاحظة (اختياري)" value="{{ old('side') === 'purchase' ? old('notes') : '' }}">
-                                        <div class="form-text">يُخصم من حساب المساهم ويُحسب في تمويله الفعلي ويظهر في بروفايله</div>
+                                        <div class="form-text">يُخصم من جاري المساهم (الرصيد ينقص) · يُحسب في تمويله الفعلي على الأرض · يظهر في جدول الأقساط أعلاه وفي بروفايله</div>
                                     </div>
                                 </form>
                             </div>
