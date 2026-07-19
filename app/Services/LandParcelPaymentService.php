@@ -53,12 +53,29 @@ class LandParcelPaymentService
                 ? (int) $data['received_by_shareholder_id']
                 : null;
 
-            if ($side === LandParcelPayment::SIDE_PURCHASE && $paidById !== null) {
-                $this->assertParcelShareholder((int) $parcel->id, $paidById, 'المساهم الدافع غير مرتبط بهذه الأرض.');
+            $hasMembers = LandParcelShareholder::query()
+                ->where('land_parcel_id', (int) $parcel->id)
+                ->exists();
+
+            if ($side === LandParcelPayment::SIDE_PURCHASE) {
+                if ($hasMembers && $paidById === null) {
+                    throw new InvalidArgumentException('اختر المساهم: خرج من حساب مين.');
+                }
+                if ($paidById !== null) {
+                    $this->assertParcelShareholder((int) $parcel->id, $paidById, 'المساهم (خرج من حسابه) غير مرتبط بهذه الأرض.');
+                }
+                // السداد يخرج من حساب الدافع فقط
+                $receivedById = null;
             }
 
-            if ($receivedById !== null) {
-                $this->assertParcelShareholder((int) $parcel->id, $receivedById, 'المساهم المستلم غير مرتبط بهذه الأرض.');
+            if ($side === LandParcelPayment::SIDE_SALE) {
+                if ($hasMembers && $receivedById === null) {
+                    throw new InvalidArgumentException('اختر المساهم: دخل حساب مين.');
+                }
+                if ($receivedById !== null) {
+                    $this->assertParcelShareholder((int) $parcel->id, $receivedById, 'المساهم (دخل حسابه) غير مرتبط بهذه الأرض.');
+                }
+                $paidById = null;
             }
 
             $part = null;
@@ -119,6 +136,7 @@ class LandParcelPaymentService
             if ($side === LandParcelPayment::SIDE_PURCHASE
                 && $paidById !== null
                 && ($payment->approval_status ?? '') === 'approved') {
+                $this->postPurchaseToShareholderLedger($parcel, $payment, $paidById, $user);
                 $this->ownershipService->syncLandActual((int) $parcel->id);
             }
 
@@ -148,6 +166,43 @@ class LandParcelPaymentService
         if (! $member) {
             throw new InvalidArgumentException($message);
         }
+    }
+
+    /**
+     * يسجّل سداد الشراء في جاري المساهم كرأس مال (بدون تكرار حركة الصندوق).
+     */
+    private function postPurchaseToShareholderLedger(
+        LandParcel $parcel,
+        LandParcelPayment $payment,
+        int $paidById,
+        ?User $user
+    ): void {
+        $shareholder = Shareholder::query()->find($paidById);
+        if (! $shareholder instanceof Shareholder) {
+            return;
+        }
+
+        $note = sprintf(
+            'سداد شراء أرض «%s» — %s — خرج من حساب المساهم — دفعة #%d',
+            $parcel->name,
+            $payment->kindLabel(),
+            (int) $payment->id
+        );
+
+        $payload = [
+            'land_parcel_id' => (int) $parcel->id,
+            'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
+            'amount' => round((float) $payment->amount, 2),
+            'entry_date' => $payment->paid_at?->toDateString() ?? now()->toDateString(),
+            'notes' => $note,
+            'skip_cashbox' => true,
+        ];
+
+        if (Schema::hasColumn('shareholder_ledger_entries', 'land_parcel_payment_id')) {
+            $payload['land_parcel_payment_id'] = (int) $payment->id;
+        }
+
+        $this->shareholderLedgerService->create($shareholder, $payload, $user);
     }
 
     /**
@@ -203,7 +258,7 @@ class LandParcelPaymentService
                 }
 
                 $note = sprintf(
-                    'توزيع تحصيل بيع أرض «%s»%s — أساس %s%s — دفعة #%d',
+                    'تحصيل بيع أرض «%s»%s — دخل حساب المساهم — أساس %s%s — دفعة #%d',
                     $parcel->name,
                     $partLabel ? ' / جزء: '.$partLabel : '',
                     $basis === LandParcelPaymentDistribution::BASIS_PLANNED ? 'مخطط' : ($basis === LandParcelPaymentDistribution::BASIS_ACTUAL ? 'فعلي' : 'يدوي'),

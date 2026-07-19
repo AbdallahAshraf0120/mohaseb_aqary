@@ -23,6 +23,16 @@
     @if (session('error'))
         <div class="alert alert-danger">{{ session('error') }}</div>
     @endif
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <div class="fw-semibold mb-1">تعذّر حفظ الحركة:</div>
+            <ul class="mb-0 small">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
     @if (empty($paymentsReady))
         <div class="alert alert-warning">أقساط وتحصيل الأراضي تحتاج: <code>php artisan migrate --force</code></div>
     @endif
@@ -309,7 +319,7 @@
                                                     </div>
                                                 @endif
                                                 <div class="col-md-3">
-                                                    <label class="form-label small">راجعت لحساب مين (المستلم)</label>
+                                                    <label class="form-label small">دخل حساب مين</label>
                                                     <select name="received_by_shareholder_id" class="form-select form-select-sm" {{ ($parcelShareholders ?? collect())->isNotEmpty() ? 'required' : '' }}>
                                                         <option value="">— اختر المساهم —</option>
                                                         @foreach ($parcelShareholders ?? [] as $row)
@@ -652,23 +662,12 @@
                                             <option value="check">شيك</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label small">مين دفع (تمويل فعلي)</label>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">خرج من حساب مين</label>
                                         <select name="paid_by_shareholder_id" class="form-select form-select-sm" {{ ($parcelShareholders ?? collect())->isNotEmpty() ? 'required' : '' }}>
-                                            <option value="">— اختر —</option>
+                                            <option value="">— اختر المساهم —</option>
                                             @foreach ($parcelShareholders ?? [] as $row)
                                                 <option value="{{ $row->shareholder_id }}" @selected((string) old('paid_by_shareholder_id') === (string) $row->shareholder_id)>
-                                                    {{ $row->shareholder->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label small">راجعت لحساب مين (المستلم)</label>
-                                        <select name="received_by_shareholder_id" class="form-select form-select-sm" {{ ($parcelShareholders ?? collect())->isNotEmpty() ? 'required' : '' }}>
-                                            <option value="">— اختر —</option>
-                                            @foreach ($parcelShareholders ?? [] as $row)
-                                                <option value="{{ $row->shareholder_id }}" @selected((string) old('received_by_shareholder_id') === (string) $row->shareholder_id)>
                                                     {{ $row->shareholder->name }}
                                                 </option>
                                             @endforeach
@@ -679,7 +678,7 @@
                                     </div>
                                     <div class="col-12">
                                         <input name="notes" class="form-control form-control-sm" placeholder="ملاحظة (اختياري)" value="{{ old('side') === 'purchase' ? old('notes') : '' }}">
-                                        <div class="form-text">النسب من البداية · التمويل الفعلي يتراكم مع كل سداد منسوب لمساهم دافع</div>
+                                        <div class="form-text">يُخصم من حساب المساهم ويُحسب في تمويله الفعلي ويظهر في بروفايله</div>
                                     </div>
                                 </form>
                             </div>
@@ -756,10 +755,10 @@
                                             <option value="check">شيك</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label small">راجعت لحساب مين (المستلم)</label>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">دخل حساب مين</label>
                                         <select name="received_by_shareholder_id" class="form-select form-select-sm" {{ ($parcelShareholders ?? collect())->isNotEmpty() ? 'required' : '' }}>
-                                            <option value="">— اختر —</option>
+                                            <option value="">— اختر المساهم —</option>
                                             @foreach ($parcelShareholders ?? [] as $row)
                                                 <option value="{{ $row->shareholder_id }}" @selected((string) old('received_by_shareholder_id') === (string) $row->shareholder_id)>
                                                     {{ $row->shareholder->name }}
@@ -772,7 +771,7 @@
                                     </div>
                                     <div class="col-12">
                                         <input name="notes" class="form-control form-control-sm" placeholder="ملاحظة (اختياري)" value="{{ old('side') === 'sale' ? old('notes') : '' }}">
-                                        <div class="form-text">يُضاف المبلغ لصندوق الأراضي ولجاري المساهم المستلم مباشرة</div>
+                                        <div class="form-text">يدخل صندوق الأراضي وجاري المساهم المختار ويظهر في بروفايله</div>
                                     </div>
                                 </form>
                             </div>
@@ -794,8 +793,8 @@
                             <th>الجزء</th>
                             <th>النوع</th>
                             <th class="text-end">المبلغ</th>
-                            <th>مين دفع</th>
-                            <th>راجعت لحساب</th>
+                            <th>خرج من حساب</th>
+                            <th>دخل حساب</th>
                             <th>الطريقة</th>
                             <th>الحالة</th>
                             <th>ملاحظة</th>
@@ -822,11 +821,13 @@
                                     @endif
                                 </td>
                                 <td class="small">
-                                    {{ $payment->receivedByShareholder?->name ?? '—' }}
                                     @if ($payment->side === 'sale')
+                                        {{ $payment->receivedByShareholder?->name ?? '—' }}
                                         <div class="text-body-secondary" style="font-size: .75rem;">
-                                            {{ ($payment->distribution_status ?? '') === 'distributed' ? 'موزّع للجاري' : (($payment->distribution_status ?? '') === 'pending' ? 'بانتظار التوزيع' : '') }}
+                                            {{ ($payment->distribution_status ?? '') === 'distributed' ? 'في الجاري' : (($payment->distribution_status ?? '') === 'pending' ? 'بانتظار التوزيع' : '') }}
                                         </div>
+                                    @else
+                                        <span class="text-body-secondary">صندوق الأراضي</span>
                                     @endif
                                 </td>
                                 <td class="small">{{ $payment->payment_method }}</td>

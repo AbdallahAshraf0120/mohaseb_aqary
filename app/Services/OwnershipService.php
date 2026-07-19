@@ -9,6 +9,7 @@ use App\Models\OwnershipSnapshot;
 use App\Models\Project;
 use App\Models\ProjectShareholder;
 use App\Models\Shareholder;
+use App\Models\ShareholderLedgerEntry;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -37,12 +38,26 @@ class OwnershipService
             return 0.0;
         }
 
-        return round((float) LandParcelPayment::query()
+        $query = LandParcelPayment::query()
             ->where('land_parcel_id', $landParcelId)
             ->where('side', LandParcelPayment::SIDE_PURCHASE)
             ->where('approval_status', 'approved')
-            ->where('paid_by_shareholder_id', $shareholderId)
-            ->sum('amount'), 2);
+            ->where('paid_by_shareholder_id', $shareholderId);
+
+        // تجنّب العد المزدوج: الدفعات اللي اتسجّلت كرأس مال في الجاري
+        if (Schema::hasTable('shareholder_ledger_entries')
+            && Schema::hasColumn('shareholder_ledger_entries', 'land_parcel_payment_id')) {
+            $linkedIds = ShareholderLedgerEntry::withoutProjectScope()
+                ->where('shareholder_id', $shareholderId)
+                ->where('type', ShareholderLedgerEntry::TYPE_CAPITAL)
+                ->whereNotNull('land_parcel_payment_id')
+                ->pluck('land_parcel_payment_id');
+            if ($linkedIds->isNotEmpty()) {
+                $query->whereNotIn('id', $linkedIds);
+            }
+        }
+
+        return round((float) $query->sum('amount'), 2);
     }
 
     public function syncProjectActual(int $projectId): void

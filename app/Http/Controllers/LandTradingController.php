@@ -372,6 +372,7 @@ class LandTradingController extends Controller
             && LandParcelShareholder::query()->where('land_parcel_id', (int) $parcel->id)->exists();
 
         if (Schema::hasColumn('land_parcel_payments', 'paid_by_shareholder_id')) {
+            // سداد الشراء: خرج من حساب مين
             $rules['paid_by_shareholder_id'] = [
                 Rule::requiredIf(fn () => $request->input('side') === 'purchase' && $hasShareholders),
                 'nullable',
@@ -380,8 +381,9 @@ class LandTradingController extends Controller
             ];
         }
         if (Schema::hasColumn('land_parcel_payments', 'received_by_shareholder_id')) {
+            // تحصيل البيع: دخل حساب مين
             $rules['received_by_shareholder_id'] = [
-                Rule::requiredIf(fn () => $hasShareholders),
+                Rule::requiredIf(fn () => $request->input('side') === 'sale' && $hasShareholders),
                 'nullable',
                 'integer',
                 'exists:shareholders,id',
@@ -404,8 +406,8 @@ class LandTradingController extends Controller
         }
 
         $msg = $data['side'] === 'purchase'
-            ? 'تم تسجيل دفعة الشراء (الدافع والمستلم) وتحديث التمويل الفعلي وصندوق الأراضي.'
-            : 'تم تسجيل تحصيل البيع في الصندوق وإضافته لجاري المساهم المستلم.';
+            ? 'تم تسجيل السداد: خرج من حساب المساهم، وتحديث التمويل الفعلي وصندوق الأراضي.'
+            : 'تم تسجيل التحصيل: دخل حساب المساهم وجاريّه، وصندوق الأراضي.';
 
         return redirect()
             ->route('land-trading.show', $parcel)

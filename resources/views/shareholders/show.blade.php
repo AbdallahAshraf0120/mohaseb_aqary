@@ -225,6 +225,84 @@
 
     <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="mb-0"><i class="fa-solid fa-map-location-dot text-warning ms-1"></i> حركات أراضي البيع/الشراء</h5>
+                <div class="small text-body-secondary">سداد خرج من حسابه · تحصيل دخل حسابه</div>
+            </div>
+            <span class="badge text-bg-light">{{ ($landPayments ?? collect())->count() }} حركة</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>الأرض</th>
+                        <th>النوع</th>
+                        <th class="text-end">المبلغ</th>
+                        <th>خرج من حساب</th>
+                        <th>دخل حساب</th>
+                        <th>الحالة</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @forelse ($landPayments ?? [] as $payment)
+                        <tr>
+                            <td class="font-monospace small">{{ $payment->paid_at?->format('Y-m-d') }}</td>
+                            <td class="small">
+                                {{ $payment->landParcel?->name ?? '—' }}
+                                @if ($payment->part)
+                                    <span class="text-body-secondary">/ {{ $payment->part->name }}</span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="badge {{ $payment->side === 'purchase' ? 'text-bg-danger' : 'text-bg-success' }}">
+                                    {{ $payment->side === 'purchase' ? 'سداد شراء' : 'تحصيل بيع' }}
+                                </span>
+                                <div class="small text-body-secondary">{{ $payment->kindLabel() }}</div>
+                            </td>
+                            <td class="text-end font-monospace">{{ number_format((float) $payment->amount, 2) }}</td>
+                            <td class="small">
+                                @if ($payment->side === 'purchase')
+                                    <strong class="{{ (int) $payment->paid_by_shareholder_id === (int) $shareholder->id ? '' : 'text-body-secondary' }}">
+                                        {{ $payment->paidByShareholder?->name ?? '—' }}
+                                    </strong>
+                                @else
+                                    <span class="text-body-secondary">المشتري</span>
+                                @endif
+                            </td>
+                            <td class="small">
+                                @if ($payment->side === 'sale')
+                                    <strong class="{{ (int) $payment->received_by_shareholder_id === (int) $shareholder->id ? '' : 'text-body-secondary' }}">
+                                        {{ $payment->receivedByShareholder?->name ?? '—' }}
+                                    </strong>
+                                @else
+                                    <span class="text-body-secondary">صندوق الأراضي</span>
+                                @endif
+                            </td>
+                            <td class="small">{{ $payment->approval_status }}</td>
+                            <td class="text-end">
+                                @if ($payment->landParcel)
+                                    <a href="{{ route('land-trading.show', $payment->landParcel) }}" class="btn btn-outline-info btn-sm">الأرض</a>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                لا توجد سدادات/تحصيلات منسوبة لهذا المساهم بعد.
+                            </td>
+                        </tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card app-surface mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="mb-0"><i class="fa-solid fa-book-open text-primary ms-1"></i> دفتر جاري المساهم (موحّد)</h5>
             <span class="badge {{ $ledgerBalance >= 0 ? 'text-bg-success' : 'text-bg-danger' }}">
                 الرصيد: {{ number_format((float) $ledgerBalance, 2) }} ج.م

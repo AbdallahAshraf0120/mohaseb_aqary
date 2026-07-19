@@ -8,6 +8,7 @@ use App\Http\Requests\StoreShareholderRequest;
 use App\Http\Requests\UpdateShareholderFundingRequest;
 use App\Http\Requests\UpdateShareholderRequest;
 use App\Models\LandParcel;
+use App\Models\LandParcelPayment;
 use App\Models\Project;
 use App\Models\ProjectShareholder;
 use App\Models\Shareholder;
@@ -162,6 +163,23 @@ class ShareholderController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        $landPayments = collect();
+        if (Schema::hasTable('land_parcel_payments')) {
+            $sid = (int) $shareholder->id;
+            $landPayments = LandParcelPayment::query()
+                ->with(['landParcel:id,name', 'part:id,name', 'paidByShareholder:id,name', 'receivedByShareholder:id,name'])
+                ->where(function ($q) use ($sid): void {
+                    $q->where('paid_by_shareholder_id', $sid);
+                    if (Schema::hasColumn('land_parcel_payments', 'received_by_shareholder_id')) {
+                        $q->orWhere('received_by_shareholder_id', $sid);
+                    }
+                })
+                ->orderByDesc('paid_at')
+                ->orderByDesc('id')
+                ->limit(100)
+                ->get();
+        }
+
         $projectBreakdown = [];
         foreach ($memberships as $membership) {
             $project = $membership->project;
@@ -224,6 +242,7 @@ class ShareholderController extends Controller
             'landBreakdown' => $landBreakdown,
             'participations' => $participations,
             'ledgerEntries' => $ledgerEntries,
+            'landPayments' => $landPayments,
             'ledgerBalance' => $shareholder->ledgerBalance(),
             'capitalDepositsTotal' => $shareholder->capitalDepositsTotal(),
             'availableProjects' => $availableProjects,
