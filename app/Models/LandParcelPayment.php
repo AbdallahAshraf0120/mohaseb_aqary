@@ -37,6 +37,7 @@ class LandParcelPayment extends Model
         'rejection_reason',
         'created_by',
         'paid_by_shareholder_id',
+        'received_by_shareholder_id',
         'distribution_status',
     ];
 
@@ -68,6 +69,11 @@ class LandParcelPayment extends Model
     public function paidByShareholder(): BelongsTo
     {
         return $this->belongsTo(Shareholder::class, 'paid_by_shareholder_id');
+    }
+
+    public function receivedByShareholder(): BelongsTo
+    {
+        return $this->belongsTo(Shareholder::class, 'received_by_shareholder_id');
     }
 
     public function distributions(): HasMany

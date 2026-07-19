@@ -228,7 +228,12 @@ class LandTradingController extends Controller
             : collect();
 
         $payments = $paymentsReady
-            ? $parcel->payments()->with(['creator:id,name', 'part:id,name', 'paidByShareholder:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->get()
+            ? $parcel->payments()->with([
+                'creator:id,name',
+                'part:id,name',
+                'paidByShareholder:id,name',
+                'receivedByShareholder:id,name',
+            ])->orderByDesc('paid_at')->orderByDesc('id')->get()
             : collect();
 
         $partsSaleTotal = $partsReady ? (float) $parts->sum(fn (LandParcelPart $p) => (float) $p->sale_price) : 0.0;
@@ -363,11 +368,20 @@ class LandTradingController extends Controller
             'payment_method' => ['required', 'in:cash,bank_transfer,check'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
+        $hasShareholders = Schema::hasTable('land_parcel_shareholder')
+            && LandParcelShareholder::query()->where('land_parcel_id', (int) $parcel->id)->exists();
+
         if (Schema::hasColumn('land_parcel_payments', 'paid_by_shareholder_id')) {
-            $hasShareholders = Schema::hasTable('land_parcel_shareholder')
-                && LandParcelShareholder::query()->where('land_parcel_id', (int) $parcel->id)->exists();
             $rules['paid_by_shareholder_id'] = [
                 Rule::requiredIf(fn () => $request->input('side') === 'purchase' && $hasShareholders),
+                'nullable',
+                'integer',
+                'exists:shareholders,id',
+            ];
+        }
+        if (Schema::hasColumn('land_parcel_payments', 'received_by_shareholder_id')) {
+            $rules['received_by_shareholder_id'] = [
+                Rule::requiredIf(fn () => $hasShareholders),
                 'nullable',
                 'integer',
                 'exists:shareholders,id',
@@ -390,8 +404,8 @@ class LandTradingController extends Controller
         }
 
         $msg = $data['side'] === 'purchase'
-            ? 'تم تسجيل دفعة الشراء وإسنادها للمساهم وتحديث صندوق الأراضي.'
-            : 'تم تسجيل تحصيل البيع في الصندوق. وزّع المبلغ على المساهمين من قسم التوزيع.';
+            ? 'تم تسجيل دفعة الشراء (الدافع والمستلم) وتحديث التمويل الفعلي وصندوق الأراضي.'
+            : 'تم تسجيل تحصيل البيع في الصندوق وإضافته لجاري المساهم المستلم.';
 
         return redirect()
             ->route('land-trading.show', $parcel)

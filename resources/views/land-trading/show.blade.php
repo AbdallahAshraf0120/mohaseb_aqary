@@ -245,17 +245,7 @@
                                     @can('land-trading.manage')
                                         @if ($pRemaining > 0.01 && !empty($paymentsReady))
                                             @if (($part->sale_payment_type ?? 'cash') === 'cash')
-                                                <form method="post" action="{{ route('land-trading.payments.store', $parcel) }}" class="d-inline">
-                                                    @csrf
-                                                    <input type="hidden" name="side" value="sale">
-                                                    <input type="hidden" name="land_parcel_part_id" value="{{ $part->id }}">
-                                                    <input type="hidden" name="kind" value="down_payment">
-                                                    <input type="hidden" name="amount" value="{{ $pRemaining }}">
-                                                    <input type="hidden" name="paid_at" value="{{ now()->toDateString() }}">
-                                                    <input type="hidden" name="payment_method" value="cash">
-                                                    <input type="hidden" name="notes" value="تحصيل كاش كامل">
-                                                    <button type="submit" class="btn btn-success btn-sm">تسجيل الكاش</button>
-                                                </form>
+                                                <button type="button" class="btn btn-success btn-sm" data-bs-toggle="collapse" data-bs-target="#collect-part-{{ $part->id }}">تسجيل الكاش</button>
                                             @else
                                                 <button type="button" class="btn btn-success btn-sm" data-bs-toggle="collapse" data-bs-target="#collect-part-{{ $part->id }}">تحصيل قسط</button>
                                             @endif
@@ -271,43 +261,70 @@
                                 </td>
                             </tr>
                             @can('land-trading.manage')
-                                @if ($pRemaining > 0.01 && !empty($paymentsReady) && ($part->sale_payment_type ?? '') === 'installment')
+                                @if ($pRemaining > 0.01 && !empty($paymentsReady) && in_array($part->sale_payment_type ?? 'cash', ['cash', 'installment'], true))
+                                    @php $isPartCash = ($part->sale_payment_type ?? 'cash') === 'cash'; @endphp
                                     <tr class="collapse" id="collect-part-{{ $part->id }}">
                                         <td colspan="9" class="bg-body-tertiary">
                                             <form method="post" action="{{ route('land-trading.payments.store', $parcel) }}" class="row g-2 align-items-end p-2">
                                                 @csrf
                                                 <input type="hidden" name="side" value="sale">
                                                 <input type="hidden" name="land_parcel_part_id" value="{{ $part->id }}">
-                                                <div class="col-md-2">
-                                                    <label class="form-label small">النوع</label>
-                                                    <select name="kind" class="form-select form-select-sm" required>
-                                                        <option value="down_payment">مقدم</option>
-                                                        <option value="installment" selected>قسط</option>
-                                                        <option value="other">أخرى</option>
+                                                @if ($isPartCash)
+                                                    <input type="hidden" name="kind" value="down_payment">
+                                                    <input type="hidden" name="amount" value="{{ $pRemaining }}">
+                                                    <input type="hidden" name="payment_method" value="cash">
+                                                    <input type="hidden" name="notes" value="تحصيل كاش كامل">
+                                                    <div class="col-md-3">
+                                                        <div class="small text-body-secondary">تحصيل كاش كامل</div>
+                                                        <div class="fw-semibold font-monospace">{{ number_format($pRemaining, 2) }} ج.م</div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label small">التاريخ</label>
+                                                        <input type="date" name="paid_at" class="form-control form-control-sm" value="{{ now()->toDateString() }}" required>
+                                                    </div>
+                                                @else
+                                                    <div class="col-md-2">
+                                                        <label class="form-label small">النوع</label>
+                                                        <select name="kind" class="form-select form-select-sm" required>
+                                                            <option value="down_payment">مقدم</option>
+                                                            <option value="installment" selected>قسط</option>
+                                                            <option value="other">أخرى</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label small">المبلغ</label>
+                                                        <input type="number" step="0.01" min="0.01" max="{{ $pRemaining }}" name="amount" class="form-control form-control-sm font-monospace" required>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label small">التاريخ</label>
+                                                        <input type="date" name="paid_at" class="form-control form-control-sm" value="{{ now()->toDateString() }}" required>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label small">الطريقة</label>
+                                                        <select name="payment_method" class="form-select form-select-sm" required>
+                                                            <option value="cash">نقدي</option>
+                                                            <option value="bank_transfer">تحويل</option>
+                                                            <option value="check">شيك</option>
+                                                        </select>
+                                                    </div>
+                                                @endif
+                                                <div class="col-md-3">
+                                                    <label class="form-label small">راجعت لحساب مين (المستلم)</label>
+                                                    <select name="received_by_shareholder_id" class="form-select form-select-sm" {{ ($parcelShareholders ?? collect())->isNotEmpty() ? 'required' : '' }}>
+                                                        <option value="">— اختر المساهم —</option>
+                                                        @foreach ($parcelShareholders ?? [] as $row)
+                                                            <option value="{{ $row->shareholder_id }}">{{ $row->shareholder->name }}</option>
+                                                        @endforeach
                                                     </select>
                                                 </div>
+                                                @unless ($isPartCash)
+                                                    <div class="col-md-2">
+                                                        <label class="form-label small">ملاحظة</label>
+                                                        <input name="notes" class="form-control form-control-sm" placeholder="اختياري">
+                                                    </div>
+                                                @endunless
                                                 <div class="col-md-2">
-                                                    <label class="form-label small">المبلغ</label>
-                                                    <input type="number" step="0.01" min="0.01" max="{{ $pRemaining }}" name="amount" class="form-control form-control-sm font-monospace" required>
-                                                </div>
-                                                <div class="col-md-2">
-                                                    <label class="form-label small">التاريخ</label>
-                                                    <input type="date" name="paid_at" class="form-control form-control-sm" value="{{ now()->toDateString() }}" required>
-                                                </div>
-                                                <div class="col-md-2">
-                                                    <label class="form-label small">الطريقة</label>
-                                                    <select name="payment_method" class="form-select form-select-sm" required>
-                                                        <option value="cash">نقدي</option>
-                                                        <option value="bank_transfer">تحويل</option>
-                                                        <option value="check">شيك</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-2">
-                                                    <label class="form-label small">ملاحظة</label>
-                                                    <input name="notes" class="form-control form-control-sm" placeholder="اختياري">
-                                                </div>
-                                                <div class="col-md-2">
-                                                    <button type="submit" class="btn btn-success btn-sm w-100">حفظ التحصيل</button>
+                                                    <button type="submit" class="btn btn-success btn-sm w-100">{{ $isPartCash ? 'تسجيل الكاش' : 'حفظ التحصيل' }}</button>
                                                 </div>
                                             </form>
                                             @if ($part->installmentScheduleWithPaymentSummary() !== [])
@@ -611,7 +628,7 @@
                                 <form method="post" action="{{ route('land-trading.payments.store', $parcel) }}" class="row g-2 align-items-end">
                                     @csrf
                                     <input type="hidden" name="side" value="purchase">
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <label class="form-label small">النوع</label>
                                         <select name="kind" class="form-select form-select-sm" required>
                                             <option value="down_payment">مقدم</option>
@@ -619,7 +636,7 @@
                                             <option value="other">أخرى</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <label class="form-label small">المبلغ</label>
                                         <input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm font-monospace" value="{{ old('side') === 'purchase' ? old('amount') : '' }}" required>
                                     </div>
@@ -636,11 +653,22 @@
                                         </select>
                                     </div>
                                     <div class="col-md-2">
-                                        <label class="form-label small">المساهم الدافع</label>
-                                        <select name="paid_by_shareholder_id" class="form-select form-select-sm" required>
+                                        <label class="form-label small">مين دفع (تمويل فعلي)</label>
+                                        <select name="paid_by_shareholder_id" class="form-select form-select-sm" {{ ($parcelShareholders ?? collect())->isNotEmpty() ? 'required' : '' }}>
                                             <option value="">— اختر —</option>
                                             @foreach ($parcelShareholders ?? [] as $row)
                                                 <option value="{{ $row->shareholder_id }}" @selected((string) old('paid_by_shareholder_id') === (string) $row->shareholder_id)>
+                                                    {{ $row->shareholder->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">راجعت لحساب مين (المستلم)</label>
+                                        <select name="received_by_shareholder_id" class="form-select form-select-sm" {{ ($parcelShareholders ?? collect())->isNotEmpty() ? 'required' : '' }}>
+                                            <option value="">— اختر —</option>
+                                            @foreach ($parcelShareholders ?? [] as $row)
+                                                <option value="{{ $row->shareholder_id }}" @selected((string) old('received_by_shareholder_id') === (string) $row->shareholder_id)>
                                                     {{ $row->shareholder->name }}
                                                 </option>
                                             @endforeach
@@ -651,6 +679,7 @@
                                     </div>
                                     <div class="col-12">
                                         <input name="notes" class="form-control form-control-sm" placeholder="ملاحظة (اختياري)" value="{{ old('side') === 'purchase' ? old('notes') : '' }}">
+                                        <div class="form-text">النسب من البداية · التمويل الفعلي يتراكم مع كل سداد منسوب لمساهم دافع</div>
                                     </div>
                                 </form>
                             </div>
@@ -703,7 +732,7 @@
                                 <form method="post" action="{{ route('land-trading.payments.store', $parcel) }}" class="row g-2 align-items-end">
                                     @csrf
                                     <input type="hidden" name="side" value="sale">
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <label class="form-label small">النوع</label>
                                         <select name="kind" class="form-select form-select-sm" required>
                                             <option value="down_payment">مقدم</option>
@@ -711,7 +740,7 @@
                                             <option value="other">أخرى</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <label class="form-label small">المبلغ</label>
                                         <input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm font-monospace" value="{{ old('side') === 'sale' ? old('amount') : '' }}" required>
                                     </div>
@@ -728,10 +757,22 @@
                                         </select>
                                     </div>
                                     <div class="col-md-2">
+                                        <label class="form-label small">راجعت لحساب مين (المستلم)</label>
+                                        <select name="received_by_shareholder_id" class="form-select form-select-sm" {{ ($parcelShareholders ?? collect())->isNotEmpty() ? 'required' : '' }}>
+                                            <option value="">— اختر —</option>
+                                            @foreach ($parcelShareholders ?? [] as $row)
+                                                <option value="{{ $row->shareholder_id }}" @selected((string) old('received_by_shareholder_id') === (string) $row->shareholder_id)>
+                                                    {{ $row->shareholder->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
                                         <button type="submit" class="btn btn-success btn-sm w-100">تحصيل</button>
                                     </div>
                                     <div class="col-12">
                                         <input name="notes" class="form-control form-control-sm" placeholder="ملاحظة (اختياري)" value="{{ old('side') === 'sale' ? old('notes') : '' }}">
+                                        <div class="form-text">يُضاف المبلغ لصندوق الأراضي ولجاري المساهم المستلم مباشرة</div>
                                     </div>
                                 </form>
                             </div>
@@ -753,7 +794,8 @@
                             <th>الجزء</th>
                             <th>النوع</th>
                             <th class="text-end">المبلغ</th>
-                            <th>دافع / توزيع</th>
+                            <th>مين دفع</th>
+                            <th>راجعت لحساب</th>
                             <th>الطريقة</th>
                             <th>الحالة</th>
                             <th>ملاحظة</th>
@@ -776,7 +818,15 @@
                                     @if ($payment->side === 'purchase')
                                         {{ $payment->paidByShareholder?->name ?? '—' }}
                                     @else
-                                        {{ ($payment->distribution_status ?? '') === 'distributed' ? 'موزّع' : (($payment->distribution_status ?? '') === 'pending' ? 'بانتظار التوزيع' : '—') }}
+                                        <span class="text-body-secondary">المشتري</span>
+                                    @endif
+                                </td>
+                                <td class="small">
+                                    {{ $payment->receivedByShareholder?->name ?? '—' }}
+                                    @if ($payment->side === 'sale')
+                                        <div class="text-body-secondary" style="font-size: .75rem;">
+                                            {{ ($payment->distribution_status ?? '') === 'distributed' ? 'موزّع للجاري' : (($payment->distribution_status ?? '') === 'pending' ? 'بانتظار التوزيع' : '') }}
+                                        </div>
                                     @endif
                                 </td>
                                 <td class="small">{{ $payment->payment_method }}</td>
@@ -793,7 +843,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="10" class="text-center text-muted py-4">لا توجد دفعات مسجّلة بعد.</td></tr>
+                            <tr><td colspan="11" class="text-center text-muted py-4">لا توجد دفعات مسجّلة بعد.</td></tr>
                         @endforelse
                         </tbody>
                     </table>

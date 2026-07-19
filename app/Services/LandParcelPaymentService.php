@@ -31,7 +31,8 @@ class LandParcelPaymentService
      *     payment_method?: string,
      *     notes?: string|null,
      *     land_parcel_part_id?: int|null,
-     *     paid_by_shareholder_id?: int|null
+     *     paid_by_shareholder_id?: int|null,
+     *     received_by_shareholder_id?: int|null
      * }  $data
      */
     public function create(LandParcel $parcel, array $data, ?User $user): LandParcelPayment
@@ -48,14 +49,16 @@ class LandParcelPaymentService
                 ? (int) $data['paid_by_shareholder_id']
                 : null;
 
+            $receivedById = isset($data['received_by_shareholder_id']) && $data['received_by_shareholder_id'] !== null && $data['received_by_shareholder_id'] !== ''
+                ? (int) $data['received_by_shareholder_id']
+                : null;
+
             if ($side === LandParcelPayment::SIDE_PURCHASE && $paidById !== null) {
-                $member = LandParcelShareholder::query()
-                    ->where('land_parcel_id', (int) $parcel->id)
-                    ->where('shareholder_id', $paidById)
-                    ->exists();
-                if (! $member) {
-                    throw new InvalidArgumentException('المساهم الدافع غير مرتبط بهذه الأرض.');
-                }
+                $this->assertParcelShareholder((int) $parcel->id, $paidById, 'المساهم الدافع غير مرتبط بهذه الأرض.');
+            }
+
+            if ($receivedById !== null) {
+                $this->assertParcelShareholder((int) $parcel->id, $receivedById, 'المساهم المستلم غير مرتبط بهذه الأرض.');
             }
 
             $part = null;
@@ -79,11 +82,6 @@ class LandParcelPaymentService
                 throw new InvalidArgumentException('المبلغ أكبر من المتبقي ('.$remaining.').');
             }
 
-            $distributionStatus = 'none';
-            if ($side === LandParcelPayment::SIDE_SALE) {
-                $distributionStatus = $isAdmin ? 'pending' : 'pending';
-            }
-
             $payload = [
                 'land_parcel_id' => (int) $parcel->id,
                 'land_parcel_part_id' => $partId,
@@ -102,8 +100,11 @@ class LandParcelPaymentService
             if (Schema::hasColumn('land_parcel_payments', 'paid_by_shareholder_id')) {
                 $payload['paid_by_shareholder_id'] = $side === LandParcelPayment::SIDE_PURCHASE ? $paidById : null;
             }
+            if (Schema::hasColumn('land_parcel_payments', 'received_by_shareholder_id')) {
+                $payload['received_by_shareholder_id'] = $receivedById;
+            }
             if (Schema::hasColumn('land_parcel_payments', 'distribution_status')) {
-                $payload['distribution_status'] = $distributionStatus;
+                $payload['distribution_status'] = $side === LandParcelPayment::SIDE_SALE ? 'pending' : 'none';
             }
 
             $payment = LandParcelPayment::query()->create($payload);
@@ -121,8 +122,32 @@ class LandParcelPaymentService
                 $this->ownershipService->syncLandActual((int) $parcel->id);
             }
 
-            return $payment->fresh(['landParcel', 'part', 'creator', 'paidByShareholder']) ?? $payment;
+            if ($side === LandParcelPayment::SIDE_SALE
+                && $receivedById !== null
+                && ($payment->approval_status ?? '') === 'approved') {
+                $this->distributeSale(
+                    $parcel,
+                    $payment,
+                    LandParcelPaymentDistribution::BASIS_MANUAL,
+                    $user,
+                    [['shareholder_id' => $receivedById, 'amount' => $amount]]
+                );
+                $payment->refresh();
+            }
+
+            return $payment->fresh(['landParcel', 'part', 'creator', 'paidByShareholder', 'receivedByShareholder']) ?? $payment;
         });
+    }
+
+    private function assertParcelShareholder(int $parcelId, int $shareholderId, string $message): void
+    {
+        $member = LandParcelShareholder::query()
+            ->where('land_parcel_id', $parcelId)
+            ->where('shareholder_id', $shareholderId)
+            ->exists();
+        if (! $member) {
+            throw new InvalidArgumentException($message);
+        }
     }
 
     /**
