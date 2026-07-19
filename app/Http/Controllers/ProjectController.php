@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Facing;
+use App\Models\OwnershipSnapshot;
 use App\Models\Project;
 use App\Models\ProjectShareholder;
 use App\Models\TreasuryTransaction;
+use App\Services\OwnershipService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +18,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ProjectController extends Controller
 {
+    public function __construct(
+        private readonly OwnershipService $ownershipService,
+    ) {}
+
     public function index(): View
     {
         $projects = Project::query()->listed()->orderBy('name')->get();
@@ -53,7 +59,12 @@ class ProjectController extends Controller
         $data['is_active'] = true;
         $data['is_draft'] = false;
         if ($this->projectsHaveCapitalColumn()) {
-            $data['capital'] = round((float) ($data['capital'] ?? 0), 2);
+            $capital = round((float) ($data['capital'] ?? 0), 2);
+            $data['capital'] = $capital;
+            if (Schema::hasColumn('projects', 'planned_capital')) {
+                $data['planned_capital'] = $capital;
+                $data['actual_capital'] = 0;
+            }
         } else {
             unset($data['capital']);
         }
@@ -95,7 +106,11 @@ class ProjectController extends Controller
             'code' => $code,
         ];
         if ($this->projectsHaveCapitalColumn()) {
-            $payload['capital'] = round((float) ($data['capital'] ?? 0), 2);
+            $capital = round((float) ($data['capital'] ?? 0), 2);
+            $payload['capital'] = $capital;
+            if (Schema::hasColumn('projects', 'planned_capital')) {
+                $payload['planned_capital'] = $capital;
+            }
         }
 
         $remove = $request->boolean('remove_contract_template');
@@ -115,9 +130,31 @@ class ProjectController extends Controller
         $project->update($payload);
         $project = $project->fresh();
         $this->syncProjectCapitalCashbox($project, $request->user());
-        $this->recalculateShareholderPercentages($project);
+        if (Schema::hasColumn('project_shareholder', 'planned_investment')) {
+            $this->ownershipService->syncProjectPlannedPercentages($project);
+            $this->ownershipService->syncProjectActual((int) $project->id);
+        } else {
+            $this->recalculateShareholderPercentages($project);
+        }
 
         return redirect()->route('projects.index')->with('success', 'تم تحديث بيانات المشروع.');
+    }
+
+    public function adoptPlan(Request $request, Project $project): RedirectResponse
+    {
+        if (! Schema::hasTable('ownership_snapshots')) {
+            return back()->with('error', 'قاعدة البيانات غير محدّثة. شغّل: php artisan migrate --force');
+        }
+
+        $this->ownershipService->adoptPlanAsActual(
+            OwnershipSnapshot::TARGET_PROJECT,
+            (int) $project->id,
+            $request->user()
+        );
+
+        return redirect()
+            ->route('projects.edit', $project)
+            ->with('success', 'تم اعتماد المخطط كفعلي وتسجيل لقطة ملكية.');
     }
 
     public function downloadContractTemplate(Project $project): Response

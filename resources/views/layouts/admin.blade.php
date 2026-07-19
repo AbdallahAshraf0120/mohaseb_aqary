@@ -294,6 +294,13 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="{{ route('fund-transfers.index') }}"
+                                   class="nav-link {{ request()->routeIs('fund-transfers.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-right-left"></i>
+                                    <p>تحويلات الصناديق</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('global-cashbox.index') }}"
                                    class="nav-link {{ request()->routeIs('global-cashbox.*') ? 'active' : '' }}">
                                     <i class="nav-icon fa-solid fa-vault"></i>

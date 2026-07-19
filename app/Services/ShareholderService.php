@@ -14,7 +14,10 @@ use Illuminate\Support\Collection;
 
 class ShareholderService
 {
-    public function __construct(private readonly ShareholderRepositoryInterface $shareholders) {}
+    public function __construct(
+        private readonly ShareholderRepositoryInterface $shareholders,
+        private readonly OwnershipService $ownershipService,
+    ) {}
 
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
@@ -46,18 +49,7 @@ class ShareholderService
      */
     public function attachToProject(Shareholder $shareholder, Project $project, float $investment): ProjectShareholder
     {
-        $percentage = $project->shareholderPercentageForInvestment($investment);
-
-        return ProjectShareholder::query()->updateOrCreate(
-            [
-                'shareholder_id' => (int) $shareholder->id,
-                'project_id' => (int) $project->id,
-            ],
-            [
-                'total_investment' => round($investment, 2),
-                'share_percentage' => $percentage,
-            ]
-        );
+        return $this->ownershipService->setPlannedInvestmentForProject($shareholder, $project, $investment);
     }
 
     /**
@@ -65,18 +57,7 @@ class ShareholderService
      */
     public function attachToLandParcel(Shareholder $shareholder, LandParcel $parcel, float $investment): LandParcelShareholder
     {
-        $percentage = $parcel->shareholderPercentageForInvestment($investment);
-
-        return LandParcelShareholder::query()->updateOrCreate(
-            [
-                'shareholder_id' => (int) $shareholder->id,
-                'land_parcel_id' => (int) $parcel->id,
-            ],
-            [
-                'total_investment' => round($investment, 2),
-                'share_percentage' => $percentage,
-            ]
-        );
+        return $this->ownershipService->setPlannedInvestmentForLand($shareholder, $parcel, $investment);
     }
 
     /**

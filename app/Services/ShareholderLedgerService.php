@@ -12,6 +12,7 @@ use App\Models\TreasuryTransaction;
 use App\Models\User;
 use App\Support\CurrentProject;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 
 class ShareholderLedgerService
@@ -183,6 +184,13 @@ class ShareholderLedgerService
 
     public function syncProjectInvestment(Shareholder $shareholder, int $projectId): void
     {
+        // المخطط لا يُمس من حركات رأس المال؛ الفعلي يُعاد احتسابه
+        if (Schema::hasColumn('project_shareholder', 'actual_investment')) {
+            app(OwnershipService::class)->syncProjectActual($projectId);
+
+            return;
+        }
+
         $total = $shareholder->capitalDepositsTotal($projectId, null);
         $project = Project::query()->find($projectId);
         $percentage = $project
@@ -203,6 +211,12 @@ class ShareholderLedgerService
 
     public function syncLandInvestment(Shareholder $shareholder, int $landParcelId): void
     {
+        if (Schema::hasColumn('land_parcel_shareholder', 'actual_investment')) {
+            app(OwnershipService::class)->syncLandActual($landParcelId);
+
+            return;
+        }
+
         $total = $shareholder->capitalDepositsTotal(null, $landParcelId);
         $parcel = LandParcel::query()->find($landParcelId);
         $percentage = $parcel
@@ -229,7 +243,9 @@ class ShareholderLedgerService
         ?int $projectId,
         ?int $landParcelId,
         float $newAmount,
-        ?User $user = null
+        ?User $user = null,
+        bool $skipCashbox = false,
+        ?string $notes = null
     ): void {
         if (($projectId === null) === ($landParcelId === null)) {
             throw new InvalidArgumentException('يجب تحديد مشروع أو أرض واحدة فقط.');
@@ -253,7 +269,7 @@ class ShareholderLedgerService
             return;
         }
 
-        DB::transaction(function () use ($shareholder, $projectId, $landParcelId, $diff, $user): void {
+        DB::transaction(function () use ($shareholder, $projectId, $landParcelId, $diff, $user, $skipCashbox, $notes): void {
             if ($diff > 0) {
                 $this->create($shareholder, [
                     'project_id' => $projectId,
@@ -261,7 +277,8 @@ class ShareholderLedgerService
                     'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
                     'amount' => $diff,
                     'entry_date' => now()->toDateString(),
-                    'notes' => 'تعديل التمويل — زيادة رأس المال',
+                    'notes' => $notes ?? 'تعديل التمويل — زيادة رأس المال',
+                    'skip_cashbox' => $skipCashbox,
                 ], $user);
 
                 return;

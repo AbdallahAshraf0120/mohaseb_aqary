@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\LandParcel;
 use App\Models\LandParcelPart;
 use App\Models\LandParcelPayment;
+use App\Models\LandParcelPaymentDistribution;
 use App\Models\LandParcelShareholder;
+use App\Models\OwnershipSnapshot;
 use App\Models\ShareholderLedgerEntry;
 use App\Services\LandParcelPaymentService;
+use App\Services\OwnershipService;
 use App\Support\LandInstallmentPlanBuilder;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
@@ -21,6 +24,7 @@ class LandTradingController extends Controller
 {
     public function __construct(
         private readonly LandParcelPaymentService $paymentService,
+        private readonly OwnershipService $ownershipService,
     ) {}
 
     public function index(Request $request): View
@@ -193,6 +197,10 @@ class LandTradingController extends Controller
     {
         $data = $this->validated($request);
         $data['created_by'] = $request->user()?->id;
+        if (Schema::hasColumn('land_parcels', 'planned_capital')) {
+            $data['planned_capital'] = round((float) $data['purchase_price'], 2);
+            $data['actual_capital'] = 0;
+        }
 
         $parcel = LandParcel::query()->create($data);
 
@@ -220,7 +228,7 @@ class LandTradingController extends Controller
             : collect();
 
         $payments = $paymentsReady
-            ? $parcel->payments()->with(['creator:id,name', 'part:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->get()
+            ? $parcel->payments()->with(['creator:id,name', 'part:id,name', 'paidByShareholder:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->get()
             : collect();
 
         $partsSaleTotal = $partsReady ? (float) $parts->sum(fn (LandParcelPart $p) => (float) $p->sale_price) : 0.0;
@@ -233,22 +241,33 @@ class LandTradingController extends Controller
             ? $partsSaleTotal + (float) ($parcel->sale_price ?? 0)
             : (float) ($parcel->sale_price ?? 0);
 
-        $saleDistributions = Schema::hasTable('shareholder_ledger_entries')
-            ? ShareholderLedgerEntry::withoutProjectScope()
-                ->with(['shareholder:id,name'])
-                ->where('land_parcel_id', (int) $parcel->id)
-                ->where('type', ShareholderLedgerEntry::TYPE_ADJUSTMENT)
-                ->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT)
-                ->where(function ($q): void {
-                    $q->where('notes', 'like', 'توزيع تحصيل بيع%');
-                    if (Schema::hasColumn('shareholder_ledger_entries', 'land_parcel_payment_id')) {
-                        $q->orWhereNotNull('land_parcel_payment_id');
-                    }
-                })
-                ->orderByDesc('entry_date')
+        $saleDistributions = Schema::hasTable('land_parcel_payment_distributions')
+            ? LandParcelPaymentDistribution::query()
+                ->with(['shareholder:id,name', 'payment:id,paid_at,amount,side'])
+                ->whereHas('payment', fn ($q) => $q->where('land_parcel_id', (int) $parcel->id))
                 ->orderByDesc('id')
                 ->limit(100)
                 ->get()
+            : (Schema::hasTable('shareholder_ledger_entries')
+                ? ShareholderLedgerEntry::withoutProjectScope()
+                    ->with(['shareholder:id,name'])
+                    ->where('land_parcel_id', (int) $parcel->id)
+                    ->where('type', ShareholderLedgerEntry::TYPE_ADJUSTMENT)
+                    ->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT)
+                    ->where(function ($q): void {
+                        $q->where('notes', 'like', 'توزيع تحصيل بيع%');
+                        if (Schema::hasColumn('shareholder_ledger_entries', 'land_parcel_payment_id')) {
+                            $q->orWhereNotNull('land_parcel_payment_id');
+                        }
+                    })
+                    ->orderByDesc('entry_date')
+                    ->orderByDesc('id')
+                    ->limit(100)
+                    ->get()
+                : collect());
+
+        $pendingSalePayments = $paymentsReady
+            ? $payments->filter(fn (LandParcelPayment $p) => $p->isDistributionPending())->values()
             : collect();
 
         return view('land-trading.show', [
@@ -257,6 +276,7 @@ class LandTradingController extends Controller
             'parcel' => $parcel,
             'parcelShareholders' => $shareholders,
             'saleDistributions' => $saleDistributions,
+            'pendingSalePayments' => $pendingSalePayments,
             'payments' => $payments,
             'paymentsReady' => $paymentsReady,
             'partsReady' => $partsReady,
@@ -268,6 +288,7 @@ class LandTradingController extends Controller
             'salePaid' => $salePaid,
             'saleRemaining' => round(max(0, $saleTarget - $salePaid), 2),
             'remainingArea' => $partsReady ? $parcel->remainingArea() : null,
+            'ownershipReady' => Schema::hasColumn('land_parcel_shareholder', 'planned_investment'),
         ]);
     }
 
@@ -282,11 +303,36 @@ class LandTradingController extends Controller
 
     public function update(Request $request, LandParcel $parcel): RedirectResponse
     {
-        $parcel->update($this->validated($request));
+        $data = $this->validated($request);
+        if (Schema::hasColumn('land_parcels', 'planned_capital')) {
+            $data['planned_capital'] = round((float) $data['purchase_price'], 2);
+        }
+        $parcel->update($data);
+        if (Schema::hasColumn('land_parcel_shareholder', 'planned_investment')) {
+            $this->ownershipService->syncLandPlannedPercentages($parcel->fresh() ?? $parcel);
+            $this->ownershipService->syncLandActual((int) $parcel->id);
+        }
 
         return redirect()
             ->route('land-trading.show', $parcel)
             ->with('success', 'تم تحديث بيانات الأرض.');
+    }
+
+    public function adoptPlan(Request $request, LandParcel $parcel): RedirectResponse
+    {
+        if (! Schema::hasTable('ownership_snapshots')) {
+            return back()->with('error', 'قاعدة البيانات غير محدّثة. شغّل: php artisan migrate --force');
+        }
+
+        $this->ownershipService->adoptPlanAsActual(
+            OwnershipSnapshot::TARGET_LAND_PARCEL,
+            (int) $parcel->id,
+            $request->user()
+        );
+
+        return redirect()
+            ->route('land-trading.show', $parcel)
+            ->with('success', 'تم اعتماد مخطط الأرض كفعلي.');
     }
 
     public function destroy(LandParcel $parcel): RedirectResponse
@@ -308,7 +354,7 @@ class LandTradingController extends Controller
             ? ['nullable', 'integer', 'exists:land_parcel_parts,id']
             : ['nullable'];
 
-        $data = $request->validate([
+        $rules = [
             'side' => ['required', 'in:purchase,sale'],
             'land_parcel_part_id' => $partIdRules,
             'kind' => ['required', 'in:down_payment,installment,secondary,other'],
@@ -316,7 +362,19 @@ class LandTradingController extends Controller
             'paid_at' => ['required', 'date'],
             'payment_method' => ['required', 'in:cash,bank_transfer,check'],
             'notes' => ['nullable', 'string', 'max:1000'],
-        ]);
+        ];
+        if (Schema::hasColumn('land_parcel_payments', 'paid_by_shareholder_id')) {
+            $hasShareholders = Schema::hasTable('land_parcel_shareholder')
+                && LandParcelShareholder::query()->where('land_parcel_id', (int) $parcel->id)->exists();
+            $rules['paid_by_shareholder_id'] = [
+                Rule::requiredIf(fn () => $request->input('side') === 'purchase' && $hasShareholders),
+                'nullable',
+                'integer',
+                'exists:shareholders,id',
+            ];
+        }
+
+        $data = $request->validate($rules);
 
         if (($data['side'] ?? '') === 'sale' && empty($data['land_parcel_part_id']) && Schema::hasTable('land_parcel_parts')) {
             // بيع جزء إلزامي إذا وُجدت أجزاء — وإلا يبقى البيع الكامل
@@ -332,12 +390,42 @@ class LandTradingController extends Controller
         }
 
         $msg = $data['side'] === 'purchase'
-            ? 'تم تسجيل دفعة الشراء وتحديث صندوق الأراضي.'
-            : 'تم تسجيل تحصيل البيع وتحديث الصندوق، وتوزيع المبلغ على مساهمي الأرض حسب النسبة.';
+            ? 'تم تسجيل دفعة الشراء وإسنادها للمساهم وتحديث صندوق الأراضي.'
+            : 'تم تسجيل تحصيل البيع في الصندوق. وزّع المبلغ على المساهمين من قسم التوزيع.';
 
         return redirect()
             ->route('land-trading.show', $parcel)
             ->with('success', $msg);
+    }
+
+    public function distributePayment(Request $request, LandParcel $parcel, LandParcelPayment $payment): RedirectResponse
+    {
+        if ((int) $payment->land_parcel_id !== (int) $parcel->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'basis' => ['required', 'in:planned,actual,manual'],
+            'manual' => ['nullable', 'array'],
+            'manual.*.shareholder_id' => ['required_with:manual', 'integer', 'exists:shareholders,id'],
+            'manual.*.amount' => ['required_with:manual', 'numeric', 'min:0'],
+        ]);
+
+        try {
+            $this->paymentService->distributeSale(
+                $parcel,
+                $payment,
+                (string) $data['basis'],
+                $request->user(),
+                $data['basis'] === 'manual' ? ($data['manual'] ?? []) : null
+            );
+        } catch (InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('land-trading.show', $parcel)
+            ->with('success', 'تم توزيع تحصيل البيع على المساهمين.');
     }
 
     public function destroyPayment(LandParcel $parcel, LandParcelPayment $payment): RedirectResponse

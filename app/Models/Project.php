@@ -17,6 +17,8 @@ class Project extends Model
         'name',
         'code',
         'capital',
+        'planned_capital',
+        'actual_capital',
         'is_active',
         'is_draft',
         'is_land_trading_cashbox',
@@ -27,6 +29,8 @@ class Project extends Model
     {
         return [
             'capital' => 'decimal:2',
+            'planned_capital' => 'decimal:2',
+            'actual_capital' => 'decimal:2',
             'is_active' => 'boolean',
             'is_draft' => 'boolean',
             'is_land_trading_cashbox' => 'boolean',
@@ -50,7 +54,7 @@ class Project extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'code', 'capital', 'is_active', 'is_draft'])
+            ->logOnly(['name', 'code', 'capital', 'planned_capital', 'actual_capital', 'is_active', 'is_draft'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->useLogName('projects')
@@ -84,15 +88,25 @@ class Project extends Model
             });
     }
 
-    /** نسبة المساهم من رأس مال المشروع: (تمويل المساهم ÷ رأس مال المشروع) × 100. */
+    /** نسبة المساهم من رأس المال المخطط: (تمويل المساهم ÷ رأس المال المخطط) × 100. */
     public function shareholderPercentageForInvestment(float|int|string $investment): float
     {
-        $capital = round((float) $this->capital, 2);
+        $capital = round((float) ($this->planned_capital ?? $this->capital ?? 0), 2);
         if ($capital <= 0) {
             return 0.0;
         }
 
         return round(((float) $investment / $capital) * 100, 2);
+    }
+
+    public function plannedCapitalAmount(): float
+    {
+        return round((float) ($this->planned_capital ?? $this->capital ?? 0), 2);
+    }
+
+    public function actualCapitalAmount(): float
+    {
+        return round((float) ($this->actual_capital ?? 0), 2);
     }
 
     public function areas(): HasMany
@@ -140,7 +154,14 @@ class Project extends Model
     public function shareholders(): BelongsToMany
     {
         return $this->belongsToMany(Shareholder::class, 'project_shareholder')
-            ->withPivot(['share_percentage', 'total_investment'])
+            ->withPivot([
+                'share_percentage',
+                'total_investment',
+                'planned_investment',
+                'planned_percentage',
+                'actual_investment',
+                'actual_percentage',
+            ])
             ->withTimestamps();
     }
 

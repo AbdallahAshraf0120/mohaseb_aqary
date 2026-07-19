@@ -9,6 +9,9 @@
                     <a href="{{ route('projects.index') }}" class="btn btn-sm btn-outline-secondary">رجوع</a>
                 </div>
                 <div class="card-body">
+                    @if (session('success'))
+                        <div class="alert alert-success small">{{ session('success') }}</div>
+                    @endif
                     @if (session('error'))
                         <div class="alert alert-danger small">{{ session('error') }}</div>
                     @endif
@@ -40,13 +43,32 @@
                             @endif
                         </div>
                         <div class="mb-3">
-                            <label class="form-label" for="project-capital">رأس مال المشروع (ج.م)</label>
-                            <input type="number" step="0.01" min="0" class="form-control font-monospace @error('capital') is-invalid @enderror" id="project-capital" name="capital" value="{{ old('capital', $project->capital ?? 0) }}" placeholder="0.00">
+                            <label class="form-label" for="project-capital">رأس المال المخطط (ج.م)</label>
+                            <input type="number" step="0.01" min="0" class="form-control font-monospace @error('capital') is-invalid @enderror" id="project-capital" name="capital" value="{{ old('capital', $project->planned_capital ?? $project->capital ?? 0) }}" placeholder="0.00">
                             @error('capital')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            <div class="form-text">يُحدَّث تلقائياً حركة «رأس مال المشروع» في صندوق المشروع.</div>
+                            <div class="form-text">
+                                الاتفاق الأصلي لنسب المساهمين. رأس المال الفعلي الحالي:
+                                <span class="font-monospace fw-semibold">{{ number_format((float) ($project->actual_capital ?? 0), 2) }}</span>
+                                ج.م
+                            </div>
                         </div>
+
+                        @can('projects.manage')
+                            <div class="mb-4 p-3 border rounded bg-body-tertiary">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div>
+                                        <div class="fw-semibold">اعتماد المخطط كفعلي</div>
+                                        <div class="small text-body-secondary">ينسخ نسب وتمويل المخطط إلى الفعلي ويُطابق إيداعات رأس المال عند الحاجة.</div>
+                                    </div>
+                                    <form method="post" action="{{ route('projects.adopt-plan', $project) }}" onsubmit="return confirm('اعتماد مخطط المشروع كفعلي؟');">
+                                        @csrf
+                                        <button type="submit" class="btn btn-warning btn-sm">اعتماد المخطط كفعلي</button>
+                                    </form>
+                                </div>
+                            </div>
+                        @endcan
 
                         <hr class="my-4">
                         <h6 class="fw-semibold mb-2">قالب عقد المشروع (Word)</h6>

@@ -45,6 +45,7 @@
                             <div class="rounded-3 border bg-body-secondary bg-opacity-50 p-3 h-100">
                                 <div class="small text-body-secondary fw-semibold mb-2">روابط</div>
                                 <a href="{{ route('land-trading.index') }}" class="d-block small fw-semibold mb-1">أراضي البيع والشراء</a>
+                                <a href="{{ route('fund-transfers.index') }}" class="d-block small fw-semibold mb-1">تحويلات الصناديق</a>
                                 <a href="{{ route('global-cashbox.index', ['project_id' => $project->id]) }}" class="d-block small fw-semibold">عرض في الصندوق الشامل</a>
                             </div>
                         </div>

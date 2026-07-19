@@ -29,6 +29,8 @@ class LandParcel extends Model
         'deed_number',
         'status',
         'purchase_price',
+        'planned_capital',
+        'actual_capital',
         'purchase_date',
         'purchased_from',
         'purchase_phone',
@@ -58,6 +60,8 @@ class LandParcel extends Model
             'purchase_price_per_m2' => 'decimal:2',
             'sale_price_per_m2' => 'decimal:2',
             'purchase_price' => 'decimal:2',
+            'planned_capital' => 'decimal:2',
+            'actual_capital' => 'decimal:2',
             'purchase_down_payment' => 'decimal:2',
             'sale_price' => 'decimal:2',
             'sale_down_payment' => 'decimal:2',
@@ -83,7 +87,14 @@ class LandParcel extends Model
     public function shareholders(): BelongsToMany
     {
         return $this->belongsToMany(Shareholder::class, 'land_parcel_shareholder', 'land_parcel_id', 'shareholder_id')
-            ->withPivot(['share_percentage', 'total_investment'])
+            ->withPivot([
+                'share_percentage',
+                'total_investment',
+                'planned_investment',
+                'planned_percentage',
+                'actual_investment',
+                'actual_percentage',
+            ])
             ->withTimestamps();
     }
 
@@ -184,15 +195,25 @@ class LandParcel extends Model
         return (float) $this->sale_price - (float) $this->purchase_price;
     }
 
-    /** أساس النسبة: سعر شراء الأرض (مثل رأس مال المشروع). */
+    /** أساس النسبة المخططة: رأس المال المخطط / سعر شراء الأرض. */
     public function shareholderPercentageForInvestment(float|int|string $investment): float
     {
-        $capital = round((float) $this->purchase_price, 2);
+        $capital = round((float) ($this->planned_capital ?? $this->purchase_price ?? 0), 2);
         if ($capital <= 0) {
             return 0.0;
         }
 
         return round(((float) $investment / $capital) * 100, 2);
+    }
+
+    public function plannedCapitalAmount(): float
+    {
+        return round((float) ($this->planned_capital ?? $this->purchase_price ?? 0), 2);
+    }
+
+    public function actualCapitalAmount(): float
+    {
+        return round((float) ($this->actual_capital ?? 0), 2);
     }
 
     public function approvedPaidTotal(string $side, ?int $partId = null): float

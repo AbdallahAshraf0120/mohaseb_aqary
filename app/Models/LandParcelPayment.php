@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LandParcelPayment extends Model
 {
@@ -35,6 +36,8 @@ class LandParcelPayment extends Model
         'rejected_by',
         'rejection_reason',
         'created_by',
+        'paid_by_shareholder_id',
+        'distribution_status',
     ];
 
     protected function casts(): array
@@ -60,6 +63,23 @@ class LandParcelPayment extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function paidByShareholder(): BelongsTo
+    {
+        return $this->belongsTo(Shareholder::class, 'paid_by_shareholder_id');
+    }
+
+    public function distributions(): HasMany
+    {
+        return $this->hasMany(LandParcelPaymentDistribution::class, 'land_parcel_payment_id');
+    }
+
+    public function isDistributionPending(): bool
+    {
+        return $this->side === self::SIDE_SALE
+            && ($this->approval_status ?? '') === 'approved'
+            && ($this->distribution_status ?? 'pending') === 'pending';
     }
 
     public function sideLabel(): string

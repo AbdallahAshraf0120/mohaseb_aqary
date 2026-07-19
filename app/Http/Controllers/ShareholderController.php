@@ -304,15 +304,30 @@ class ShareholderController extends Controller
     {
         $data = $request->validated();
         $isProject = $data['target_type'] === 'project';
+        $investment = (float) $data['total_investment'];
 
         try {
-            $this->ledgerService->setFundingAmount(
-                $shareholder,
-                $isProject ? (int) $data['target_id'] : null,
-                $isProject ? null : (int) $data['target_id'],
-                (float) $data['total_investment'],
-                $request->user()
-            );
+            if ($isProject) {
+                $project = Project::query()->findOrFail((int) $data['target_id']);
+                $this->shareholderService->attachToProject($shareholder, $project, $investment);
+                $this->ledgerService->setFundingAmount(
+                    $shareholder,
+                    (int) $project->id,
+                    null,
+                    $investment,
+                    $request->user()
+                );
+            } else {
+                $parcel = LandParcel::query()->findOrFail((int) $data['target_id']);
+                $this->shareholderService->attachToLandParcel($shareholder, $parcel, $investment);
+                $this->ledgerService->setFundingAmount(
+                    $shareholder,
+                    null,
+                    (int) $parcel->id,
+                    $investment,
+                    $request->user()
+                );
+            }
         } catch (InvalidArgumentException $e) {
             return redirect()
                 ->route('shareholders.show', $shareholder)
@@ -323,7 +338,7 @@ class ShareholderController extends Controller
         return redirect()
             ->route('shareholders.show', $shareholder)
             ->with('success', $isProject
-                ? 'تم تحديث تمويل المشروع وإعادة حساب النسبة.'
-                : 'تم تحديث تمويل الأرض وإعادة حساب النسبة.');
+                ? 'تم تحديث التمويل المخطط والفعلي للمشروع.'
+                : 'تم تحديث التمويل المخطط والفعلي للأرض.');
     }
 }

@@ -18,7 +18,14 @@ class Shareholder extends Model
     public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'project_shareholder')
-            ->withPivot(['share_percentage', 'total_investment'])
+            ->withPivot([
+                'share_percentage',
+                'total_investment',
+                'planned_investment',
+                'planned_percentage',
+                'actual_investment',
+                'actual_percentage',
+            ])
             ->withTimestamps();
     }
 
@@ -30,7 +37,14 @@ class Shareholder extends Model
     public function landParcels(): BelongsToMany
     {
         return $this->belongsToMany(LandParcel::class, 'land_parcel_shareholder', 'shareholder_id', 'land_parcel_id')
-            ->withPivot(['share_percentage', 'total_investment'])
+            ->withPivot([
+                'share_percentage',
+                'total_investment',
+                'planned_investment',
+                'planned_percentage',
+                'actual_investment',
+                'actual_percentage',
+            ])
             ->withTimestamps();
     }
 

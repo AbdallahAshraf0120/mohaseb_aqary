@@ -636,6 +636,17 @@
                                         </select>
                                     </div>
                                     <div class="col-md-2">
+                                        <label class="form-label small">المساهم الدافع</label>
+                                        <select name="paid_by_shareholder_id" class="form-select form-select-sm" required>
+                                            <option value="">— اختر —</option>
+                                            @foreach ($parcelShareholders ?? [] as $row)
+                                                <option value="{{ $row->shareholder_id }}" @selected((string) old('paid_by_shareholder_id') === (string) $row->shareholder_id)>
+                                                    {{ $row->shareholder->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
                                         <button type="submit" class="btn btn-danger btn-sm w-100">سداد</button>
                                     </div>
                                     <div class="col-12">
@@ -742,6 +753,7 @@
                             <th>الجزء</th>
                             <th>النوع</th>
                             <th class="text-end">المبلغ</th>
+                            <th>دافع / توزيع</th>
                             <th>الطريقة</th>
                             <th>الحالة</th>
                             <th>ملاحظة</th>
@@ -760,6 +772,13 @@
                                 <td class="small">{{ $payment->part?->name ?? '—' }}</td>
                                 <td>{{ $payment->kindLabel() }}</td>
                                 <td class="text-end font-monospace">{{ number_format((float) $payment->amount, 2) }}</td>
+                                <td class="small">
+                                    @if ($payment->side === 'purchase')
+                                        {{ $payment->paidByShareholder?->name ?? '—' }}
+                                    @else
+                                        {{ ($payment->distribution_status ?? '') === 'distributed' ? 'موزّع' : (($payment->distribution_status ?? '') === 'pending' ? 'بانتظار التوزيع' : '—') }}
+                                    @endif
+                                </td>
                                 <td class="small">{{ $payment->payment_method }}</td>
                                 <td class="small">{{ $payment->approval_status }}</td>
                                 <td class="small">{{ $payment->notes ?: '—' }}</td>
@@ -774,7 +793,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" class="text-center text-muted py-4">لا توجد دفعات مسجّلة بعد.</td></tr>
+                            <tr><td colspan="10" class="text-center text-muted py-4">لا توجد دفعات مسجّلة بعد.</td></tr>
                         @endforelse
                         </tbody>
                     </table>
@@ -786,12 +805,27 @@
     <div class="card app-surface mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
-                <h6 class="mb-0">مساهمو الأرض</h6>
-                <div class="small text-body-secondary">كل تحصيل بيع يُوزَّع تلقائيًا على جاري المساهمين حسب النسبة (الصندوق يستلم المبلغ مرة واحدة).</div>
+                <h6 class="mb-0">مساهمو الأرض — مخطط / فعلي</h6>
+                <div class="small text-body-secondary">
+                    المخطط = الاتفاق · الفعلي = التمويل المدفوع · رأس مال مخطط:
+                    <span class="font-monospace">{{ number_format((float) ($parcel->planned_capital ?? $parcel->purchase_price), 2) }}</span>
+                    · فعلي:
+                    <span class="font-monospace">{{ number_format((float) ($parcel->actual_capital ?? 0), 2) }}</span>
+                </div>
             </div>
-            @can('shareholders.manage')
-                <a href="{{ route('shareholders.index') }}" class="btn btn-outline-primary btn-sm">إدارة المساهمين</a>
-            @endcan
+            <div class="d-flex gap-2 flex-wrap">
+                @can('land-trading.manage')
+                    @if ($ownershipReady ?? false)
+                        <form method="post" action="{{ route('land-trading.adopt-plan', $parcel) }}" onsubmit="return confirm('اعتماد المخطط كفعلي؟ سيتم مطابقة التمويل الفعلي بالمخطط.');">
+                            @csrf
+                            <button type="submit" class="btn btn-warning btn-sm">اعتماد المخطط كفعلي</button>
+                        </form>
+                    @endif
+                @endcan
+                @can('shareholders.manage')
+                    <a href="{{ route('shareholders.index') }}" class="btn btn-outline-primary btn-sm">إدارة المساهمين</a>
+                @endcan
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -799,24 +833,37 @@
                     <thead>
                     <tr>
                         <th>المساهم</th>
-                        <th class="text-end">التمويل</th>
-                        <th class="text-end">النسبة</th>
+                        <th class="text-end">تمويل مخطط</th>
+                        <th class="text-end">نسبة مخطط</th>
+                        <th class="text-end">تمويل فعلي</th>
+                        <th class="text-end">نسبة فعلي</th>
+                        <th class="text-end">فجوة</th>
                         <th class="text-end">بروفايل</th>
                     </tr>
                     </thead>
                     <tbody>
                     @forelse ($parcelShareholders ?? [] as $row)
+                        @php
+                            $plannedInv = (float) ($row->planned_investment ?? $row->total_investment ?? 0);
+                            $actualInv = (float) ($row->actual_investment ?? 0);
+                            $gap = round($plannedInv - $actualInv, 2);
+                        @endphp
                         <tr>
                             <td class="fw-semibold">{{ $row->shareholder->name }}</td>
-                            <td class="text-end font-monospace">{{ number_format((float) $row->total_investment, 2) }}</td>
-                            <td class="text-end">{{ number_format((float) $row->share_percentage, 2) }}%</td>
+                            <td class="text-end font-monospace">{{ number_format($plannedInv, 2) }}</td>
+                            <td class="text-end">{{ number_format((float) ($row->planned_percentage ?? $row->share_percentage ?? 0), 2) }}%</td>
+                            <td class="text-end font-monospace">{{ number_format($actualInv, 2) }}</td>
+                            <td class="text-end">{{ number_format((float) ($row->actual_percentage ?? 0), 2) }}%</td>
+                            <td class="text-end font-monospace {{ $gap > 0.01 ? 'text-danger' : ($gap < -0.01 ? 'text-success' : '') }}">
+                                {{ number_format($gap, 2) }}
+                            </td>
                             <td class="text-end">
                                 <a href="{{ route('shareholders.show', $row->shareholder) }}" class="btn btn-outline-info btn-sm">فتح</a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">
+                            <td colspan="7" class="text-center text-muted py-4">
                                 لا يوجد مساهمون على هذه الأرض بعد.
                             </td>
                         </tr>
@@ -827,11 +874,44 @@
         </div>
     </div>
 
+    @if (($pendingSalePayments ?? collect())->isNotEmpty())
+        <div class="card app-surface mb-3 border-warning">
+            <div class="card-header">
+                <h6 class="mb-0">تحصيلات بانتظار التوزيع</h6>
+                <div class="small text-body-secondary">اختر أساس التوزيع: مخطط أو فعلي (أو يدوي).</div>
+            </div>
+            <div class="card-body">
+                @foreach ($pendingSalePayments as $pending)
+                    <form method="post" action="{{ route('land-trading.payments.distribute', [$parcel, $pending]) }}" class="row g-2 align-items-end border rounded p-3 mb-2">
+                        @csrf
+                        <div class="col-md-3">
+                            <div class="small text-body-secondary">دفعة #{{ $pending->id }} — {{ $pending->paid_at?->format('Y-m-d') }}</div>
+                            <div class="fw-semibold font-monospace">{{ number_format((float) $pending->amount, 2) }} ج.م</div>
+                            <div class="small">{{ $pending->part?->name ?? 'بيع كامل' }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">أساس التوزيع</label>
+                            <select name="basis" class="form-select form-select-sm" required>
+                                <option value="planned">النسبة المخططة</option>
+                                <option value="actual">النسبة الفعلية</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            @can('land-trading.manage')
+                                <button type="submit" class="btn btn-primary btn-sm">توزيع على المساهمين</button>
+                            @endcan
+                        </div>
+                    </form>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <div class="card app-surface mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <h6 class="mb-0">توزيع تحصيلات البيع على المساهمين</h6>
-                <div class="small text-body-secondary">نفس الحركات تظهر أيضًا في دفتر جاري كل مساهم (نوع: تسوية / دائن).</div>
+                <div class="small text-body-secondary">بعد التوزيع تُسجَّل في جاري المساهم (تسوية دائن) دون تكرار حركة الصندوق.</div>
             </div>
             <span class="badge text-bg-light">
                 إجمالي موزّع: {{ number_format((float) ($saleDistributions ?? collect())->sum('amount'), 2) }} ج.م
@@ -845,17 +925,28 @@
                         <th>التاريخ</th>
                         <th>المساهم</th>
                         <th class="text-end">المبلغ</th>
-                        <th>التفاصيل</th>
+                        <th>الأساس</th>
                         <th class="text-end">الجاري</th>
                     </tr>
                     </thead>
                     <tbody>
                     @forelse ($saleDistributions ?? [] as $dist)
                         <tr>
-                            <td class="font-monospace small">{{ $dist->entry_date?->format('Y-m-d') }}</td>
+                            <td class="font-monospace small">
+                                {{ $dist->payment?->paid_at?->format('Y-m-d') ?? $dist->entry_date?->format('Y-m-d') ?? $dist->created_at?->format('Y-m-d') }}
+                            </td>
                             <td class="fw-semibold">{{ $dist->shareholder?->name ?? '—' }}</td>
                             <td class="text-end font-monospace text-success-emphasis">+{{ number_format((float) $dist->amount, 2) }}</td>
-                            <td class="small">{{ $dist->notes ?: '—' }}</td>
+                            <td class="small">
+                                @if (method_exists($dist, 'basisLabel'))
+                                    {{ $dist->basisLabel() }}
+                                    @if ($dist->percentage_used !== null)
+                                        ({{ number_format((float) $dist->percentage_used, 2) }}%)
+                                    @endif
+                                @else
+                                    {{ $dist->notes ?: '—' }}
+                                @endif
+                            </td>
                             <td class="text-end">
                                 @if ($dist->shareholder)
                                     <a href="{{ route('shareholders.show', $dist->shareholder) }}" class="btn btn-outline-info btn-sm">فتح الجاري</a>
@@ -865,7 +956,7 @@
                     @empty
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4">
-                                لا توجد توزيعات بعد. بعد ربط المساهمين وتسجيل تحصيل بيع، تظهر هنا حصص كل مساهم.
+                                لا توجد توزيعات بعد. سجّل تحصيل بيع ثم وزّعه من القسم أعلاه.
                             </td>
                         </tr>
                     @endforelse

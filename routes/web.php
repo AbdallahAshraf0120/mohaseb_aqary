@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CashboxController;
 use App\Http\Controllers\GlobalCashboxController;
 use App\Http\Controllers\LandCashboxController;
+use App\Http\Controllers\FundTransferController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DashboardController;
@@ -77,6 +78,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
         Route::get('projects/{project}/contract-template', [ProjectController::class, 'downloadContractTemplate'])->name('projects.contract-template');
         Route::put('projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
+        Route::post('projects/{project}/adopt-plan', [ProjectController::class, 'adoptPlan'])->name('projects.adopt-plan');
         Route::delete('projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
         Route::post('projects/{managedProject}/draft', [ProjectController::class, 'toDraft'])->name('projects.draft');
         Route::post('projects/{draftProject}/restore', [ProjectController::class, 'restore'])->name('projects.restore');
@@ -99,6 +101,9 @@ Route::middleware('auth')->group(function (): void {
         // صندوق أراضي البيع والشراء (مشروع نظامي) — يظهر أيضًا في الصندوق الشامل
         Route::get('land-cashbox', [LandCashboxController::class, 'index'])->name('land-cashbox.index');
         Route::post('land-cashbox', [LandCashboxController::class, 'store'])->name('land-cashbox.store');
+
+        Route::get('fund-transfers', [FundTransferController::class, 'index'])->name('fund-transfers.index');
+        Route::post('fund-transfers', [FundTransferController::class, 'store'])->name('fund-transfers.store');
 
         // إدارة المساهمين (برا المشاريع) — مساهم عام يمكن ربطه بعدة مشاريع
         Route::resource('shareholders', ShareholderController::class);
@@ -147,10 +152,17 @@ Route::middleware('auth')->group(function (): void {
             Route::post('{parcel}/payments', [LandTradingController::class, 'storePayment'])
                 ->whereNumber('parcel')
                 ->name('land-trading.payments.store');
+            Route::post('{parcel}/payments/{payment}/distribute', [LandTradingController::class, 'distributePayment'])
+                ->whereNumber('parcel')
+                ->whereNumber('payment')
+                ->name('land-trading.payments.distribute');
             Route::delete('{parcel}/payments/{payment}', [LandTradingController::class, 'destroyPayment'])
                 ->whereNumber('parcel')
                 ->whereNumber('payment')
                 ->name('land-trading.payments.destroy');
+            Route::post('{parcel}/adopt-plan', [LandTradingController::class, 'adoptPlan'])
+                ->whereNumber('parcel')
+                ->name('land-trading.adopt-plan');
             Route::post('{parcel}/parts', [LandTradingController::class, 'storePart'])
                 ->whereNumber('parcel')
                 ->name('land-trading.parts.store');

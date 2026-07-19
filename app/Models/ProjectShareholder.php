@@ -14,6 +14,10 @@ class ProjectShareholder extends Model
         'shareholder_id',
         'share_percentage',
         'total_investment',
+        'planned_investment',
+        'planned_percentage',
+        'actual_investment',
+        'actual_percentage',
     ];
 
     protected function casts(): array
@@ -21,6 +25,10 @@ class ProjectShareholder extends Model
         return [
             'share_percentage' => 'decimal:2',
             'total_investment' => 'decimal:2',
+            'planned_investment' => 'decimal:2',
+            'planned_percentage' => 'decimal:2',
+            'actual_investment' => 'decimal:2',
+            'actual_percentage' => 'decimal:2',
         ];
     }
 

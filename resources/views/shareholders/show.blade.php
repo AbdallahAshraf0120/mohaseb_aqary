@@ -38,8 +38,10 @@
                             <thead>
                             <tr>
                                 <th>المشروع</th>
-                                <th class="text-end">التمويل</th>
-                                <th class="text-end">النسبة</th>
+                                <th class="text-end">مخطط</th>
+                                <th class="text-end">%</th>
+                                <th class="text-end">فعلي</th>
+                                <th class="text-end">%</th>
                                 <th class="text-end">جاري</th>
                                 @can('shareholders.manage')
                                     <th class="text-end">إجراء</th>
@@ -48,10 +50,16 @@
                             </thead>
                             <tbody>
                             @forelse ($projectBreakdown as $row)
+                                @php
+                                    $pInv = (float) ($row->membership->planned_investment ?? $row->membership->total_investment ?? 0);
+                                    $aInv = (float) ($row->membership->actual_investment ?? $row->capital_deposits ?? 0);
+                                @endphp
                                 <tr>
                                     <td class="fw-semibold">{{ $row->project->name }}</td>
-                                    <td class="text-end font-monospace">{{ number_format((float) $row->membership->total_investment, 2) }}</td>
-                                    <td class="text-end">{{ number_format((float) $row->membership->share_percentage, 2) }}%</td>
+                                    <td class="text-end font-monospace">{{ number_format($pInv, 2) }}</td>
+                                    <td class="text-end">{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 2) }}%</td>
+                                    <td class="text-end font-monospace">{{ number_format($aInv, 2) }}</td>
+                                    <td class="text-end">{{ number_format((float) ($row->membership->actual_percentage ?? 0), 2) }}%</td>
                                     <td class="text-end font-monospace {{ $row->ledger_balance >= 0 ? 'text-success' : 'text-danger' }}">
                                         {{ number_format((float) $row->ledger_balance, 2) }}
                                     </td>
@@ -65,8 +73,8 @@
                                                 data-funding-type="project"
                                                 data-funding-id="{{ $row->project->id }}"
                                                 data-funding-label="مشروع: {{ $row->project->name }}"
-                                                data-funding-amount="{{ number_format((float) $row->membership->total_investment, 2, '.', '') }}"
-                                                data-funding-hint="النسبة = التمويل ÷ رأس مال المشروع × 100. الزيادة/التخفيض تُسجَّل في دفتر الجاري."
+                                                data-funding-amount="{{ number_format($pInv, 2, '.', '') }}"
+                                                data-funding-hint="يُحدَّث التمويل المخطط ويُطابق إيداعات رأس المال (الفعلي). النسبة المخططة = التمويل ÷ رأس مال المشروع."
                                             >
                                                 تعديل التمويل
                                             </button>
@@ -74,7 +82,7 @@
                                     @endcan
                                 </tr>
                             @empty
-                                <tr><td colspan="{{ auth()->user()?->can('shareholders.manage') ? 5 : 4 }}" class="text-muted text-center">لا توجد مشاريع.</td></tr>
+                                <tr><td colspan="{{ auth()->user()?->can('shareholders.manage') ? 7 : 6 }}" class="text-muted text-center">لا توجد مشاريع.</td></tr>
                             @endforelse
                             </tbody>
                         </table>
@@ -86,8 +94,10 @@
                             <thead>
                             <tr>
                                 <th>الأرض</th>
-                                <th class="text-end">التمويل</th>
-                                <th class="text-end">النسبة</th>
+                                <th class="text-end">مخطط</th>
+                                <th class="text-end">%</th>
+                                <th class="text-end">فعلي</th>
+                                <th class="text-end">%</th>
                                 <th class="text-end">جاري</th>
                                 @can('shareholders.manage')
                                     <th class="text-end">إجراء</th>
@@ -96,6 +106,10 @@
                             </thead>
                             <tbody>
                             @forelse ($landBreakdown as $row)
+                                @php
+                                    $lpInv = (float) ($row->membership->planned_investment ?? $row->membership->total_investment ?? 0);
+                                    $laInv = (float) ($row->membership->actual_investment ?? $row->capital_deposits ?? 0);
+                                @endphp
                                 <tr>
                                     <td class="fw-semibold">
                                         @if ($row->parcel)
@@ -104,8 +118,10 @@
                                             —
                                         @endif
                                     </td>
-                                    <td class="text-end font-monospace">{{ number_format((float) $row->membership->total_investment, 2) }}</td>
-                                    <td class="text-end">{{ number_format((float) $row->membership->share_percentage, 2) }}%</td>
+                                    <td class="text-end font-monospace">{{ number_format($lpInv, 2) }}</td>
+                                    <td class="text-end">{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 2) }}%</td>
+                                    <td class="text-end font-monospace">{{ number_format($laInv, 2) }}</td>
+                                    <td class="text-end">{{ number_format((float) ($row->membership->actual_percentage ?? 0), 2) }}%</td>
                                     <td class="text-end font-monospace {{ $row->ledger_balance >= 0 ? 'text-success' : 'text-danger' }}">
                                         {{ number_format((float) $row->ledger_balance, 2) }}
                                     </td>
@@ -120,8 +136,8 @@
                                                     data-funding-type="land"
                                                     data-funding-id="{{ $row->parcel->id }}"
                                                     data-funding-label="أرض: {{ $row->parcel->name }}"
-                                                    data-funding-amount="{{ number_format((float) $row->membership->total_investment, 2, '.', '') }}"
-                                                    data-funding-hint="النسبة = التمويل ÷ سعر شراء الأرض × 100. الزيادة/التخفيض تُسجَّل في دفتر الجاري."
+                                                    data-funding-amount="{{ number_format($lpInv, 2, '.', '') }}"
+                                                    data-funding-hint="يُحدَّث التمويل المخطط ويُطابق رأس المال المسجّل. دفعات الشراء المنسوبة تُحسب ضمن الفعلي."
                                                 >
                                                     تعديل التمويل
                                                 </button>
@@ -130,7 +146,7 @@
                                     @endcan
                                 </tr>
                             @empty
-                                <tr><td colspan="{{ auth()->user()?->can('shareholders.manage') ? 5 : 4 }}" class="text-muted text-center">لا توجد أراضي.</td></tr>
+                                <tr><td colspan="{{ auth()->user()?->can('shareholders.manage') ? 7 : 6 }}" class="text-muted text-center">لا توجد أراضي.</td></tr>
                             @endforelse
                             </tbody>
                         </table>
