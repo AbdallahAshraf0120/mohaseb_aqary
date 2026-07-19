@@ -101,21 +101,67 @@ class ShareholderController extends Controller
 
     public function create(): View
     {
+        $landsReady = Schema::hasTable('land_parcels') && Schema::hasTable('land_parcel_shareholder');
+        $landColumns = ['id', 'name', 'purchase_price'];
+        if ($landsReady && Schema::hasColumn('land_parcels', 'planned_capital')) {
+            $landColumns[] = 'planned_capital';
+        }
+
+        $projectColumns = ['id', 'name', 'capital'];
+        if (Schema::hasColumn('projects', 'planned_capital')) {
+            $projectColumns[] = 'planned_capital';
+        }
+
         return view('shareholders.create', [
             'title' => 'إضافة مساهم | Mohaseb Aqary',
             'pageTitle' => 'إضافة مساهم',
             'shareholder' => new Shareholder,
-            'projects' => Project::query()->listed()->orderBy('name')->get(['id', 'name', 'capital']),
+            'projects' => Project::query()->listed()->orderBy('name')->get($projectColumns),
+            'lands' => $landsReady
+                ? LandParcel::query()
+                    ->where(function ($q): void {
+                        $q->where('purchase_price', '>', 0);
+                        if (Schema::hasColumn('land_parcels', 'planned_capital')) {
+                            $q->orWhere('planned_capital', '>', 0);
+                        }
+                    })
+                    ->orderBy('name')
+                    ->get($landColumns)
+                : collect(),
+            'landsReady' => $landsReady,
         ]);
     }
 
     public function store(StoreShareholderRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $project = Project::query()->findOrFail((int) $data['project_id']);
+        $linkType = (string) $data['link_type'];
         $investment = round((float) $data['total_investment'], 2);
 
         $shareholder = $this->shareholderService->create($data);
+
+        if ($linkType === 'land') {
+            $parcel = LandParcel::query()->findOrFail((int) $data['land_parcel_id']);
+            $this->shareholderService->attachToLandParcel($shareholder, $parcel, $investment);
+
+            app(CurrentProject::class)->force(null);
+            if ($investment > 0) {
+                $this->ledgerService->create($shareholder, [
+                    'project_id' => null,
+                    'land_parcel_id' => (int) $parcel->id,
+                    'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
+                    'amount' => $investment,
+                    'entry_date' => now()->toDateString(),
+                    'notes' => 'إيداع رأس مال عند تسجيل المساهم على الأرض',
+                ], $request->user());
+            }
+
+            return redirect()
+                ->route('shareholders.show', $shareholder)
+                ->with('success', 'تم إضافة المساهم وربطه بالأرض بنجاح.');
+        }
+
+        $project = Project::query()->findOrFail((int) $data['project_id']);
         $this->shareholderService->attachToProject($shareholder, $project, $investment);
 
         app(CurrentProject::class)->force((int) $project->id);
@@ -129,7 +175,9 @@ class ShareholderController extends Controller
             ], $request->user());
         }
 
-        return redirect()->route('shareholders.show', $shareholder)->with('success', 'تم إضافة المساهم وربطه بالمشروع بنجاح.');
+        return redirect()
+            ->route('shareholders.show', $shareholder)
+            ->with('success', 'تم إضافة المساهم وربطه بالمشروع بنجاح.');
     }
 
     public function show(Shareholder $shareholder): View
