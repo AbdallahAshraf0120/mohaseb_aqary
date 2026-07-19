@@ -53,7 +53,7 @@
                 @endforeach
             </select>
             @error('project_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-            <div class="form-text" id="shareholder-project-capital-hint">يمكن لاحقًا ربط نفس المساهم بمشاريع/أراضي أخرى من البروفايل.</div>
+            <div class="form-text" id="shareholder-project-capital-hint">أدخل النسبة المخططة — التمويل النقدي اختياري.</div>
         </div>
 
         <div class="col-md-6 d-none" id="shareholder-land-wrap">
@@ -73,21 +73,24 @@
                 @endforeach
             </select>
             @error('land_parcel_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-            <div class="form-text" id="shareholder-land-capital-hint">النسبة = التمويل ÷ سعر شراء الأرض × 100.</div>
+            <div class="form-text" id="shareholder-land-capital-hint">أدخل النسبة المخططة — التمويل النقدي اختياري ويُسجَّل لاحقًا بالسداد.</div>
         </div>
 
         <div class="col-md-4">
-            <label class="form-label" for="shareholder-total-investment" id="shareholder-investment-label">التمويل (ج.م)</label>
-            <input id="shareholder-total-investment" type="number" step="0.01" min="0.01" name="total_investment"
-                   class="form-control font-monospace @error('total_investment') is-invalid @enderror"
-                   value="{{ old('total_investment') }}" required>
-            @error('total_investment') <div class="invalid-feedback">{{ $message }}</div> @enderror
-            <div class="form-text" id="shareholder-investment-hint">يُسجَّل كإيداع رأس مال في الجاري.</div>
+            <label class="form-label" for="shareholder-share-percentage">نسبة المساهمة (%)</label>
+            <input id="shareholder-share-percentage" type="number" step="0.01" min="0.01" max="100" name="share_percentage"
+                   class="form-control font-monospace @error('share_percentage') is-invalid @enderror"
+                   value="{{ old('share_percentage') }}" required>
+            @error('share_percentage') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            <div class="form-text" id="shareholder-pct-hint">إلزامي — النسبة المخططة من البداية.</div>
         </div>
         <div class="col-md-4">
-            <label class="form-label">نسبة المساهمة (%)</label>
-            <input type="text" id="shareholder-share-percentage" class="form-control" value="" readonly>
-            <div class="form-text" id="shareholder-pct-hint">محسوبة: التمويل ÷ رأس المال × 100.</div>
+            <label class="form-label" for="shareholder-total-investment" id="shareholder-investment-label">التمويل النقدي (اختياري)</label>
+            <input id="shareholder-total-investment" type="number" step="0.01" min="0" name="total_investment"
+                   class="form-control font-monospace @error('total_investment') is-invalid @enderror"
+                   value="{{ old('total_investment') }}">
+            @error('total_investment') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            <div class="form-text" id="shareholder-investment-hint">لو فاضي: النسبة فقط بدون إيداع في الجاري.</div>
         </div>
         <div class="col-md-4 d-flex align-items-end">
             <div class="alert alert-light border small mb-0 w-100 py-2">
@@ -125,9 +128,6 @@
     const landWrap = document.getElementById('shareholder-land-wrap');
     const projectHint = document.getElementById('shareholder-project-capital-hint');
     const landHint = document.getElementById('shareholder-land-capital-hint');
-    const investmentLabel = document.getElementById('shareholder-investment-label');
-    const investmentHint = document.getElementById('shareholder-investment-hint');
-    const pctHint = document.getElementById('shareholder-pct-hint');
     const radios = document.querySelectorAll('input[name="link_type"]');
 
     function linkType() {
@@ -151,46 +151,31 @@
         landWrap?.classList.toggle('d-none', !isLand);
         if (projectSelect) projectSelect.required = !isLand;
         if (landSelect) landSelect.required = isLand;
-        if (investmentLabel) {
-            investmentLabel.textContent = isLand ? 'التمويل في هذه الأرض (ج.م)' : 'التمويل في هذا المشروع (ج.م)';
-        }
-        if (investmentHint) {
-            investmentHint.textContent = isLand
-                ? 'يُسجَّل كإيداع رأس مال في الجاري مرتبط بهذه الأرض.'
-                : 'يُسجَّل كإيداع رأس مال في الجاري لصندوق هذا المشروع.';
-        }
-        if (pctHint) {
-            pctHint.textContent = isLand
-                ? 'محسوبة: التمويل ÷ سعر شراء الأرض × 100.'
-                : 'محسوبة: التمويل ÷ رأس مال المشروع × 100.';
-        }
         recalc();
     }
     function recalc() {
         const isLand = linkType() === 'land';
         const cap = capital();
-        const investment = parseFloat(investmentInput?.value || '0') || 0;
-        let pct = 0;
-        if (cap > 0) pct = Math.round((investment / cap) * 10000) / 100;
-        if (pctInput) pctInput.value = cap > 0 ? pct.toFixed(2) : '';
+        const pct = parseFloat(pctInput?.value || '0') || 0;
+        const planned = cap > 0 ? Math.round(cap * (pct / 100) * 100) / 100 : 0;
         if (formulaEl) {
             formulaEl.textContent = cap <= 0
                 ? (isLand ? 'عيّن سعر شراء الأرض أولاً' : 'عيّن رأس مال المشروع أولاً')
-                : formatMoney(investment) + ' ÷ ' + formatMoney(cap) + ' × 100 = ' + pct.toFixed(2) + '%';
+                : 'تمويل مخطط ≈ ' + formatMoney(planned) + ' ج.م (' + pct.toFixed(2) + '% من ' + formatMoney(cap) + ')';
         }
         if (!isLand && projectHint) {
             projectHint.textContent = cap > 0
-                ? ('رأس مال المشروع: ' + formatMoney(cap) + ' ج.م — يمكن لاحقًا إضافة مشاريع/أراضي من البروفايل')
+                ? ('رأس مال المشروع: ' + formatMoney(cap) + ' ج.م')
                 : 'هذا المشروع بلا رأس مال. عيّنه من صفحة المشاريع أولاً.';
         }
         if (isLand && landHint) {
             landHint.textContent = cap > 0
-                ? ('سعر شراء الأرض: ' + formatMoney(cap) + ' ج.م — يمكن لاحقًا إضافة روابط أخرى من البروفايل')
+                ? ('سعر شراء الأرض: ' + formatMoney(cap) + ' ج.م')
                 : 'هذه الأرض بلا سعر شراء. عيّنه من صفحة الأرض أولاً.';
         }
     }
     radios.forEach((r) => r.addEventListener('change', syncVisibility));
-    investmentInput?.addEventListener('input', recalc);
+    pctInput?.addEventListener('input', recalc);
     projectSelect?.addEventListener('change', recalc);
     landSelect?.addEventListener('change', recalc);
     syncVisibility();

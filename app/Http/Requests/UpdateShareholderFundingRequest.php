@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\ProjectShareholder;
 use App\Models\Shareholder;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -23,14 +24,15 @@ class UpdateShareholderFundingRequest extends FormRequest
         return [
             'target_type' => ['required', Rule::in(['project', 'land'])],
             'target_id' => ['required', 'integer', 'min:1'],
-            'total_investment' => ['required', 'numeric', 'min:0.01'],
+            'share_percentage' => ['required', 'numeric', 'min:0.01', 'max:100'],
+            'total_investment' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if ($validator->errors()->hasAny(['target_type', 'target_id', 'total_investment'])) {
+            if ($validator->errors()->hasAny(['target_type', 'target_id', 'share_percentage'])) {
                 return;
             }
 
@@ -41,7 +43,7 @@ class UpdateShareholderFundingRequest extends FormRequest
 
             $type = (string) $this->input('target_type');
             $targetId = (int) $this->input('target_id');
-            $investment = round((float) $this->input('total_investment'), 2);
+            $percentage = round((float) $this->input('share_percentage'), 2);
 
             if ($type === 'project') {
                 $project = Project::query()->find($targetId);
@@ -61,23 +63,26 @@ class UpdateShareholderFundingRequest extends FormRequest
                     return;
                 }
 
-                $projectCapital = round((float) $project->capital, 2);
+                $projectCapital = round((float) ($project->planned_capital ?? $project->capital ?? 0), 2);
                 if ($projectCapital <= 0) {
-                    $validator->errors()->add('total_investment', 'يجب تعيين رأس مال المشروع أولاً.');
+                    $validator->errors()->add('share_percentage', 'يجب تعيين رأس مال المشروع أولاً.');
 
                     return;
                 }
 
-                $othersInvestment = round((float) ProjectShareholder::query()
+                $pctColumn = Schema::hasColumn('project_shareholder', 'planned_percentage')
+                    ? 'planned_percentage'
+                    : 'share_percentage';
+                $othersPct = round((float) ProjectShareholder::query()
                     ->where('project_id', $targetId)
                     ->where('shareholder_id', '!=', (int) $shareholder->id)
-                    ->sum('total_investment'), 2);
+                    ->sum($pctColumn), 2);
 
-                if (round($othersInvestment + $investment, 2) > $projectCapital) {
-                    $remaining = max(0, round($projectCapital - $othersInvestment, 2));
+                if (round($othersPct + $percentage, 2) > 100.01) {
+                    $remaining = max(0, round(100 - $othersPct, 2));
                     $validator->errors()->add(
-                        'total_investment',
-                        "مجموع تمويلات المساهمين يتجاوز رأس مال المشروع. الحد الأقصى لهذا المساهم: {$remaining} ج.م."
+                        'share_percentage',
+                        "مجموع نسب المساهمين يتجاوز 100٪. الحد الأقصى لهذا المساهم: {$remaining}٪."
                     );
                 }
 
@@ -101,23 +106,26 @@ class UpdateShareholderFundingRequest extends FormRequest
                 return;
             }
 
-            $capital = round((float) $parcel->purchase_price, 2);
+            $capital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 2);
             if ($capital <= 0) {
-                $validator->errors()->add('total_investment', 'يجب تعيين سعر شراء للأرض أولاً.');
+                $validator->errors()->add('share_percentage', 'يجب تعيين سعر شراء للأرض أولاً.');
 
                 return;
             }
 
-            $othersInvestment = round((float) LandParcelShareholder::query()
+            $pctColumn = Schema::hasColumn('land_parcel_shareholder', 'planned_percentage')
+                ? 'planned_percentage'
+                : 'share_percentage';
+            $othersPct = round((float) LandParcelShareholder::query()
                 ->where('land_parcel_id', $targetId)
                 ->where('shareholder_id', '!=', (int) $shareholder->id)
-                ->sum('total_investment'), 2);
+                ->sum($pctColumn), 2);
 
-            if (round($othersInvestment + $investment, 2) > $capital) {
-                $remaining = max(0, round($capital - $othersInvestment, 2));
+            if (round($othersPct + $percentage, 2) > 100.01) {
+                $remaining = max(0, round(100 - $othersPct, 2));
                 $validator->errors()->add(
-                    'total_investment',
-                    "مجموع تمويلات المساهمين يتجاوز سعر شراء الأرض. الحد الأقصى لهذا المساهم: {$remaining} ج.م."
+                    'share_percentage',
+                    "مجموع نسب المساهمين يتجاوز 100٪. الحد الأقصى لهذا المساهم: {$remaining}٪."
                 );
             }
         });

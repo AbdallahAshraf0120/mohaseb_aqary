@@ -201,6 +201,42 @@ class OwnershipService
         $plannedCapital = round((float) ($project->planned_capital ?? $project->capital ?? 0), 2);
         $pct = $this->percentageFor($investment, $plannedCapital);
 
+        return $this->persistProjectPlan($shareholder, $project, $investment, $pct);
+    }
+
+    public function setPlannedPercentageForProject(Shareholder $shareholder, Project $project, float $percentage): ProjectShareholder
+    {
+        $pct = round(max(0, $percentage), 2);
+        $plannedCapital = round((float) ($project->planned_capital ?? $project->capital ?? 0), 2);
+        $investment = round($plannedCapital * ($pct / 100), 2);
+
+        return $this->persistProjectPlan($shareholder, $project, $investment, $pct);
+    }
+
+    public function setPlannedInvestmentForLand(Shareholder $shareholder, LandParcel $parcel, float $investment): LandParcelShareholder
+    {
+        $investment = round($investment, 2);
+        $plannedCapital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 2);
+        $pct = $this->percentageFor($investment, $plannedCapital);
+
+        return $this->persistLandPlan($shareholder, $parcel, $investment, $pct);
+    }
+
+    public function setPlannedPercentageForLand(Shareholder $shareholder, LandParcel $parcel, float $percentage): LandParcelShareholder
+    {
+        $pct = round(max(0, $percentage), 2);
+        $plannedCapital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 2);
+        $investment = round($plannedCapital * ($pct / 100), 2);
+
+        return $this->persistLandPlan($shareholder, $parcel, $investment, $pct);
+    }
+
+    private function persistProjectPlan(
+        Shareholder $shareholder,
+        Project $project,
+        float $investment,
+        float $pct
+    ): ProjectShareholder {
         $membership = ProjectShareholder::query()->updateOrCreate(
             [
                 'shareholder_id' => (int) $shareholder->id,
@@ -219,12 +255,12 @@ class OwnershipService
         return $membership->fresh() ?? $membership;
     }
 
-    public function setPlannedInvestmentForLand(Shareholder $shareholder, LandParcel $parcel, float $investment): LandParcelShareholder
-    {
-        $investment = round($investment, 2);
-        $plannedCapital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 2);
-        $pct = $this->percentageFor($investment, $plannedCapital);
-
+    private function persistLandPlan(
+        Shareholder $shareholder,
+        LandParcel $parcel,
+        float $investment,
+        float $pct
+    ): LandParcelShareholder {
         $membership = LandParcelShareholder::query()->updateOrCreate(
             [
                 'shareholder_id' => (int) $shareholder->id,

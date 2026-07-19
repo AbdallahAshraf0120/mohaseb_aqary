@@ -45,19 +45,19 @@ class ShareholderService
     }
 
     /**
-     * يربط المساهم بمشروع (أو يحدّث التمويل/النسبة).
+     * يربط المساهم بمشروع حسب النسبة المخططة (التمويل المخطط يُحسب تلقائيًا).
      */
-    public function attachToProject(Shareholder $shareholder, Project $project, float $investment): ProjectShareholder
+    public function attachToProject(Shareholder $shareholder, Project $project, float $percentage): ProjectShareholder
     {
-        return $this->ownershipService->setPlannedInvestmentForProject($shareholder, $project, $investment);
+        return $this->ownershipService->setPlannedPercentageForProject($shareholder, $project, $percentage);
     }
 
     /**
-     * يربط المساهم بأرض بيع/شراء.
+     * يربط المساهم بأرض بيع/شراء حسب النسبة المخططة.
      */
-    public function attachToLandParcel(Shareholder $shareholder, LandParcel $parcel, float $investment): LandParcelShareholder
+    public function attachToLandParcel(Shareholder $shareholder, LandParcel $parcel, float $percentage): LandParcelShareholder
     {
-        return $this->ownershipService->setPlannedInvestmentForLand($shareholder, $parcel, $investment);
+        return $this->ownershipService->setPlannedPercentageForLand($shareholder, $parcel, $percentage);
     }
 
     /**

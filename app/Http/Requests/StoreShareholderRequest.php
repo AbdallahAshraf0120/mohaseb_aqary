@@ -37,33 +37,34 @@ class StoreShareholderRequest extends FormRequest
                 'integer',
                 $landsReady ? Rule::exists('land_parcels', 'id') : 'integer',
             ]),
-            'total_investment' => ['required', 'numeric', 'min:0.01'],
+            'share_percentage' => ['required', 'numeric', 'min:0.01', 'max:100'],
+            'total_investment' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if ($validator->errors()->hasAny(['link_type', 'project_id', 'land_parcel_id', 'total_investment'])) {
+            if ($validator->errors()->hasAny(['link_type', 'project_id', 'land_parcel_id', 'share_percentage'])) {
                 return;
             }
 
             $linkType = (string) $this->input('link_type');
-            $investment = round((float) $this->input('total_investment'), 2);
+            $percentage = round((float) $this->input('share_percentage'), 2);
 
             if ($linkType === 'project') {
-                $this->validateProjectFunding($validator, $investment);
+                $this->validateProjectPercentage($validator, $percentage);
 
                 return;
             }
 
             if ($linkType === 'land') {
-                $this->validateLandFunding($validator, $investment);
+                $this->validateLandPercentage($validator, $percentage);
             }
         });
     }
 
-    private function validateProjectFunding(Validator $validator, float $investment): void
+    private function validateProjectPercentage(Validator $validator, float $percentage): void
     {
         $project = Project::query()->find((int) $this->input('project_id'));
         if ($project === null) {
@@ -80,20 +81,24 @@ class StoreShareholderRequest extends FormRequest
             return;
         }
 
-        $existingInvestment = round((float) ProjectShareholder::query()
-            ->where('project_id', (int) $project->id)
-            ->sum(Schema::hasColumn('project_shareholder', 'planned_investment') ? 'planned_investment' : 'total_investment'), 2);
+        $pctColumn = Schema::hasColumn('project_shareholder', 'planned_percentage')
+            ? 'planned_percentage'
+            : 'share_percentage';
 
-        if (round($existingInvestment + $investment, 2) > $projectCapital) {
-            $remaining = max(0, round($projectCapital - $existingInvestment, 2));
+        $existingPct = round((float) ProjectShareholder::query()
+            ->where('project_id', (int) $project->id)
+            ->sum($pctColumn), 2);
+
+        if (round($existingPct + $percentage, 2) > 100.01) {
+            $remaining = max(0, round(100 - $existingPct, 2));
             $validator->errors()->add(
-                'total_investment',
-                "مجموع تمويلات المساهمين يتجاوز رأس مال المشروع ({$projectCapital} ج.م). المتبقي المتاح: {$remaining} ج.م."
+                'share_percentage',
+                "مجموع نسب المساهمين يتجاوز 100٪. المتبقي المتاح: {$remaining}٪."
             );
         }
     }
 
-    private function validateLandFunding(Validator $validator, float $investment): void
+    private function validateLandPercentage(Validator $validator, float $percentage): void
     {
         if (! Schema::hasTable('land_parcels') || ! Schema::hasTable('land_parcel_shareholder')) {
             $validator->errors()->add('land_parcel_id', 'ميزة الأراضي غير مفعّلة. شغّل migrate على السيرفر.');
@@ -116,19 +121,19 @@ class StoreShareholderRequest extends FormRequest
             return;
         }
 
-        $sumColumn = Schema::hasColumn('land_parcel_shareholder', 'planned_investment')
-            ? 'planned_investment'
-            : 'total_investment';
+        $pctColumn = Schema::hasColumn('land_parcel_shareholder', 'planned_percentage')
+            ? 'planned_percentage'
+            : 'share_percentage';
 
-        $existingInvestment = round((float) LandParcelShareholder::query()
+        $existingPct = round((float) LandParcelShareholder::query()
             ->where('land_parcel_id', (int) $parcel->id)
-            ->sum($sumColumn), 2);
+            ->sum($pctColumn), 2);
 
-        if (round($existingInvestment + $investment, 2) > $capital) {
-            $remaining = max(0, round($capital - $existingInvestment, 2));
+        if (round($existingPct + $percentage, 2) > 100.01) {
+            $remaining = max(0, round(100 - $existingPct, 2));
             $validator->errors()->add(
-                'total_investment',
-                "مجموع تمويلات المساهمين يتجاوز سعر شراء الأرض ({$capital} ج.م). المتبقي: {$remaining} ج.م."
+                'share_percentage',
+                "مجموع نسب المساهمين يتجاوز 100٪. المتبقي المتاح: {$remaining}٪."
             );
         }
     }

@@ -136,21 +136,24 @@ class ShareholderController extends Controller
     {
         $data = $request->validated();
         $linkType = (string) $data['link_type'];
-        $investment = round((float) $data['total_investment'], 2);
+        $percentage = round((float) $data['share_percentage'], 2);
+        $funding = isset($data['total_investment']) && $data['total_investment'] !== null && $data['total_investment'] !== ''
+            ? round((float) $data['total_investment'], 2)
+            : 0.0;
 
         $shareholder = $this->shareholderService->create($data);
 
         if ($linkType === 'land') {
             $parcel = LandParcel::query()->findOrFail((int) $data['land_parcel_id']);
-            $this->shareholderService->attachToLandParcel($shareholder, $parcel, $investment);
+            $this->shareholderService->attachToLandParcel($shareholder, $parcel, $percentage);
 
             app(CurrentProject::class)->force(null);
-            if ($investment > 0) {
+            if ($funding >= 0.01) {
                 $this->ledgerService->create($shareholder, [
                     'project_id' => null,
                     'land_parcel_id' => (int) $parcel->id,
                     'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
-                    'amount' => $investment,
+                    'amount' => $funding,
                     'entry_date' => now()->toDateString(),
                     'notes' => 'إيداع رأس مال عند تسجيل المساهم على الأرض',
                 ], $request->user());
@@ -158,18 +161,18 @@ class ShareholderController extends Controller
 
             return redirect()
                 ->route('shareholders.show', $shareholder)
-                ->with('success', 'تم إضافة المساهم وربطه بالأرض بنجاح.');
+                ->with('success', 'تم إضافة المساهم وربطه بالأرض بالنسبة المخططة.');
         }
 
         $project = Project::query()->findOrFail((int) $data['project_id']);
-        $this->shareholderService->attachToProject($shareholder, $project, $investment);
+        $this->shareholderService->attachToProject($shareholder, $project, $percentage);
 
         app(CurrentProject::class)->force((int) $project->id);
-        if ($investment > 0) {
+        if ($funding >= 0.01) {
             $this->ledgerService->create($shareholder, [
                 'project_id' => (int) $project->id,
                 'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
-                'amount' => $investment,
+                'amount' => $funding,
                 'entry_date' => now()->toDateString(),
                 'notes' => 'إيداع رأس مال عند تسجيل المساهم في المشروع',
             ], $request->user());
@@ -177,7 +180,7 @@ class ShareholderController extends Controller
 
         return redirect()
             ->route('shareholders.show', $shareholder)
-            ->with('success', 'تم إضافة المساهم وربطه بالمشروع بنجاح.');
+            ->with('success', 'تم إضافة المساهم وربطه بالمشروع بالنسبة المخططة.');
     }
 
     public function show(Shareholder $shareholder): View
@@ -328,72 +331,94 @@ class ShareholderController extends Controller
     {
         $data = $request->validated();
         $project = Project::query()->findOrFail((int) $data['project_id']);
-        $investment = round((float) $data['total_investment'], 2);
+        $percentage = round((float) $data['share_percentage'], 2);
+        $funding = isset($data['total_investment']) && $data['total_investment'] !== null && $data['total_investment'] !== ''
+            ? round((float) $data['total_investment'], 2)
+            : 0.0;
 
-        $this->shareholderService->attachToProject($shareholder, $project, $investment);
+        $this->shareholderService->attachToProject($shareholder, $project, $percentage);
         app(CurrentProject::class)->force((int) $project->id);
-        $this->ledgerService->create($shareholder, [
-            'project_id' => (int) $project->id,
-            'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
-            'amount' => $investment,
-            'entry_date' => now()->toDateString(),
-            'notes' => 'إيداع رأس مال عند الربط بمشروع جديد',
-        ], $request->user());
+        if ($funding >= 0.01) {
+            $this->ledgerService->create($shareholder, [
+                'project_id' => (int) $project->id,
+                'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
+                'amount' => $funding,
+                'entry_date' => now()->toDateString(),
+                'notes' => 'إيداع رأس مال عند الربط بمشروع جديد',
+            ], $request->user());
+        }
 
         return redirect()
             ->route('shareholders.show', $shareholder)
-            ->with('success', 'تم ربط المساهم بالمشروع وتسجيل رأس المال في الجاري.');
+            ->with('success', $funding >= 0.01
+                ? 'تم ربط المساهم بالمشروع وتسجيل رأس المال في الجاري.'
+                : 'تم ربط المساهم بالمشروع بالنسبة المخططة.');
     }
 
     public function attachLand(AttachShareholderLandRequest $request, Shareholder $shareholder): RedirectResponse
     {
         $data = $request->validated();
         $parcel = LandParcel::query()->findOrFail((int) $data['land_parcel_id']);
-        $investment = round((float) $data['total_investment'], 2);
+        $percentage = round((float) $data['share_percentage'], 2);
+        $funding = isset($data['total_investment']) && $data['total_investment'] !== null && $data['total_investment'] !== ''
+            ? round((float) $data['total_investment'], 2)
+            : 0.0;
 
-        $this->shareholderService->attachToLandParcel($shareholder, $parcel, $investment);
+        $this->shareholderService->attachToLandParcel($shareholder, $parcel, $percentage);
         app(CurrentProject::class)->force(null);
-        $this->ledgerService->create($shareholder, [
-            'project_id' => null,
-            'land_parcel_id' => (int) $parcel->id,
-            'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
-            'amount' => $investment,
-            'entry_date' => now()->toDateString(),
-            'notes' => 'إيداع رأس مال عند الربط بأرض بيع/شراء',
-        ], $request->user());
+        if ($funding >= 0.01) {
+            $this->ledgerService->create($shareholder, [
+                'project_id' => null,
+                'land_parcel_id' => (int) $parcel->id,
+                'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
+                'amount' => $funding,
+                'entry_date' => now()->toDateString(),
+                'notes' => 'إيداع رأس مال عند الربط بأرض بيع/شراء',
+            ], $request->user());
+        }
 
         return redirect()
             ->route('shareholders.show', $shareholder)
-            ->with('success', 'تم ربط المساهم بالأرض وتسجيل رأس المال في الجاري.');
+            ->with('success', $funding >= 0.01
+                ? 'تم ربط المساهم بالأرض وتسجيل رأس المال في الجاري.'
+                : 'تم ربط المساهم بالأرض بالنسبة المخططة.');
     }
 
     public function updateFunding(UpdateShareholderFundingRequest $request, Shareholder $shareholder): RedirectResponse
     {
         $data = $request->validated();
         $isProject = $data['target_type'] === 'project';
-        $investment = (float) $data['total_investment'];
+        $percentage = round((float) $data['share_percentage'], 2);
+        $hasFunding = array_key_exists('total_investment', $data)
+            && $data['total_investment'] !== null
+            && $data['total_investment'] !== '';
+        $funding = $hasFunding ? round((float) $data['total_investment'], 2) : null;
 
         try {
             if ($isProject) {
                 $project = Project::query()->findOrFail((int) $data['target_id']);
-                $this->shareholderService->attachToProject($shareholder, $project, $investment);
-                $this->ledgerService->setFundingAmount(
-                    $shareholder,
-                    (int) $project->id,
-                    null,
-                    $investment,
-                    $request->user()
-                );
+                $this->shareholderService->attachToProject($shareholder, $project, $percentage);
+                if ($funding !== null) {
+                    $this->ledgerService->setFundingAmount(
+                        $shareholder,
+                        (int) $project->id,
+                        null,
+                        $funding,
+                        $request->user()
+                    );
+                }
             } else {
                 $parcel = LandParcel::query()->findOrFail((int) $data['target_id']);
-                $this->shareholderService->attachToLandParcel($shareholder, $parcel, $investment);
-                $this->ledgerService->setFundingAmount(
-                    $shareholder,
-                    null,
-                    (int) $parcel->id,
-                    $investment,
-                    $request->user()
-                );
+                $this->shareholderService->attachToLandParcel($shareholder, $parcel, $percentage);
+                if ($funding !== null) {
+                    $this->ledgerService->setFundingAmount(
+                        $shareholder,
+                        null,
+                        (int) $parcel->id,
+                        $funding,
+                        $request->user()
+                    );
+                }
             }
         } catch (InvalidArgumentException $e) {
             return redirect()
@@ -404,8 +429,6 @@ class ShareholderController extends Controller
 
         return redirect()
             ->route('shareholders.show', $shareholder)
-            ->with('success', $isProject
-                ? 'تم تحديث التمويل المخطط والفعلي للمشروع.'
-                : 'تم تحديث التمويل المخطط والفعلي للأرض.');
+            ->with('success', 'تم تحديث النسبة المخططة'.($funding !== null ? ' والتمويل الفعلي' : '').'.');
     }
 }

@@ -73,10 +73,11 @@
                                                 data-funding-type="project"
                                                 data-funding-id="{{ $row->project->id }}"
                                                 data-funding-label="مشروع: {{ $row->project->name }}"
-                                                data-funding-amount="{{ number_format($pInv, 2, '.', '') }}"
-                                                data-funding-hint="يُحدَّث التمويل المخطط ويُطابق إيداعات رأس المال (الفعلي). النسبة المخططة = التمويل ÷ رأس مال المشروع."
+                                                data-funding-pct="{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 2, '.', '') }}"
+                                                data-funding-amount=""
+                                                data-funding-hint="عدّل النسبة المخططة. التمويل النقدي اختياري ويحدّث رأس المال الفعلي في الجاري."
                                             >
-                                                تعديل التمويل
+                                                تعديل النسبة
                                             </button>
                                         </td>
                                     @endcan
@@ -136,10 +137,11 @@
                                                     data-funding-type="land"
                                                     data-funding-id="{{ $row->parcel->id }}"
                                                     data-funding-label="أرض: {{ $row->parcel->name }}"
-                                                    data-funding-amount="{{ number_format($lpInv, 2, '.', '') }}"
-                                                    data-funding-hint="يُحدَّث التمويل المخطط ويُطابق رأس المال المسجّل. دفعات الشراء المنسوبة تُحسب ضمن الفعلي."
+                                                    data-funding-pct="{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 2, '.', '') }}"
+                                                    data-funding-amount=""
+                                                    data-funding-hint="عدّل النسبة المخططة. التمويل النقدي اختياري. السدادات على الأرض تبني الفعلي."
                                                 >
-                                                    تعديل التمويل
+                                                    تعديل النسبة
                                                 </button>
                                             @endif
                                         </td>
@@ -164,7 +166,7 @@
                         @else
                             <form method="post" action="{{ route('shareholders.projects.attach', $shareholder) }}" class="row g-2 align-items-end">
                                 @csrf
-                                <div class="col-md-5">
+                                <div class="col-md-4">
                                     <label class="form-label">المشروع</label>
                                     <select name="project_id" class="form-select @error('project_id') is-invalid @enderror" required>
                                         <option value="">اختر…</option>
@@ -174,12 +176,17 @@
                                     </select>
                                     @error('project_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">التمويل</label>
-                                    <input type="number" step="0.01" min="0.01" name="total_investment" class="form-control font-monospace @error('total_investment') is-invalid @enderror" required>
-                                    @error('total_investment') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                <div class="col-md-3">
+                                    <label class="form-label">النسبة %</label>
+                                    <input type="number" step="0.01" min="0.01" max="100" name="share_percentage" class="form-control font-monospace @error('share_percentage') is-invalid @enderror" value="{{ old('share_percentage') }}" required>
+                                    @error('share_percentage') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 <div class="col-md-3">
+                                    <label class="form-label">تمويل نقدي (اختياري)</label>
+                                    <input type="number" step="0.01" min="0" name="total_investment" class="form-control font-monospace @error('total_investment') is-invalid @enderror" value="{{ old('total_investment') }}">
+                                    @error('total_investment') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-md-2">
                                     <button type="submit" class="btn btn-primary w-100">ربط</button>
                                 </div>
                             </form>
@@ -194,7 +201,7 @@
                         @else
                             <form method="post" action="{{ route('shareholders.lands.attach', $shareholder) }}" class="row g-2 align-items-end">
                                 @csrf
-                                <div class="col-md-5">
+                                <div class="col-md-4">
                                     <label class="form-label">الأرض</label>
                                     <select name="land_parcel_id" class="form-select @error('land_parcel_id') is-invalid @enderror" required>
                                         <option value="">اختر…</option>
@@ -206,16 +213,21 @@
                                     </select>
                                     @error('land_parcel_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">التمويل</label>
-                                    <input type="number" step="0.01" min="0.01" name="total_investment" class="form-control font-monospace @error('total_investment') is-invalid @enderror" required>
-                                    @error('total_investment') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                <div class="col-md-3">
+                                    <label class="form-label">النسبة %</label>
+                                    <input type="number" step="0.01" min="0.01" max="100" name="share_percentage" class="form-control font-monospace @error('share_percentage') is-invalid @enderror" value="{{ old('share_percentage') }}" required>
+                                    @error('share_percentage') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 <div class="col-md-3">
+                                    <label class="form-label">تمويل نقدي (اختياري)</label>
+                                    <input type="number" step="0.01" min="0" name="total_investment" class="form-control font-monospace @error('total_investment') is-invalid @enderror" value="{{ old('total_investment') }}">
+                                    @error('total_investment') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-md-2">
                                     <button type="submit" class="btn btn-primary w-100">ربط</button>
                                 </div>
                             </form>
-                            <div class="form-text mt-2">النسبة = التمويل ÷ سعر شراء الأرض × 100.</div>
+                            <div class="form-text mt-2">النسبة إلزامية · التمويل النقدي اختياري (الفعلي يتراكم بالسداد).</div>
                         @endif
                     </div>
                 </div>
@@ -539,7 +551,7 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title fw-semibold" id="fundingModalLabel">تعديل التمويل</h5>
+                        <h5 class="modal-title fw-semibold" id="fundingModalLabel">تعديل النسبة</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
                     </div>
                     <form method="post" id="fundingModalForm" action="{{ route('shareholders.funding.update', $shareholder) }}">
@@ -549,16 +561,30 @@
                         <input type="hidden" name="target_id" id="funding-target-id" value="{{ old('target_id') }}">
                         <div class="modal-body">
                             <div class="small text-body-secondary mb-2" id="fundingModalLabelTarget">—</div>
-                            <label class="form-label fw-semibold" for="funding-total-investment">التمويل الجديد</label>
+                            <label class="form-label fw-semibold" for="funding-share-percentage">نسبة المساهمة (%)</label>
                             <input
                                 type="number"
                                 step="0.01"
                                 min="0.01"
+                                max="100"
+                                name="share_percentage"
+                                id="funding-share-percentage"
+                                value="{{ old('share_percentage') }}"
+                                class="form-control font-monospace @error('share_percentage') is-invalid @enderror"
+                                required
+                            >
+                            @error('share_percentage')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                            <label class="form-label fw-semibold mt-3" for="funding-total-investment">تمويل نقدي فعلي (اختياري)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
                                 name="total_investment"
                                 id="funding-total-investment"
                                 value="{{ old('total_investment') }}"
                                 class="form-control font-monospace @error('total_investment') is-invalid @enderror"
-                                required
                             >
                             @error('total_investment')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -570,7 +596,7 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-                            <button type="submit" class="btn btn-warning">حفظ التمويل</button>
+                            <button type="submit" class="btn btn-warning">حفظ</button>
                         </div>
                     </form>
                 </div>
@@ -594,6 +620,7 @@
 
                 const typeInput = document.getElementById('funding-target-type');
                 const idInput = document.getElementById('funding-target-id');
+                const pctInput = document.getElementById('funding-share-percentage');
                 const amountInput = document.getElementById('funding-total-investment');
                 const labelEl = document.getElementById('fundingModalLabelTarget');
                 const hintEl = document.getElementById('fundingModalHint');
@@ -604,12 +631,13 @@
 
                     typeInput.value = button.getAttribute('data-funding-type') || '';
                     idInput.value = button.getAttribute('data-funding-id') || '';
+                    if (pctInput) pctInput.value = button.getAttribute('data-funding-pct') || '';
                     amountInput.value = button.getAttribute('data-funding-amount') || '';
                     labelEl.textContent = button.getAttribute('data-funding-label') || '—';
                     hintEl.textContent = button.getAttribute('data-funding-hint') || '';
                 });
 
-                @if ($errors->hasAny(['total_investment', 'target_id', 'target_type']))
+                @if ($errors->hasAny(['share_percentage', 'total_investment', 'target_id', 'target_type']))
                     (function () {
                         const type = @json(old('target_type'));
                         const id = @json(old('target_id'));
