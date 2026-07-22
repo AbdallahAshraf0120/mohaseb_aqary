@@ -447,14 +447,41 @@
                             <td class="small">{{ $entry->notes ?: '—' }}</td>
                             <td class="text-end">
                                 @can('shareholders.manage')
-                                    <form method="post"
-                                          action="{{ route('shareholders.ledger.destroy', [$shareholder, $entry]) }}"
-                                          class="d-inline"
-                                          data-swal-confirm="{{ e('حذف الحركة وحركة الصندوق المرتبطة؟') }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
-                                    </form>
+                                    @php
+                                        $canAllocate = $entry->direction === 'credit'
+                                            && $entry->project_id
+                                            && ($allocateTargetProjects ?? collect())->where('id', '!=', (int) $entry->project_id)->isNotEmpty()
+                                            && $entry->remainingAllocatableAmount() >= 0.01;
+                                    @endphp
+                                    <div class="d-inline-flex gap-1 justify-content-end flex-wrap">
+                                        @if ($canAllocate)
+                                            <button
+                                                type="button"
+                                                class="btn btn-primary btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#allocateLedgerModal"
+                                                data-allocate-id="{{ $entry->id }}"
+                                                data-allocate-action="{{ route('shareholders.ledger.allocate', [$shareholder, $entry]) }}"
+                                                data-allocate-amount="{{ number_format((float) $entry->amount, 2, '.', '') }}"
+                                                data-allocate-remaining="{{ number_format($entry->remainingAllocatableAmount(), 2, '.', '') }}"
+                                                data-allocate-project-id="{{ (int) $entry->project_id }}"
+                                                data-allocate-project="{{ e($entry->project?->name ?? '—') }}"
+                                                data-allocate-date="{{ $entry->entry_date?->format('Y-m-d') }}"
+                                                data-allocate-type="{{ e($entry->typeLabel()) }}"
+                                                data-allocate-notes="{{ e(\Illuminate\Support\Str::limit((string) ($entry->notes ?: ''), 80)) }}"
+                                            >
+                                                توزيع على مشروع
+                                            </button>
+                                        @endif
+                                        <form method="post"
+                                              action="{{ route('shareholders.ledger.destroy', [$shareholder, $entry]) }}"
+                                              class="d-inline"
+                                              data-swal-confirm="{{ e('حذف الحركة وحركة الصندوق المرتبطة؟') }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
+                                        </form>
+                                    </div>
                                 @endcan
                             </td>
                         </tr>
@@ -602,6 +629,125 @@
                 </div>
             </div>
         </div>
+
+        <div class="modal fade" id="allocateLedgerModal" tabindex="-1" aria-labelledby="allocateLedgerModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header border-bottom-0 pb-0">
+                        <div>
+                            <h5 class="modal-title fw-semibold mb-1" id="allocateLedgerModalLabel">توزيع من حركة الجاري</h5>
+                            <div class="small text-body-secondary">انقل نسبة أو مبلغ من هذه الحركة إلى مشروع آخر — بدون تأثير على الصندوق</div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                    </div>
+                    <form method="post" id="allocateLedgerForm" action="#">
+                        @csrf
+                        <div class="modal-body pt-3">
+                            <div class="rounded-3 border bg-body-tertiary p-3 mb-3">
+                                <div class="row g-2 small">
+                                    <div class="col-md-4">
+                                        <div class="text-body-secondary">المصدر</div>
+                                        <div class="fw-semibold" id="allocate-source-project">—</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-body-secondary">التاريخ / النوع</div>
+                                        <div class="fw-semibold"><span id="allocate-source-date">—</span> · <span id="allocate-source-type">—</span></div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="text-body-secondary">أصل الحركة</div>
+                                        <div class="fw-semibold font-monospace text-success" id="allocate-source-amount">—</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-body-secondary">المتبقي القابل للتوزيع</div>
+                                        <div class="fw-semibold font-monospace text-primary" id="allocate-source-remaining">—</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="text-body-secondary">ملاحظة الحركة</div>
+                                        <div id="allocate-source-notes" class="text-truncate">—</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold" for="allocate-target-project">المشروع الهدف</label>
+                                <select name="target_project_id" id="allocate-target-project" class="form-select @error('target_project_id') is-invalid @enderror" required>
+                                    <option value="">اختر المشروع…</option>
+                                    @foreach (($allocateTargetProjects ?? collect()) as $p)
+                                        <option value="{{ $p->id }}" @selected((string) old('target_project_id') === (string) $p->id)>{{ $p->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('target_project_id')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">يظهر فقط المشاريع المرتبطة بهذا المساهم (غير مشروع المصدر).</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold d-block">طريقة التوزيع</label>
+                                <div class="btn-group w-100" role="group" aria-label="وضع التوزيع">
+                                    <input type="radio" class="btn-check" name="mode" id="allocate-mode-percentage" value="percentage" autocomplete="off" @checked(old('mode', 'percentage') === 'percentage')>
+                                    <label class="btn btn-outline-primary" for="allocate-mode-percentage">بالنسبة %</label>
+                                    <input type="radio" class="btn-check" name="mode" id="allocate-mode-amount" value="amount" autocomplete="off" @checked(old('mode') === 'amount')>
+                                    <label class="btn btn-outline-primary" for="allocate-mode-amount">بالمبلغ</label>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6" id="allocate-percentage-wrap">
+                                    <label class="form-label fw-semibold" for="allocate-percentage">النسبة من أصل الحركة (%)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0.01" max="100" name="percentage" id="allocate-percentage"
+                                               value="{{ old('percentage') }}"
+                                               class="form-control font-monospace @error('percentage') is-invalid @enderror"
+                                               placeholder="مثال: 30">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                    @error('percentage')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                    <div class="d-flex flex-wrap gap-1 mt-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary allocate-pct-preset" data-pct="25">25%</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary allocate-pct-preset" data-pct="50">50%</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary allocate-pct-preset" data-pct="75">75%</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary allocate-pct-preset" data-pct="100">الكل</button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" id="allocate-amount-wrap" style="display:none">
+                                    <label class="form-label fw-semibold" for="allocate-amount">المبلغ المراد توزيعه</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0.01" name="amount" id="allocate-amount"
+                                               value="{{ old('amount') }}"
+                                               class="form-control font-monospace @error('amount') is-invalid @enderror"
+                                               placeholder="0.00">
+                                        <span class="input-group-text">ج.م</span>
+                                    </div>
+                                    @error('amount')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">معاينة المبلغ</label>
+                                    <div class="form-control-plaintext font-monospace fs-5 fw-semibold text-primary" id="allocate-preview-amount">—</div>
+                                    <div class="small text-body-secondary" id="allocate-preview-hint">سيُخصم من مشروع المصدر ويُضاف لمشروع الهدف.</div>
+                                </div>
+                            </div>
+
+                            <div class="mb-0">
+                                <label class="form-label fw-semibold" for="allocate-notes">ملاحظة (اختياري)</label>
+                                <textarea name="notes" id="allocate-notes" rows="2" class="form-control @error('notes') is-invalid @enderror" maxlength="1000" placeholder="سبب التوزيع أو مرجع…">{{ old('notes') }}</textarea>
+                                @error('notes')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top-0 pt-0">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="submit" class="btn btn-primary px-4" id="allocate-submit-btn">تأكيد التوزيع</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     @endcan
 
     @push('scripts')
@@ -616,41 +762,158 @@
                 }
 
                 const fundingModal = document.getElementById('fundingModal');
-                if (!fundingModal) return;
+                if (fundingModal) {
+                    const typeInput = document.getElementById('funding-target-type');
+                    const idInput = document.getElementById('funding-target-id');
+                    const pctInput = document.getElementById('funding-share-percentage');
+                    const amountInput = document.getElementById('funding-total-investment');
+                    const labelEl = document.getElementById('fundingModalLabelTarget');
+                    const hintEl = document.getElementById('fundingModalHint');
 
-                const typeInput = document.getElementById('funding-target-type');
-                const idInput = document.getElementById('funding-target-id');
-                const pctInput = document.getElementById('funding-share-percentage');
-                const amountInput = document.getElementById('funding-total-investment');
-                const labelEl = document.getElementById('fundingModalLabelTarget');
-                const hintEl = document.getElementById('fundingModalHint');
+                    fundingModal.addEventListener('show.bs.modal', function (event) {
+                        const button = event.relatedTarget;
+                        if (!button) return;
 
-                fundingModal.addEventListener('show.bs.modal', function (event) {
+                        typeInput.value = button.getAttribute('data-funding-type') || '';
+                        idInput.value = button.getAttribute('data-funding-id') || '';
+                        if (pctInput) pctInput.value = button.getAttribute('data-funding-pct') || '';
+                        amountInput.value = button.getAttribute('data-funding-amount') || '';
+                        labelEl.textContent = button.getAttribute('data-funding-label') || '—';
+                        hintEl.textContent = button.getAttribute('data-funding-hint') || '';
+                    });
+
+                    @if ($errors->hasAny(['share_percentage', 'total_investment', 'target_id', 'target_type']))
+                        (function () {
+                            const type = @json(old('target_type'));
+                            const id = @json(old('target_id'));
+                            if (type && id) {
+                                const btn = document.querySelector(
+                                    '[data-funding-type="' + type + '"][data-funding-id="' + id + '"]'
+                                );
+                                if (btn) {
+                                    labelEl.textContent = btn.getAttribute('data-funding-label') || '—';
+                                    hintEl.textContent = btn.getAttribute('data-funding-hint') || '';
+                                }
+                            }
+                            bootstrap.Modal.getOrCreateInstance(fundingModal).show();
+                        })();
+                    @endif
+                }
+
+                const allocateModal = document.getElementById('allocateLedgerModal');
+                if (!allocateModal) return;
+
+                const form = document.getElementById('allocateLedgerForm');
+                const targetSelect = document.getElementById('allocate-target-project');
+                const pctInput = document.getElementById('allocate-percentage');
+                const amountInput = document.getElementById('allocate-amount');
+                const pctWrap = document.getElementById('allocate-percentage-wrap');
+                const amountWrap = document.getElementById('allocate-amount-wrap');
+                const previewEl = document.getElementById('allocate-preview-amount');
+                const modePct = document.getElementById('allocate-mode-percentage');
+                const modeAmt = document.getElementById('allocate-mode-amount');
+                let sourceAmount = 0;
+                let remaining = 0;
+                let sourceProjectId = '';
+
+                function money(n) {
+                    return (Math.round((n + Number.EPSILON) * 100) / 100).toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }) + ' ج.م';
+                }
+
+                function syncMode() {
+                    const isPct = modePct && modePct.checked;
+                    if (pctWrap) pctWrap.style.display = isPct ? '' : 'none';
+                    if (amountWrap) amountWrap.style.display = isPct ? 'none' : '';
+                    if (pctInput) pctInput.required = !!isPct;
+                    if (amountInput) amountInput.required = !isPct;
+                    updatePreview();
+                }
+
+                function updatePreview() {
+                    let value = 0;
+                    if (modePct && modePct.checked) {
+                        const pct = parseFloat(pctInput && pctInput.value ? pctInput.value : '0') || 0;
+                        value = Math.round(sourceAmount * (pct / 100) * 100) / 100;
+                    } else {
+                        value = parseFloat(amountInput && amountInput.value ? amountInput.value : '0') || 0;
+                    }
+                    if (previewEl) {
+                        previewEl.textContent = value > 0 ? money(value) : '—';
+                        previewEl.classList.toggle('text-danger', value > remaining + 0.001);
+                        previewEl.classList.toggle('text-primary', value <= remaining + 0.001);
+                    }
+                }
+
+                function filterTargets() {
+                    if (!targetSelect) return;
+                    Array.from(targetSelect.options).forEach(function (opt) {
+                        if (!opt.value) return;
+                        const hide = String(opt.value) === String(sourceProjectId);
+                        opt.hidden = hide;
+                        opt.disabled = hide;
+                        if (hide && opt.selected) {
+                            targetSelect.value = '';
+                        }
+                    });
+                }
+
+                allocateModal.addEventListener('show.bs.modal', function (event) {
                     const button = event.relatedTarget;
-                    if (!button) return;
+                    if (!button || !form) return;
 
-                    typeInput.value = button.getAttribute('data-funding-type') || '';
-                    idInput.value = button.getAttribute('data-funding-id') || '';
-                    if (pctInput) pctInput.value = button.getAttribute('data-funding-pct') || '';
-                    amountInput.value = button.getAttribute('data-funding-amount') || '';
-                    labelEl.textContent = button.getAttribute('data-funding-label') || '—';
-                    hintEl.textContent = button.getAttribute('data-funding-hint') || '';
+                    form.action = button.getAttribute('data-allocate-action') || '#';
+                    sourceAmount = parseFloat(button.getAttribute('data-allocate-amount') || '0') || 0;
+                    remaining = parseFloat(button.getAttribute('data-allocate-remaining') || '0') || 0;
+                    sourceProjectId = button.getAttribute('data-allocate-project-id') || '';
+
+                    document.getElementById('allocate-source-project').textContent = button.getAttribute('data-allocate-project') || '—';
+                    document.getElementById('allocate-source-date').textContent = button.getAttribute('data-allocate-date') || '—';
+                    document.getElementById('allocate-source-type').textContent = button.getAttribute('data-allocate-type') || '—';
+                    document.getElementById('allocate-source-amount').textContent = money(sourceAmount);
+                    document.getElementById('allocate-source-remaining').textContent = money(remaining);
+                    document.getElementById('allocate-source-notes').textContent = button.getAttribute('data-allocate-notes') || '—';
+
+                    if (amountInput) {
+                        amountInput.max = String(remaining);
+                        amountInput.value = '';
+                    }
+                    if (pctInput) {
+                        const maxPct = sourceAmount > 0 ? Math.min(100, Math.round((remaining / sourceAmount) * 10000) / 100) : 100;
+                        pctInput.max = String(maxPct);
+                        pctInput.value = '';
+                    }
+                    if (modePct) modePct.checked = true;
+                    filterTargets();
+                    syncMode();
                 });
 
-                @if ($errors->hasAny(['share_percentage', 'total_investment', 'target_id', 'target_type']))
+                if (modePct) modePct.addEventListener('change', syncMode);
+                if (modeAmt) modeAmt.addEventListener('change', syncMode);
+                if (pctInput) pctInput.addEventListener('input', updatePreview);
+                if (amountInput) amountInput.addEventListener('input', updatePreview);
+
+                document.querySelectorAll('.allocate-pct-preset').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        if (!pctInput || !modePct) return;
+                        modePct.checked = true;
+                        syncMode();
+                        const pct = parseFloat(btn.getAttribute('data-pct') || '0') || 0;
+                        const maxPct = sourceAmount > 0 ? Math.min(100, (remaining / sourceAmount) * 100) : 100;
+                        pctInput.value = String(Math.min(pct, Math.round(maxPct * 100) / 100));
+                        updatePreview();
+                    });
+                });
+
+                @if ($errors->hasAny(['target_project_id', 'percentage', 'amount', 'mode', 'notes']))
                     (function () {
-                        const type = @json(old('target_type'));
-                        const id = @json(old('target_id'));
-                        if (type && id) {
-                            const btn = document.querySelector(
-                                '[data-funding-type="' + type + '"][data-funding-id="' + id + '"]'
-                            );
-                            if (btn) {
-                                labelEl.textContent = btn.getAttribute('data-funding-label') || '—';
-                                hintEl.textContent = btn.getAttribute('data-funding-hint') || '';
-                            }
+                        const btn = document.querySelector('[data-allocate-action]');
+                        if (btn) {
+                            // Prefer last submitted entry if present in old input context — reopen first eligible
+                            bootstrap.Modal.getOrCreateInstance(allocateModal).show();
                         }
-                        bootstrap.Modal.getOrCreateInstance(fundingModal).show();
                     })();
                 @endif
             })();

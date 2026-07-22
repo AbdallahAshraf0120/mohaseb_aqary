@@ -299,6 +299,7 @@ class ShareholderController extends Controller
             'landBreakdown' => $landBreakdown,
             'participations' => $participations,
             'ledgerEntries' => $ledgerEntries,
+            'allocateTargetProjects' => $allocateTargetProjects,
             'landPayments' => $landPayments,
             'ledgerBalance' => $shareholder->ledgerBalance(),
             'capitalDepositsTotal' => $shareholder->capitalDepositsTotal(),
