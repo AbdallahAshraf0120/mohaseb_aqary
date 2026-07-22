@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\ActivityLogPresenter;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -32,6 +33,9 @@ class AuditHttpRequests
         }
 
         try {
+            $routeName = $request->route()?->getName();
+            $presenter = app(ActivityLogPresenter::class);
+
             activity()
                 ->useLog('http')
                 ->causedBy(Auth::user())
@@ -39,7 +43,7 @@ class AuditHttpRequests
                     'method' => $request->method(),
                     'full_url' => $request->fullUrl(),
                     'path' => '/'.$request->path(),
-                    'route' => $request->route()?->getName(),
+                    'route' => $routeName,
                     'route_parameters' => $this->serializeRouteParameters($request->route()?->parameters() ?? []),
                     'query' => $request->query(),
                     'payload' => $this->sanitizePayload($request),
@@ -48,18 +52,14 @@ class AuditHttpRequests
                     'user_agent' => Str::limit((string) $request->userAgent(), 400, ''),
                 ])
                 ->event($request->method())
-                ->log($this->buildDescription($request));
+                ->log($presenter->httpDescription(
+                    $request->method(),
+                    $routeName,
+                    '/'.$request->path()
+                ));
         } catch (\Throwable) {
             //
         }
-    }
-
-    private function buildDescription(Request $request): string
-    {
-        $routeName = $request->route()?->getName();
-        $target = $routeName ?: '/'.$request->path();
-
-        return sprintf('%s %s', $request->method(), $target);
     }
 
     /**
