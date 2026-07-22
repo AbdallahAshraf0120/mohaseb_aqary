@@ -7,40 +7,25 @@ use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 
 /**
- * يحوّل صفوف سجل النشاط إلى عرض عربي منظم للمستخدم.
+ * يحوّل صفوف سجل النشاط إلى عرض عربي واضح للعميل (بدون مصطلحات تقنية).
  */
 final class ActivityLogPresenter
 {
     /** @var array<string, string> */
     private const LOG_LABELS = [
-        'http' => 'طلبات النظام',
-        'auth' => 'المصادقة',
+        'http' => 'عملية',
+        'auth' => 'دخول وخروج',
         'users' => 'المستخدمون',
         'projects' => 'المشاريع',
         'default' => 'عام',
     ];
 
     /** @var array<string, string> */
-    private const EVENT_LABELS = [
-        'created' => 'إضافة',
-        'updated' => 'تعديل',
-        'deleted' => 'حذف',
-        'GET' => 'عرض',
-        'HEAD' => 'عرض',
-        'POST' => 'تنفيذ',
-        'PUT' => 'تعديل',
-        'PATCH' => 'تعديل',
-        'DELETE' => 'حذف',
-    ];
-
-    /** @var array<string, string> */
-    private const METHOD_ACTION = [
-        'GET' => 'عرض',
-        'HEAD' => 'عرض',
-        'POST' => 'إضافة / تنفيذ',
-        'PUT' => 'تعديل',
-        'PATCH' => 'تعديل',
-        'DELETE' => 'حذف',
+    private const ROLE_LABELS = [
+        'admin' => 'مدير النظام',
+        'accountant' => 'محاسب',
+        'sales' => 'مبيعات',
+        'viewer' => 'عرض فقط',
     ];
 
     /** @var array<string, string> */
@@ -76,17 +61,52 @@ final class ActivityLogPresenter
         'site-sketch' => 'كروكي الموقع',
     ];
 
-    /** @var array<string, string> */
-    private const ACTION_SUFFIX = [
-        'index' => 'قائمة',
-        'create' => 'نموذج إضافة',
-        'store' => 'حفظ جديد',
-        'show' => 'تفاصيل',
-        'edit' => 'نموذج تعديل',
-        'update' => 'حفظ التعديل',
-        'destroy' => 'حذف',
-        'mine' => 'مهامي',
-        'sales' => 'المبيعات',
+    /** @var array<string, string> عناوين جاهزة لمسارات شائعة */
+    private const ROUTE_HEADLINES = [
+        'logout' => 'تسجيل خروج من النظام',
+        'login' => 'محاولة تسجيل دخول',
+        'login.store' => 'محاولة تسجيل دخول',
+        'sales.store' => 'تم تسجيل بيعة جديدة',
+        'sales.update' => 'تم تعديل بيعة',
+        'sales.destroy' => 'تم حذف بيعة',
+        'revenues.store' => 'تم تسجيل تحصيل',
+        'revenues.update' => 'تم تعديل تحصيل',
+        'revenues.destroy' => 'تم حذف تحصيل',
+        'expenses.store' => 'تم تسجيل مصروف',
+        'expenses.update' => 'تم تعديل مصروف',
+        'expenses.destroy' => 'تم حذف مصروف',
+        'clients.store' => 'تم إضافة عميل',
+        'clients.update' => 'تم تعديل عميل',
+        'clients.destroy' => 'تم حذف عميل',
+        'contracts.store' => 'تم إضافة عقد',
+        'contracts.update' => 'تم تعديل عقد',
+        'contracts.destroy' => 'تم حذف عقد',
+        'properties.store' => 'تم إضافة عقار',
+        'properties.update' => 'تم تعديل عقار',
+        'properties.destroy' => 'تم حذف عقار',
+        'projects.store' => 'تم إضافة مشروع',
+        'projects.update' => 'تم تعديل مشروع',
+        'projects.destroy' => 'تم حذف مشروع',
+        'shareholders.store' => 'تم إضافة مساهم',
+        'shareholders.update' => 'تم تعديل مساهم',
+        'shareholders.destroy' => 'تم حذف مساهم',
+        'users.store' => 'تم إضافة مستخدم',
+        'users.update' => 'تم تعديل مستخدم',
+        'users.destroy' => 'تم حذف مستخدم',
+        'debts.store' => 'تم تسجيل ذمة',
+        'debts.update' => 'تم تعديل ذمة',
+        'debts.destroy' => 'تم حذف ذمة',
+        'cashbox.store' => 'تم تسجيل حركة صندوق',
+        'land-cashbox.store' => 'تم تسجيل حركة صندوق أراضي',
+        'fund-transfers.store' => 'تم تنفيذ تحويل بين الصناديق',
+        'approvals.approve' => 'تم اعتماد عملية',
+        'approvals.reject' => 'تم رفض عملية',
+        'crm-leads.store' => 'تم إضافة عميل محتمل',
+        'crm-leads.update' => 'تم تعديل عميل محتمل',
+        'tasks.store' => 'تم إضافة مهمة',
+        'tasks.update' => 'تم تعديل مهمة',
+        'land-trading.store' => 'تم تسجيل عملية أرض',
+        'land-trading.payments.store' => 'تم تسجيل دفعة أرض',
     ];
 
     /** @var array<string, string> */
@@ -165,41 +185,14 @@ final class ActivityLogPresenter
         };
     }
 
-    public function eventLabel(?string $event): string
+    public function roleLabel(?string $role): string
     {
-        $key = (string) $event;
+        $key = (string) $role;
         if ($key === '') {
-            return '—';
+            return '';
         }
 
-        return self::EVENT_LABELS[$key] ?? self::EVENT_LABELS[strtoupper($key)] ?? $key;
-    }
-
-    public function methodBadgeClass(?string $method): string
-    {
-        return match (strtoupper((string) $method)) {
-            'GET', 'HEAD' => 'text-bg-secondary',
-            'POST' => 'text-bg-primary',
-            'PUT', 'PATCH' => 'text-bg-warning text-dark',
-            'DELETE' => 'text-bg-danger',
-            default => 'text-bg-light text-dark border',
-        };
-    }
-
-    public function statusBadgeClass(mixed $status): string
-    {
-        $st = (int) $status;
-        if ($st >= 500) {
-            return 'text-bg-danger';
-        }
-        if ($st >= 400) {
-            return 'text-bg-warning text-dark';
-        }
-        if ($st >= 300) {
-            return 'text-bg-info text-dark';
-        }
-
-        return 'text-bg-success';
+        return self::ROLE_LABELS[$key] ?? $key;
     }
 
     public function moduleLabel(?string $routeName): string
@@ -230,6 +223,56 @@ final class ActivityLogPresenter
     }
 
     /**
+     * نوع العملية بلغة العميل: إضافة / تعديل / حذف / عرض / دخول.
+     */
+    public function actionKind(Activity $activity): string
+    {
+        $logName = (string) ($activity->log_name ?? '');
+        if ($logName === 'auth') {
+            $desc = (string) ($activity->description ?? '');
+            if (str_contains($desc, 'خروج')) {
+                return 'خروج';
+            }
+
+            return 'دخول';
+        }
+
+        $event = strtolower((string) ($activity->event ?? ''));
+        if (in_array($event, ['created'], true)) {
+            return 'إضافة';
+        }
+        if (in_array($event, ['updated'], true)) {
+            return 'تعديل';
+        }
+        if (in_array($event, ['deleted'], true)) {
+            return 'حذف';
+        }
+
+        $props = $this->properties($activity);
+        $method = strtoupper((string) ($props['method'] ?? $activity->event ?? ''));
+        $route = isset($props['route']) ? (string) $props['route'] : '';
+        $action = $this->routeAction($route);
+
+        return match (true) {
+            $action === 'destroy' || $method === 'DELETE' => 'حذف',
+            in_array($action, ['update', 'edit'], true) || in_array($method, ['PUT', 'PATCH'], true) => 'تعديل',
+            in_array($action, ['store', 'create'], true) || $method === 'POST' => 'إضافة',
+            default => 'عرض',
+        };
+    }
+
+    public function actionKindBadgeClass(string $kind): string
+    {
+        return match ($kind) {
+            'إضافة' => 'text-bg-success',
+            'تعديل' => 'text-bg-warning text-dark',
+            'حذف' => 'text-bg-danger',
+            'دخول', 'خروج' => 'text-bg-dark',
+            default => 'text-bg-light text-dark border',
+        };
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function properties(Activity $activity): array
@@ -249,35 +292,39 @@ final class ActivityLogPresenter
         $description = trim((string) ($activity->description ?? ''));
 
         if ($logName === 'auth') {
-            return $description !== '' ? $description : 'حدث مصادقة';
+            if ($description !== '' && ! preg_match('/^(GET|POST|PUT|PATCH|DELETE)\s/i', $description)) {
+                return $description;
+            }
+
+            return 'حدث دخول أو خروج';
         }
 
         if ($logName === 'http') {
             $route = isset($props['route']) ? (string) $props['route'] : null;
-            $method = strtoupper((string) ($props['method'] ?? $activity->event ?? 'GET'));
-            $action = self::METHOD_ACTION[$method] ?? $method;
-            $module = $this->moduleLabel($route);
-            $suffix = $this->routeActionSuffix($route);
 
-            if ($route === 'logout') {
-                return 'تسجيل خروج';
-            }
-            if ($route === 'login' || $route === 'login.store') {
-                return 'محاولة تسجيل دخول';
-            }
-
-            $parts = array_filter([$action, $module, $suffix !== '' && $suffix !== $module ? $suffix : null]);
-
-            return implode(' — ', $parts) ?: ($description !== '' ? $description : 'طلب نظام');
+            return $this->clientHeadlineForRoute($route, strtoupper((string) ($props['method'] ?? $activity->event ?? 'GET')));
         }
 
-        $event = $this->eventLabel($activity->event);
-        $subject = $this->subjectLabel($activity->subject_type);
         if (in_array((string) $activity->event, ['created', 'updated', 'deleted'], true)) {
-            return trim($event.' '.$subject);
+            $subject = $this->subjectLabel($activity->subject_type);
+
+            return match ((string) $activity->event) {
+                'created' => 'تم إضافة '.$subject,
+                'updated' => 'تم تعديل '.$subject,
+                'deleted' => 'تم حذف '.$subject,
+                default => $subject,
+            };
         }
 
         if ($description !== '' && ! preg_match('/^(GET|POST|PUT|PATCH|DELETE)\s/i', $description)) {
+            // وصف قديم بصيغة «إضافة / تنفيذ — …» نحوّله لجملة أوضح إن أمكن
+            if (str_contains($description, ' — ')) {
+                $route = isset($props['route']) ? (string) $props['route'] : null;
+                if ($route) {
+                    return $this->clientHeadlineForRoute($route, 'POST');
+                }
+            }
+
             return $description;
         }
 
@@ -289,25 +336,7 @@ final class ActivityLogPresenter
      */
     public function httpDescription(string $method, ?string $routeName, string $path): string
     {
-        $method = strtoupper($method);
-        $action = self::METHOD_ACTION[$method] ?? $method;
-        $module = $routeName ? $this->moduleLabel($routeName) : null;
-        $suffix = $this->routeActionSuffix($routeName);
-
-        if ($routeName === 'logout') {
-            return 'تسجيل خروج';
-        }
-        if (in_array($routeName, ['login', 'login.store'], true)) {
-            return 'محاولة تسجيل دخول';
-        }
-
-        if ($module && $module !== '—') {
-            $parts = array_filter([$action, $module, $suffix !== '' && $suffix !== $module ? $suffix : null]);
-
-            return implode(' — ', $parts);
-        }
-
-        return trim($action.' '.($path !== '' ? $path : 'طلب'));
+        return $this->clientHeadlineForRoute($routeName, strtoupper($method));
     }
 
     /**
@@ -340,39 +369,14 @@ final class ActivityLogPresenter
     }
 
     /**
-     * @return array{
-     *     headline: string,
-     *     log_label: string,
-     *     log_badge: string,
-     *     event_label: string,
-     *     is_http: bool,
-     *     method: ?string,
-     *     method_badge: string,
-     *     status: mixed,
-     *     status_badge: string,
-     *     module: string,
-     *     route: ?string,
-     *     path: ?string,
-     *     ip: ?string,
-     *     subject_label: string,
-     *     subject_name: ?string,
-     *     changed_fields: list<array{key: string, label: string, old: string, new: string}>,
-     *     has_technical: bool,
-     *     technical_json: string,
-     *     time_absolute: string,
-     *     time_relative: string
-     * }
+     * @return array<string, mixed>
      */
     public function present(Activity $activity): array
     {
         $props = $this->properties($activity);
         $isHttp = ($activity->log_name ?? '') === 'http';
-        $method = $isHttp
-            ? strtoupper((string) ($props['method'] ?? $activity->event ?? ''))
-            : null;
-        $status = $props['status'] ?? null;
+        $status = isset($props['status']) ? (int) $props['status'] : null;
         $route = isset($props['route']) ? (string) $props['route'] : null;
-        $path = isset($props['path']) ? (string) $props['path'] : null;
         $changed = $this->changedFields($activity);
         $created = $activity->created_at
             ? Carbon::parse($activity->created_at)->timezone(config('app.timezone'))
@@ -397,49 +401,79 @@ final class ActivityLogPresenter
             }
         }
 
-        $technical = $props;
-        unset($technical['attributes'], $technical['old']);
+        $actionKind = $this->actionKind($activity);
+        $module = $this->moduleLabel($route);
+        $failed = $status !== null && $status >= 400;
 
         return [
             'headline' => $this->headline($activity),
             'log_label' => $this->logLabel($activity->log_name),
             'log_badge' => $this->logBadgeClass($activity->log_name),
-            'event_label' => $this->eventLabel($activity->event),
+            'action_kind' => $actionKind,
+            'action_kind_badge' => $this->actionKindBadgeClass($actionKind),
             'is_http' => $isHttp,
-            'method' => $method !== '' ? $method : null,
-            'method_badge' => $this->methodBadgeClass($method),
-            'status' => $status,
-            'status_badge' => $this->statusBadgeClass($status),
-            'module' => $this->moduleLabel($route),
-            'route' => $route,
-            'path' => $path,
-            'ip' => isset($props['ip']) ? (string) $props['ip'] : null,
+            'module' => $module,
+            'failed' => $failed,
+            'result_label' => $failed ? 'لم تكتمل' : null,
             'subject_label' => $activity->subject_type
                 ? $this->subjectLabel($activity->subject_type)
-                : ($isHttp ? 'طلب ويب' : '—'),
+                : ($isHttp && $module !== '—' ? $module : null),
             'subject_name' => $subjectName,
             'changed_fields' => $changed,
-            'has_technical' => $technical !== [],
-            'technical_json' => json_encode($props, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?: '{}',
-            'time_absolute' => $created ? $created->format('Y-m-d H:i:s') : '—',
             'time_date' => $created ? $created->format('Y-m-d') : '—',
-            'time_clock' => $created ? $created->format('H:i:s') : '—',
+            'time_clock' => $created ? $created->format('H:i') : '—',
             'time_relative' => $relative,
         ];
     }
 
-    private function routeActionSuffix(?string $routeName): string
+    private function clientHeadlineForRoute(?string $routeName, string $method): string
+    {
+        if ($routeName !== null && $routeName !== '' && isset(self::ROUTE_HEADLINES[$routeName])) {
+            return self::ROUTE_HEADLINES[$routeName];
+        }
+
+        $module = $this->moduleLabel($routeName);
+        $action = $this->routeAction($routeName);
+
+        if ($routeName === 'logout') {
+            return 'تسجيل خروج من النظام';
+        }
+
+        if ($module === '—' || $module === '') {
+            return match (strtoupper($method)) {
+                'DELETE' => 'تم حذف سجل',
+                'PUT', 'PATCH' => 'تم تعديل سجل',
+                'POST' => 'تم تنفيذ عملية',
+                default => 'تم عرض صفحة',
+            };
+        }
+
+        return match ($action) {
+            'store', 'create' => 'تم إضافة سجل في '.$module,
+            'update', 'edit' => 'تم تعديل سجل في '.$module,
+            'destroy' => 'تم حذف سجل من '.$module,
+            'show' => 'عرض تفاصيل من '.$module,
+            'index', 'mine' => 'عرض قائمة '.$module,
+            'approve' => 'تم اعتماد عملية في '.$module,
+            'reject' => 'تم رفض عملية في '.$module,
+            default => match (strtoupper($method)) {
+                'DELETE' => 'تم حذف سجل من '.$module,
+                'PUT', 'PATCH' => 'تم تعديل سجل في '.$module,
+                'POST' => 'تم تنفيذ عملية في '.$module,
+                default => 'عرض '.$module,
+            },
+        };
+    }
+
+    private function routeAction(?string $routeName): string
     {
         if ($routeName === null || $routeName === '') {
             return '';
         }
         $parts = explode('.', $routeName);
         $last = end($parts);
-        if ($last === false || count($parts) < 2) {
-            return '';
-        }
 
-        return self::ACTION_SUFFIX[$last] ?? '';
+        return is_string($last) ? $last : '';
     }
 
     private function stringifyValue(mixed $value): string
