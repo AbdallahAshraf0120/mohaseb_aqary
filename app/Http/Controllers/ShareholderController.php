@@ -262,6 +262,23 @@ class ShareholderController extends Controller
                 ->get();
         }
 
+        // أرصدة الجاري من نفس حركات الجدول (عشان الكارت الشمال يطابق الدفتر)
+        $balanceByProjectId = [];
+        $balanceByLandId = [];
+        foreach ($ledgerEntries as $entry) {
+            $signed = $entry->direction === ShareholderLedgerEntry::DIRECTION_CREDIT
+                ? (float) $entry->amount
+                : -(float) $entry->amount;
+            if ($entry->project_id !== null) {
+                $pid = (int) $entry->project_id;
+                $balanceByProjectId[$pid] = round(($balanceByProjectId[$pid] ?? 0) + $signed, 2);
+            } elseif ($entry->land_parcel_id !== null) {
+                $lid = (int) $entry->land_parcel_id;
+                $balanceByLandId[$lid] = round(($balanceByLandId[$lid] ?? 0) + $signed, 2);
+            }
+        }
+        $ledgerBalanceUnified = round(array_sum($balanceByProjectId) + array_sum($balanceByLandId), 2);
+
         $projectBreakdown = [];
         foreach ($memberships as $membership) {
             $project = $membership->project;
@@ -272,26 +289,26 @@ class ShareholderController extends Controller
             $propertyDevelopmentCosts = $this->attributedFlowService->propertyDevelopmentCosts($project);
             $op = $this->attributedFlowService->attributedOperatingFlow($shareholder, $project, $propertyFinancials);
             $cost = $this->attributedFlowService->attributedDevelopmentCostShare($shareholder, $project, $propertyDevelopmentCosts);
+            $pid = (int) $project->id;
             $projectBreakdown[] = (object) [
                 'membership' => $membership,
                 'project' => $project,
-                'ledger_balance' => $shareholder->ledgerBalance((int) $project->id),
-                'capital_deposits' => $shareholder->capitalDepositsTotal((int) $project->id),
+                'ledger_balance' => $balanceByProjectId[$pid] ?? 0.0,
+                'capital_deposits' => $shareholder->capitalDepositsTotal($pid),
                 'attributed_operating' => $op,
                 'attributed_cost' => $cost,
                 'approx_current' => $this->attributedFlowService->shareholderCurrentAccountApprox($op, $cost),
             ];
         }
 
-        $landBreakdown = $landMemberships->map(function ($membership) use ($shareholder) {
+        $landBreakdown = $landMemberships->map(function ($membership) use ($shareholder, $balanceByLandId) {
             $parcel = $membership->landParcel;
+            $lid = $parcel ? (int) $parcel->id : 0;
 
             return (object) [
                 'membership' => $membership,
                 'parcel' => $parcel,
-                'ledger_balance' => $parcel
-                    ? $shareholder->ledgerBalance(null, (int) $parcel->id)
-                    : 0.0,
+                'ledger_balance' => $lid > 0 ? ($balanceByLandId[$lid] ?? 0.0) : 0.0,
                 'capital_deposits' => $parcel
                     ? $shareholder->capitalDepositsTotal(null, (int) $parcel->id)
                     : 0.0,
@@ -326,7 +343,7 @@ class ShareholderController extends Controller
             'ledgerEntries' => $ledgerEntries,
             'allocateTargetProjects' => $allocateTargetProjects,
             'landPayments' => $landPayments,
-            'ledgerBalance' => $shareholder->ledgerBalance(),
+            'ledgerBalance' => $ledgerBalanceUnified,
             'capitalDepositsTotal' => $shareholder->capitalDepositsTotal(),
             'availableProjects' => $availableProjects,
             'availableLands' => $availableLands,

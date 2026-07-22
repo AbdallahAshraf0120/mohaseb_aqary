@@ -20,6 +20,9 @@
         ['label' => 'مشاريع', 'value' => $memberships->count()],
         ['label' => 'أراضي بيع/شراء', 'value' => $landMemberships->count()],
     ]" />
+    <div class="small text-body-secondary mb-3">
+        التحويل بين مشاريع المساهم يغيّر <strong>جاري كل مشروع</strong> في الجدول تحت، لكن <strong>الإجمالي الموحّد</strong> يفضل ثابت لأن الفلوس فضلت عنده.
+    </div>
 
     <div class="row g-3 mb-3">
         <div class="col-lg-6">
@@ -32,7 +35,7 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="text-muted small mb-2">المشاريع المرتبطة</div>
+                    <div class="text-muted small mb-2">المشاريع المرتبطة — عمود <strong>جاري</strong> يتحدّث مع كل حركة في الدفتر</div>
                     <div class="table-responsive mb-4">
                         <table class="table table-sm align-middle mb-0">
                             <thead>
@@ -42,7 +45,7 @@
                                 <th class="text-end">%</th>
                                 <th class="text-end">فعلي</th>
                                 <th class="text-end">%</th>
-                                <th class="text-end">جاري</th>
+                                <th class="text-end">رصيد الجاري</th>
                                 @can('shareholders.manage')
                                     <th class="text-end">إجراء</th>
                                 @endcan
@@ -64,7 +67,7 @@
                                     <td class="text-end">{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 2) }}%</td>
                                     <td class="text-end font-monospace">{{ number_format($aInv, 2) }}</td>
                                     <td class="text-end">{{ number_format((float) ($row->membership->actual_percentage ?? 0), 2) }}%</td>
-                                    <td class="text-end font-monospace {{ $row->ledger_balance >= 0 ? 'text-success' : 'text-danger' }}">
+                                    <td class="text-end font-monospace fw-bold fs-6 {{ $row->ledger_balance >= 0 ? 'text-success' : 'text-danger' }}">
                                         {{ number_format((float) $row->ledger_balance, 2) }}
                                     </td>
                                     @can('shareholders.manage')
@@ -103,7 +106,7 @@
                                 <th class="text-end">%</th>
                                 <th class="text-end">فعلي</th>
                                 <th class="text-end">%</th>
-                                <th class="text-end">جاري</th>
+                                <th class="text-end">رصيد الجاري</th>
                                 @can('shareholders.manage')
                                     <th class="text-end">إجراء</th>
                                 @endcan

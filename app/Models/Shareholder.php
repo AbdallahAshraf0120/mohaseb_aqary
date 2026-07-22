@@ -68,15 +68,20 @@ class Shareholder extends Model
 
     public function ledgerBalance(?int $projectId = null, ?int $landParcelId = null): float
     {
-        $query = $this->ledgerEntries();
+        $creditQuery = $this->ledgerEntries();
+        $debitQuery = $this->ledgerEntries();
+
         if ($projectId !== null) {
-            $query->where('project_id', $projectId);
+            $creditQuery->where('project_id', $projectId);
+            $debitQuery->where('project_id', $projectId);
         }
         if ($landParcelId !== null) {
-            $query->where('land_parcel_id', $landParcelId);
+            $creditQuery->where('land_parcel_id', $landParcelId);
+            $debitQuery->where('land_parcel_id', $landParcelId);
         }
-        $credit = (float) (clone $query)->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT)->sum('amount');
-        $debit = (float) (clone $query)->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT)->sum('amount');
+
+        $credit = (float) $creditQuery->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT)->sum('amount');
+        $debit = (float) $debitQuery->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT)->sum('amount');
 
         return round($credit - $debit, 2);
     }
