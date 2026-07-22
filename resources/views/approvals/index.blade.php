@@ -175,6 +175,7 @@
                                             @if ($section['key'] === 'revenues')
                                                 <div class="fw-semibold">{{ $row->category ?? 'تحصيل' }}</div>
                                                 <div class="text-body-secondary">{{ $row->client?->name ?? '—' }}</div>
+                                                <div class="text-body-secondary small">دخل حساب: {{ $row->receivedByShareholder?->name ?? '—' }}</div>
                                             @elseif ($section['key'] === 'expenses')
                                                 <div class="fw-semibold">{{ $row->category ?? 'مصروف' }}</div>
                                                 <div class="text-body-secondary">{{ $row->description ?? '—' }}</div>

@@ -98,7 +98,7 @@
                                             @endif
                                         </span>
                                     </li>
-                                    <li class="d-flex py-2">
+                                    <li class="d-flex py-2 border-bottom border-secondary-subtle">
                                         <span class="text-body-secondary" style="min-width: 5.5rem;"><i class="fa-solid fa-cart-shopping ms-1"></i> البيعة</span>
                                         <span>
                                             @if ($revenue->sale_id && $revenue->sale)
@@ -112,6 +112,10 @@
                                                 —
                                             @endif
                                         </span>
+                                    </li>
+                                    <li class="d-flex py-2">
+                                        <span class="text-body-secondary" style="min-width: 5.5rem;"><i class="fa-solid fa-people-group ms-1"></i> دخل حساب</span>
+                                        <span class="fw-semibold">{{ $revenue->receivedByShareholder?->name ?? '—' }}</span>
                                     </li>
                                 </ul>
                             </div>

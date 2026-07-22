@@ -3,8 +3,11 @@
 namespace App\Http\Requests;
 
 use App\Models\Contract;
+use App\Models\ProjectShareholder;
 use App\Models\Revenue;
+use App\Support\CurrentProject;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Validator;
 
 class StoreRevenueRequest extends FormRequest
@@ -16,7 +19,7 @@ class StoreRevenueRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'contract_id' => ['required', 'exists:contracts,id'],
             'sale_id' => ['nullable', 'exists:sales,id'],
             'client_id' => ['required', 'exists:clients,id'],
@@ -27,11 +30,37 @@ class StoreRevenueRequest extends FormRequest
             'payment_method' => ['required', 'in:cash,bank_transfer,check'],
             'notes' => ['nullable', 'string'],
         ];
+
+        if (Schema::hasColumn('revenues', 'received_by_shareholder_id')) {
+            $projectId = app(CurrentProject::class)->id();
+            $hasMembers = $projectId !== null
+                && ProjectShareholder::query()->where('project_id', $projectId)->exists();
+
+            $rules['received_by_shareholder_id'] = $hasMembers
+                ? ['required', 'integer', 'exists:shareholders,id']
+                : ['nullable', 'integer', 'exists:shareholders,id'];
+        }
+
+        return $rules;
     }
 
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            if (Schema::hasColumn('revenues', 'received_by_shareholder_id')) {
+                $shareholderId = $this->input('received_by_shareholder_id');
+                $projectId = app(CurrentProject::class)->id();
+                if ($shareholderId !== null && $shareholderId !== '' && $projectId !== null) {
+                    $member = ProjectShareholder::query()
+                        ->where('project_id', $projectId)
+                        ->where('shareholder_id', (int) $shareholderId)
+                        ->exists();
+                    if (! $member) {
+                        $validator->errors()->add('received_by_shareholder_id', 'المساهم (دخل حسابه) غير مرتبط بهذا المشروع.');
+                    }
+                }
+            }
+
             $contract = Contract::query()->find((int) $this->input('contract_id'));
             if (! $contract) {
                 return;
@@ -89,6 +118,10 @@ class StoreRevenueRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if ($this->input('received_by_shareholder_id') === '') {
+            $this->merge(['received_by_shareholder_id' => null]);
+        }
+
         if (! $this->filled('contract_id')) {
             return;
         }

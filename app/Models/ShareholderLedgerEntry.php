@@ -36,6 +36,7 @@ class ShareholderLedgerEntry extends Model
         'project_id',
         'land_parcel_id',
         'land_parcel_payment_id',
+        'revenue_id',
         'shareholder_id',
         'type',
         'direction',
@@ -67,6 +68,11 @@ class ShareholderLedgerEntry extends Model
     public function landParcelPayment(): BelongsTo
     {
         return $this->belongsTo(LandParcelPayment::class, 'land_parcel_payment_id');
+    }
+
+    public function revenue(): BelongsTo
+    {
+        return $this->belongsTo(Revenue::class);
     }
 
     public function resolveRouteBinding($value, $field = null)

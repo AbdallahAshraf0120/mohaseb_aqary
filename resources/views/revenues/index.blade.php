@@ -29,6 +29,7 @@
                         <th>رقم الإيصال</th>
                         <th>العميل</th>
                         <th>مرجع العقد</th>
+                        <th>دخل حساب</th>
                         <th>القيمة</th>
                         <th>التاريخ</th>
                         <th>الحالة</th>
@@ -42,6 +43,7 @@
                             <td>RV-{{ str_pad((string) $revenue->id, 3, '0', STR_PAD_LEFT) }}</td>
                             <td>{{ $revenue->client?->name ?? '-' }}</td>
                             <td>{{ $revenue->contract_id ? 'CT-' . now()->format('Y') . '-' . str_pad((string) $revenue->contract_id, 3, '0', STR_PAD_LEFT) : '-' }}</td>
+                            <td>{{ $revenue->receivedByShareholder?->name ?? '—' }}</td>
                             <td>{{ number_format((float) $revenue->amount, 2) }}</td>
                             <td>{{ $revenue->paid_at?->format('Y-m-d') ?? '-' }}</td>
                             <td>
@@ -65,7 +67,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted">لا توجد عمليات تحصيل حتى الآن.</td>
+                            <td colspan="9" class="text-center text-muted">لا توجد عمليات تحصيل حتى الآن.</td>
                         </tr>
                     @endforelse
                     </tbody>

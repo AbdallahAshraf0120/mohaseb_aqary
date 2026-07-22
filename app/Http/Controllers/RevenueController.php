@@ -6,18 +6,22 @@ use App\Http\Requests\StoreRevenueRequest;
 use App\Http\Requests\UpdateRevenueRequest;
 use App\Models\Contract;
 use App\Models\Project;
+use App\Models\ProjectShareholder;
 use App\Models\Revenue;
 use App\Services\CashboxLedgerService;
+use App\Services\RevenueShareholderAttributionService;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class RevenueController extends Controller
 {
     public function __construct(
         private CashboxLedgerService $cashboxLedger,
+        private RevenueShareholderAttributionService $revenueAttribution,
     ) {}
 
     public function index(Project $project, Request $request): View
@@ -32,7 +36,7 @@ class RevenueController extends Controller
             'avg_amount' => (float) (clone $approvedTotals)->avg('amount'),
         ];
 
-        $listQuery = Revenue::query()->with(['client:id,name', 'contract:id']);
+        $listQuery = Revenue::query()->with(['client:id,name', 'contract:id', 'receivedByShareholder:id,name']);
         $this->applyRevenueListingFilters($listQuery, $filters);
         $revenues = $listQuery->latest()->paginate(15)->withQueryString();
 
@@ -83,6 +87,7 @@ class RevenueController extends Controller
             'revenue' => new Revenue,
             'contracts' => $contracts,
             'contractSuggestedAmounts' => $contractSuggestedAmounts,
+            'projectShareholders' => $this->projectShareholders(),
             'modules' => $this->modules(),
         ]);
     }
@@ -99,6 +104,7 @@ class RevenueController extends Controller
         }
         $revenue = Revenue::query()->create($validated);
         $this->cashboxLedger->syncFromRevenue($revenue);
+        $this->revenueAttribution->sync($revenue->fresh() ?? $revenue, $user instanceof \App\Models\User ? $user : null);
         $this->recalculateContract((int) $revenue->contract_id);
 
         return redirect()->route('revenues.index')->with('success', $isAdmin ? 'تم تسجيل التحصيل واعتماده تلقائيًا.' : 'تم تسجيل التحصيل كعملية معلقة حتى اعتماد الأدمن.');
@@ -110,7 +116,7 @@ class RevenueController extends Controller
             'title' => 'تفاصيل التحصيل | Mohaseb Aqary',
             'pageTitle' => 'تفاصيل التحصيل',
             'project' => $project,
-            'revenue' => $revenue->load(['client', 'contract.sale', 'sale']),
+            'revenue' => $revenue->load(['client', 'contract.sale', 'sale', 'receivedByShareholder:id,name']),
             'modules' => $this->modules(),
         ]);
     }
@@ -140,6 +146,7 @@ class RevenueController extends Controller
             'revenue' => $revenue,
             'contracts' => $contracts,
             'contractSuggestedAmounts' => $contractSuggestedAmounts,
+            'projectShareholders' => $this->projectShareholders(),
             'modules' => $this->modules(),
         ]);
     }
@@ -160,6 +167,7 @@ class RevenueController extends Controller
         $revenue->update($payload);
         $revenue->refresh();
         $this->cashboxLedger->syncFromRevenue($revenue);
+        $this->revenueAttribution->sync($revenue, $request->user() instanceof \App\Models\User ? $request->user() : null);
         $this->recalculateContract($oldContractId);
         $this->recalculateContract((int) $revenue->contract_id);
 
@@ -174,11 +182,36 @@ class RevenueController extends Controller
     {
         $contractId = (int) $revenue->contract_id;
         $revenueId = (int) $revenue->id;
+        $this->revenueAttribution->removeLedgerForRevenue($revenueId);
         $this->cashboxLedger->removeRevenue($revenueId);
         $revenue->delete();
         $this->recalculateContract($contractId);
 
         return redirect()->route('revenues.index')->with('success', 'تم حذف التحصيل بنجاح.');
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, \App\Models\ProjectShareholder>
+     */
+    private function projectShareholders()
+    {
+        if (! Schema::hasTable('project_shareholder')) {
+            return collect();
+        }
+
+        $projectId = app(\App\Support\CurrentProject::class)->id();
+        if ($projectId === null) {
+            return collect();
+        }
+
+        return ProjectShareholder::query()
+            ->with('shareholder:id,name')
+            ->where('project_id', $projectId)
+            ->whereHas('shareholder')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (ProjectShareholder $row) => $row->shareholder !== null)
+            ->values();
     }
 
     private function recalculateContract(int $contractId): void

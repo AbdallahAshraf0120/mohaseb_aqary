@@ -10,7 +10,9 @@ use App\Models\Project;
 use App\Models\Revenue;
 use App\Models\Sale;
 use App\Models\TreasuryTransaction;
+use App\Models\User;
 use App\Services\CashboxLedgerService;
+use App\Services\RevenueShareholderAttributionService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,12 +20,15 @@ use Illuminate\Support\Facades\DB;
 
 class ApprovalsController extends Controller
 {
-    public function __construct(private readonly CashboxLedgerService $cashboxLedger) {}
+    public function __construct(
+        private readonly CashboxLedgerService $cashboxLedger,
+        private readonly RevenueShareholderAttributionService $revenueAttribution,
+    ) {}
 
     public function index(Project $project): View
     {
         $pending = [
-            'revenues' => Revenue::query()->where('approval_status', 'pending')->with('client:id,name')->latest('paid_at')->latest('id')->limit(25)->get(),
+            'revenues' => Revenue::query()->where('approval_status', 'pending')->with(['client:id,name', 'receivedByShareholder:id,name'])->latest('paid_at')->latest('id')->limit(25)->get(),
             'expenses' => Expense::query()->where('approval_status', 'pending')->latest('id')->limit(25)->get(),
             'sales' => Sale::query()->where('approval_status', 'pending')->with(['client:id,name', 'property:id,name'])->latest('sale_date')->latest('id')->limit(25)->get(),
             'debt_payments' => DebtPayment::query()->where('approval_status', 'pending')->with('debt')->latest('id')->limit(25)->get(),
@@ -107,7 +112,9 @@ class ApprovalsController extends Controller
             'rejected_by' => null,
             'rejection_reason' => null,
         ]);
-        $this->cashboxLedger->syncFromRevenue($revenue->refresh());
+        $revenue = $revenue->refresh();
+        $this->cashboxLedger->syncFromRevenue($revenue);
+        $this->revenueAttribution->sync($revenue, User::query()->find($userId));
         if ($revenue->contract_id) {
             $this->recalculateContract((int) $revenue->contract_id);
         }
@@ -124,7 +131,9 @@ class ApprovalsController extends Controller
             'approved_at' => null,
             'approved_by' => null,
         ]);
-        $this->cashboxLedger->syncFromRevenue($revenue->refresh());
+        $revenue = $revenue->refresh();
+        $this->cashboxLedger->syncFromRevenue($revenue);
+        $this->revenueAttribution->sync($revenue, User::query()->find($userId));
         if ($revenue->contract_id) {
             $this->recalculateContract((int) $revenue->contract_id);
         }

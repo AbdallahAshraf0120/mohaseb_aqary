@@ -3,6 +3,7 @@
 @php
     $selectedContractId = (string) old('contract_id', $revenue->contract_id ?? '');
     $contractSuggestedAmounts = $contractSuggestedAmounts ?? [];
+    $projectShareholders = $projectShareholders ?? collect();
     $skipInitialAmountSuggestion = filled(old('amount')) || (isset($revenue) && $revenue->exists);
 @endphp
 
@@ -71,10 +72,24 @@
     </div>
 
     <div class="col-md-6">
+        <label class="form-label">دخل حساب مين</label>
+        <select name="received_by_shareholder_id" class="form-select" {{ $projectShareholders->isNotEmpty() ? 'required' : '' }}>
+            <option value="">— اختر المساهم —</option>
+            @foreach ($projectShareholders as $row)
+                <option value="{{ $row->shareholder_id }}"
+                    @selected((string) old('received_by_shareholder_id', $revenue->received_by_shareholder_id ?? '') === (string) $row->shareholder_id)>
+                    {{ $row->shareholder?->name }}
+                </option>
+            @endforeach
+        </select>
+        <small class="text-muted">يُرحَّل التحصيل المعتمد لجاري المساهم المختار (بدون تكرار في الصندوق).</small>
+    </div>
+
+    <div class="col-md-6">
         <label class="form-label">المصدر</label>
         <input type="text" name="source" class="form-control" value="{{ old('source', $revenue->source ?? '') }}" placeholder="مثال: قسط شهري">
     </div>
-    <div class="col-md-6">
+    <div class="col-md-12">
         <label class="form-label">ملاحظات</label>
         <input type="text" name="notes" class="form-control" value="{{ old('notes', $revenue->notes ?? '') }}">
     </div>

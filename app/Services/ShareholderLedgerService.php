@@ -27,7 +27,8 @@ class ShareholderLedgerService
      *     notes?: string|null,
      *     direction?: string|null,
      *     skip_cashbox?: bool,
-     *     land_parcel_payment_id?: int|null
+     *     land_parcel_payment_id?: int|null,
+     *     revenue_id?: int|null
      * }  $data
      */
     public function create(Shareholder $shareholder, array $data, ?User $user = null): ShareholderLedgerEntry
@@ -105,7 +106,7 @@ class ShareholderLedgerService
                 app(CurrentProject::class)->force(null);
             }
 
-            $entry = ShareholderLedgerEntry::withoutProjectScope()->create([
+            $entryPayload = [
                 'project_id' => $projectId,
                 'land_parcel_id' => $landParcelId,
                 'land_parcel_payment_id' => isset($data['land_parcel_payment_id']) ? (int) $data['land_parcel_payment_id'] : null,
@@ -116,7 +117,12 @@ class ShareholderLedgerService
                 'entry_date' => $data['entry_date'],
                 'notes' => $data['notes'] ?? null,
                 'created_by' => $user?->id,
-            ]);
+            ];
+            if (Schema::hasColumn('shareholder_ledger_entries', 'revenue_id') && isset($data['revenue_id'])) {
+                $entryPayload['revenue_id'] = (int) $data['revenue_id'];
+            }
+
+            $entry = ShareholderLedgerEntry::withoutProjectScope()->create($entryPayload);
 
             if ($affectCashbox && $projectId !== null) {
                 $cashboxType = ShareholderLedgerEntry::cashboxTypeFor($type, $direction);

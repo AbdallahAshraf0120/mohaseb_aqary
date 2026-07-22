@@ -20,6 +20,7 @@ class Revenue extends Model
         'source',
         'paid_at',
         'payment_method',
+        'received_by_shareholder_id',
         'notes',
         'approval_status',
         'approved_at',
@@ -51,5 +52,10 @@ class Revenue extends Model
     public function sale()
     {
         return $this->belongsTo(Sale::class);
+    }
+
+    public function receivedByShareholder(): BelongsTo
+    {
+        return $this->belongsTo(Shareholder::class, 'received_by_shareholder_id');
     }
 }
