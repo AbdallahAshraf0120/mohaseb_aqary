@@ -159,20 +159,40 @@
                 <div class="card app-surface mb-4 sticky-lg-top" style="top: 5rem;">
                     <div class="card-header border-0 bg-transparent pt-4 px-4 pb-0">
                         <h5 class="mb-0 fw-semibold">تسجيل حركة يدوية</h5>
-                        <p class="small text-body-secondary mb-0 mt-1">قبض أو صرف على صندوق المشروع</p>
+                        <p class="small text-body-secondary mb-0 mt-1">قبض أو صرف — أو صرف لمساهم يُسجَّل في الجاري</p>
                     </div>
                     <div class="card-body">
-                        <form method="post" action="{{ route('cashbox.store', [$project]) }}">
+                        <form method="post" action="{{ route('cashbox.store', [$project]) }}" id="cashbox-manual-form">
                             @csrf
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">نوع الحركة</label>
-                                <select name="type" class="form-select @error('type') is-invalid @enderror" required>
+                                <select name="type" id="cashbox-type" class="form-select @error('type') is-invalid @enderror" required>
                                     <option value="revenue" @selected(old('type', 'revenue') === 'revenue')>قبض (وارد للصندوق)</option>
-                                    <option value="expense" @selected(old('type') === 'expense')>صرف (صادر من الصندوق)</option>
+                                    <option value="expense" @selected(old('type') === 'expense')>صرف عادي (صادر من الصندوق)</option>
+                                    <option value="shareholder_payout" @selected(old('type') === 'shareholder_payout')>صرف لمساهم (صندوق + جاري)</option>
                                 </select>
                                 @error('type')
                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
+                            </div>
+                            <div class="mb-3" id="cashbox-shareholder-wrap" style="{{ old('type') === 'shareholder_payout' ? '' : 'display:none' }}">
+                                <label class="form-label fw-semibold" for="cashbox-shareholder">المساهم</label>
+                                <select name="shareholder_id" id="cashbox-shareholder" class="form-select @error('shareholder_id') is-invalid @enderror">
+                                    <option value="">— اختر المساهم —</option>
+                                    @foreach (($projectShareholders ?? collect()) as $row)
+                                        <option value="{{ $row->shareholder_id }}"
+                                            @selected((string) old('shareholder_id') === (string) $row->shareholder_id)>
+                                            {{ $row->shareholder?->name ?? ('مساهم #'.$row->shareholder_id) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('shareholder_id')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">يخصم من الصندوق ويُسجَّل سحبًا في جاري المساهم.</div>
+                                @if (($projectShareholders ?? collect())->isEmpty())
+                                    <div class="text-danger small mt-1">لا يوجد مساهمون مرتبطون بهذا المشروع.</div>
+                                @endif
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold" for="cashbox-amount">المبلغ</label>
@@ -206,3 +226,25 @@
         @endcan
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        const typeEl = document.getElementById('cashbox-type');
+        const wrap = document.getElementById('cashbox-shareholder-wrap');
+        const shareholderEl = document.getElementById('cashbox-shareholder');
+        if (!typeEl || !wrap) return;
+
+        const sync = () => {
+            const isPayout = typeEl.value === 'shareholder_payout';
+            wrap.style.display = isPayout ? '' : 'none';
+            if (shareholderEl) {
+                shareholderEl.required = isPayout;
+                if (!isPayout) shareholderEl.value = '';
+            }
+        };
+        typeEl.addEventListener('change', sync);
+        sync();
+    })();
+</script>
+@endpush

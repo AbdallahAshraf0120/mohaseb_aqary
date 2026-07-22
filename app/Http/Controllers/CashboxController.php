@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\ProjectShareholder;
 use App\Models\Setting;
+use App\Models\Shareholder;
+use App\Models\ShareholderLedgerEntry;
 use App\Models\TreasuryTransaction;
 use App\Services\CashboxBalanceService;
+use App\Services\ShareholderLedgerService;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +20,7 @@ class CashboxController extends Controller
 {
     public function __construct(
         private readonly CashboxBalanceService $cashboxBalanceService,
+        private readonly ShareholderLedgerService $shareholderLedgerService,
     ) {}
 
     public function index(Project $project, Request $request): View
@@ -56,6 +61,12 @@ class CashboxController extends Controller
         $setting = Setting::query()->first();
         $currency = $setting?->currency ?? 'EGP';
 
+        $projectShareholders = ProjectShareholder::query()
+            ->where('project_id', (int) $project->id)
+            ->with('shareholder:id,name')
+            ->orderBy('shareholder_id')
+            ->get();
+
         return view('cashbox.index', [
             'title' => 'الصندوق | Mohaseb Aqary',
             'pageTitle' => 'الصندوق',
@@ -68,6 +79,7 @@ class CashboxController extends Controller
             'pendingOut' => $pendingOut,
             'currentBalance' => $currentBalance,
             'transactions' => $txQuery->paginate(15)->withQueryString(),
+            'projectShareholders' => $projectShareholders,
             'modules' => $this->modules(),
         ]);
     }
@@ -75,25 +87,70 @@ class CashboxController extends Controller
     public function store(Request $request, Project $project): RedirectResponse
     {
         $data = $request->validate([
-            'type' => ['required', 'in:revenue,expense'],
+            'type' => ['required', 'in:revenue,expense,shareholder_payout'],
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'shareholder_id' => ['nullable', 'integer', 'exists:shareholders,id', 'required_if:type,shareholder_payout'],
+        ], [
+            'shareholder_id.required_if' => 'اختر المساهم المستفيد من الصرف.',
         ]);
 
         $user = $request->user();
         $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
+        $amount = round((float) $data['amount'], 2);
 
-        if ($data['type'] === 'expense') {
+        if (in_array($data['type'], ['expense', 'shareholder_payout'], true)) {
             try {
-                $this->cashboxBalanceService->assertCanSpend((int) $project->id, $data['amount']);
+                $this->cashboxBalanceService->assertCanSpend((int) $project->id, $amount);
             } catch (InvalidArgumentException $e) {
                 return back()->withInput()->with('error', $e->getMessage());
             }
         }
 
+        if ($data['type'] === 'shareholder_payout') {
+            $shareholder = Shareholder::query()->find((int) $data['shareholder_id']);
+            if (! $shareholder instanceof Shareholder) {
+                return back()->withInput()->with('error', 'المساهم غير موجود.');
+            }
+
+            $member = ProjectShareholder::query()
+                ->where('project_id', (int) $project->id)
+                ->where('shareholder_id', (int) $shareholder->id)
+                ->exists();
+            if (! $member) {
+                return back()->withInput()->with('error', 'المساهم غير مرتبط بهذا المشروع.');
+            }
+
+            $note = trim((string) ($data['description'] ?? ''));
+            if ($note === '') {
+                $note = 'صرف من صندوق المشروع للمساهم';
+            }
+
+            try {
+                $this->shareholderLedgerService->create($shareholder, [
+                    'project_id' => (int) $project->id,
+                    'type' => ShareholderLedgerEntry::TYPE_WITHDRAWAL,
+                    'amount' => $amount,
+                    'entry_date' => now()->toDateString(),
+                    'notes' => $note,
+                ], $user instanceof \App\Models\User ? $user : null);
+            } catch (InvalidArgumentException $e) {
+                return back()->withInput()->with('error', $e->getMessage());
+            }
+
+            return redirect()
+                ->route('cashbox.index', [$project])
+                ->with(
+                    'success',
+                    $isAdmin
+                        ? 'تم صرف '.$amount.' ج.م للمساهم «'.$shareholder->name.'» وتسجيلها في الجاري والصندوق.'
+                        : 'تم تسجيل صرف للمساهم «'.$shareholder->name.'» في الجاري والصندوق (معلّق حتى اعتماد الأدمن).'
+                );
+        }
+
         TreasuryTransaction::query()->create([
             'type' => $data['type'],
-            'amount' => $data['amount'],
+            'amount' => $amount,
             'description' => $data['description'] ?? null,
             'approval_status' => $isAdmin ? 'approved' : 'pending',
             'approved_at' => $isAdmin ? now() : null,
