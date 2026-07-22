@@ -160,13 +160,13 @@
         const planned = cap > 0 ? Math.round(cap * (pct / 100) * 100) / 100 : 0;
         if (formulaEl) {
             formulaEl.textContent = cap <= 0
-                ? (isLand ? 'عيّن سعر شراء الأرض أولاً' : 'عيّن رأس مال المشروع أولاً')
+                ? (pct > 0 ? pct.toFixed(2) + '% (رأس المال غير معيّن بعد — التمويل المخطط = 0)' : 'أدخل النسبة')
                 : 'تمويل مخطط ≈ ' + formatMoney(planned) + ' ج.م (' + pct.toFixed(2) + '% من ' + formatMoney(cap) + ')';
         }
         if (!isLand && projectHint) {
             projectHint.textContent = cap > 0
                 ? ('رأس مال المشروع: ' + formatMoney(cap) + ' ج.م')
-                : 'هذا المشروع بلا رأس مال. عيّنه من صفحة المشاريع أولاً.';
+                : 'يمكن الربط بالنسبة بدون تعيين رأس مال المشروع الآن.';
         }
         if (isLand && landHint) {
             landHint.textContent = cap > 0

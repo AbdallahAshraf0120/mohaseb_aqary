@@ -58,13 +58,6 @@ class AttachShareholderProjectRequest extends FormRequest
                 return;
             }
 
-            $projectCapital = round((float) ($project->planned_capital ?? $project->capital ?? 0), 2);
-            if ($projectCapital <= 0) {
-                $validator->errors()->add('project_id', 'يجب تعيين رأس مال المشروع أولاً.');
-
-                return;
-            }
-
             $pctColumn = Schema::hasColumn('project_shareholder', 'planned_percentage')
                 ? 'planned_percentage'
                 : 'share_percentage';
