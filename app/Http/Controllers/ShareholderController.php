@@ -214,21 +214,29 @@ class ShareholderController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        // رصيد جاري بعد كل حركة (محسوب زمنيًا من الأقدم للأحدث)
-        $running = 0.0;
-        $runningById = [];
+        // رصيد جاري بعد كل حركة حسب الوجهة (مشروع أو أرض) — مش الإجمالي الموحّد
+        $runningByDestination = [];
+        $balanceAfterById = [];
         foreach ($ledgerEntries->sortBy([
             ['entry_date', 'asc'],
             ['id', 'asc'],
         ]) as $entry) {
+            $destKey = $entry->project_id !== null
+                ? 'p:'.(int) $entry->project_id
+                : ($entry->land_parcel_id !== null ? 'l:'.(int) $entry->land_parcel_id : 'x:0');
+
+            if (! isset($runningByDestination[$destKey])) {
+                $runningByDestination[$destKey] = 0.0;
+            }
+
             $signed = $entry->direction === ShareholderLedgerEntry::DIRECTION_CREDIT
                 ? (float) $entry->amount
                 : -(float) $entry->amount;
-            $running = round($running + $signed, 2);
-            $runningById[(int) $entry->id] = $running;
+            $runningByDestination[$destKey] = round($runningByDestination[$destKey] + $signed, 2);
+            $balanceAfterById[(int) $entry->id] = $runningByDestination[$destKey];
         }
-        $ledgerEntries->each(function ($entry) use ($runningById): void {
-            $entry->setAttribute('running_balance', $runningById[(int) $entry->id] ?? 0.0);
+        $ledgerEntries->each(function ($entry) use ($balanceAfterById): void {
+            $entry->setAttribute('running_balance', $balanceAfterById[(int) $entry->id] ?? 0.0);
         });
 
         // أهداف التوزيع: مشاريع أخرى مرتبط بها المساهم (غير مشروع الحركة المصدر)

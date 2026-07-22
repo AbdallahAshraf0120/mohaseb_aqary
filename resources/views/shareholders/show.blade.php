@@ -423,7 +423,7 @@
                         <th>النوع</th>
                         <th>الاتجاه</th>
                         <th class="text-end">المبلغ</th>
-                        <th class="text-end">رصيد الجاري</th>
+                        <th class="text-end">رصيد المشروع</th>
                         <th>الصندوق</th>
                         <th>ملاحظات</th>
                         <th class="text-end">عمليات</th>
@@ -459,7 +459,8 @@
                             <td class="text-end font-monospace fw-semibold {{ $entry->direction === 'credit' ? 'text-success' : 'text-danger' }}">
                                 {{ $entry->direction === 'credit' ? '+' : '−' }}{{ number_format((float) $entry->amount, 2) }}
                             </td>
-                            <td class="text-end font-monospace fw-semibold {{ (float) ($entry->running_balance ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                            <td class="text-end font-monospace fw-semibold {{ (float) ($entry->running_balance ?? 0) >= 0 ? 'text-success' : 'text-danger' }}"
+                                title="رصيد المساهم في هذه الوجهة بعد الحركة">
                                 {{ number_format((float) ($entry->running_balance ?? 0), 2) }}
                             </td>
                             <td class="small">
