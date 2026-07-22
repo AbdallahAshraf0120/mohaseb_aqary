@@ -459,9 +459,9 @@
                             <td class="text-end font-monospace fw-semibold {{ $entry->direction === 'credit' ? 'text-success' : 'text-danger' }}">
                                 {{ $entry->direction === 'credit' ? '+' : '−' }}{{ number_format((float) $entry->amount, 2) }}
                             </td>
-                            <td class="text-end font-monospace fw-semibold {{ (float) ($entry->running_balance ?? 0) >= 0 ? 'text-success' : 'text-danger' }}"
-                                title="رصيد المساهم في هذه الوجهة بعد الحركة">
-                                {{ number_format((float) ($entry->running_balance ?? 0), 2) }}
+                            <td class="text-end font-monospace fw-semibold {{ (float) ($entry->project_running_balance ?? $entry->running_balance ?? 0) >= 0 ? 'text-success' : 'text-danger' }}"
+                                title="جاري المساهم في مشروع الوجهة بعد هذه الحركة">
+                                {{ number_format((float) ($entry->project_running_balance ?? $entry->running_balance ?? 0), 2) }}
                             </td>
                             <td class="small">
                                 @if ($entry->treasuryTransaction && $entry->project)
@@ -484,7 +484,26 @@
                                     <span class="text-muted">—</span>
                                 @endif
                             </td>
-                            <td class="small">{{ $entry->notes ?: '—' }}</td>
+                            <td class="small" style="max-width: 18rem;">
+                                @php
+                                    $noteView = \App\Support\ShareholderLedgerNotePresenter::present($entry->notes, $entry);
+                                @endphp
+                                @if ($noteView['title'] === '—')
+                                    <span class="text-muted">—</span>
+                                @else
+                                    <div class="d-flex flex-wrap align-items-center gap-1 mb-1">
+                                        @if ($noteView['badge'])
+                                            <span class="badge text-bg-light border">{{ $noteView['badge'] }}</span>
+                                        @endif
+                                        <span class="fw-semibold">{{ $noteView['title'] }}</span>
+                                    </div>
+                                    @if ($noteView['detail'])
+                                        <div class="text-body-secondary" style="font-size: .8rem; line-height: 1.35;">
+                                            {{ $noteView['detail'] }}
+                                        </div>
+                                    @endif
+                                @endif
+                            </td>
                             <td class="text-end">
                                 @can('shareholders.manage')
                                     @php

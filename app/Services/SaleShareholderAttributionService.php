@@ -67,11 +67,7 @@ class SaleShareholderAttributionService
             return;
         }
 
-        $note = sprintf(
-            'مقدم بيعة مشروع #%d — بيعة #%d — دخل حساب المساهم',
-            $projectId,
-            (int) $sale->id
-        );
+        $note = sprintf('مقدم بيعة دخل حساب المساهم — بيعة #%d', (int) $sale->id);
 
         $payload = [
             'project_id' => $projectId,

@@ -226,15 +226,24 @@ class ShareholderLedgerService
         $targetName = $targetProject?->name ?? ('مشروع #'.$targetProjectId);
         $pct = round(($shareAmount / max(0.01, (float) $source->amount)) * 100, 2);
         $baseNote = trim((string) ($notes ?? ''));
-        $autoNote = sprintf(
-            'توزيع %.2f%% (%.2f ج.م) من حركة #%d — من «%s» إلى «%s»',
+        $debitAuto = sprintf(
+            'تحويل إلى «%s» — توزيع %.2f%% (%.2f ج.م) من حركة #%d — من «%s»',
+            $targetName,
             $pct,
             $shareAmount,
             (int) $source->id,
+            $sourceName
+        );
+        $creditAuto = sprintf(
+            'استلام من «%s» — توزيع %.2f%% (%.2f ج.م) من حركة #%d — إلى «%s»',
             $sourceName,
+            $pct,
+            $shareAmount,
+            (int) $source->id,
             $targetName
         );
-        $finalNote = $baseNote !== '' ? $baseNote.' — '.$autoNote : $autoNote;
+        $debitNote = $baseNote !== '' ? $baseNote.' — '.$debitAuto : $debitAuto;
+        $creditNote = $baseNote !== '' ? $baseNote.' — '.$creditAuto : $creditAuto;
         $entryDate = $source->entry_date?->toDateString() ?? now()->toDateString();
         $isAdmin = $user instanceof User && $user->isAdmin();
         $cashboxDesc = sprintf(
@@ -250,7 +259,8 @@ class ShareholderLedgerService
             $sourceProjectId,
             $targetProjectId,
             $shareAmount,
-            $finalNote,
+            $debitNote,
+            $creditNote,
             $entryDate,
             $user,
             $isAdmin,
@@ -262,7 +272,7 @@ class ShareholderLedgerService
                 'direction' => ShareholderLedgerEntry::DIRECTION_DEBIT,
                 'amount' => $shareAmount,
                 'entry_date' => $entryDate,
-                'notes' => $finalNote,
+                'notes' => $debitNote,
                 'skip_cashbox' => true,
                 'source_ledger_entry_id' => (int) $source->id,
             ], $user);
@@ -273,7 +283,7 @@ class ShareholderLedgerService
                 'direction' => ShareholderLedgerEntry::DIRECTION_CREDIT,
                 'amount' => $shareAmount,
                 'entry_date' => $entryDate,
-                'notes' => $finalNote,
+                'notes' => $creditNote,
                 'skip_cashbox' => true,
                 'source_ledger_entry_id' => (int) $source->id,
             ], $user);
