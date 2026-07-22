@@ -123,17 +123,44 @@ class CashboxController extends Controller
 
             $note = trim((string) ($data['description'] ?? ''));
             if ($note === '') {
-                $note = 'صرف من صندوق المشروع للمساهم';
+                $note = 'صرف من صندوق المشروع — دخل حساب المساهم';
+            } elseif (! str_contains($note, 'دخل حساب')) {
+                $note .= ' — دخل حساب المساهم';
             }
 
             try {
-                $this->shareholderLedgerService->create($shareholder, [
-                    'project_id' => (int) $project->id,
-                    'type' => ShareholderLedgerEntry::TYPE_WITHDRAWAL,
-                    'amount' => $amount,
-                    'entry_date' => now()->toDateString(),
-                    'notes' => $note,
-                ], $user instanceof \App\Models\User ? $user : null);
+                \Illuminate\Support\Facades\DB::transaction(function () use (
+                    $shareholder,
+                    $project,
+                    $amount,
+                    $note,
+                    $user,
+                    $isAdmin
+                ): void {
+                    $entry = $this->shareholderLedgerService->create($shareholder, [
+                        'project_id' => (int) $project->id,
+                        'type' => ShareholderLedgerEntry::TYPE_ADJUSTMENT,
+                        'direction' => ShareholderLedgerEntry::DIRECTION_CREDIT,
+                        'amount' => $amount,
+                        'entry_date' => now()->toDateString(),
+                        'notes' => $note,
+                        'skip_cashbox' => true,
+                    ], $user instanceof \App\Models\User ? $user : null);
+
+                    $tx = TreasuryTransaction::withoutProjectScope()->create([
+                        'project_id' => (int) $project->id,
+                        'type' => 'expense',
+                        'amount' => $amount,
+                        'description' => sprintf('صرف لمساهم — %s%s', $shareholder->name, $note !== '' ? ' — '.$note : ''),
+                        'reference_type' => 'shareholder_ledger_entry',
+                        'reference_id' => (int) $entry->id,
+                        'approval_status' => $isAdmin ? 'approved' : 'pending',
+                        'approved_at' => $isAdmin ? now() : null,
+                        'approved_by' => $isAdmin && $user ? (int) $user->id : null,
+                    ]);
+
+                    $entry->update(['treasury_transaction_id' => (int) $tx->id]);
+                });
             } catch (InvalidArgumentException $e) {
                 return back()->withInput()->with('error', $e->getMessage());
             }
@@ -143,8 +170,8 @@ class CashboxController extends Controller
                 ->with(
                     'success',
                     $isAdmin
-                        ? 'تم صرف '.$amount.' ج.م للمساهم «'.$shareholder->name.'» وتسجيلها في الجاري والصندوق.'
-                        : 'تم تسجيل صرف للمساهم «'.$shareholder->name.'» في الجاري والصندوق (معلّق حتى اعتماد الأدمن).'
+                        ? 'تم صرف '.$amount.' ج.م من الصندوق وإضافتها لحساب المساهم «'.$shareholder->name.'».'
+                        : 'تم تسجيل الصرف للمساهم «'.$shareholder->name.'» (معلّق حتى اعتماد الأدمن).'
                 );
         }
 

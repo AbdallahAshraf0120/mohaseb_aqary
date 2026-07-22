@@ -169,7 +169,7 @@
                                 <select name="type" id="cashbox-type" class="form-select @error('type') is-invalid @enderror" required>
                                     <option value="revenue" @selected(old('type', 'revenue') === 'revenue')>قبض (وارد للصندوق)</option>
                                     <option value="expense" @selected(old('type') === 'expense')>صرف عادي (صادر من الصندوق)</option>
-                                    <option value="shareholder_payout" @selected(old('type') === 'shareholder_payout')>صرف لمساهم (صندوق + جاري)</option>
+                                    <option value="shareholder_payout" @selected(old('type') === 'shareholder_payout')>صرف لمساهم (يُضاف للجاري)</option>
                                 </select>
                                 @error('type')
                                     <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -189,7 +189,7 @@
                                 @error('shareholder_id')
                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
-                                <div class="form-text">يخصم من الصندوق ويُسجَّل سحبًا في جاري المساهم.</div>
+                                <div class="form-text">يُخصم من الصندوق ويُضاف لحساب المساهم (دائن في الجاري).</div>
                                 @if (($projectShareholders ?? collect())->isEmpty())
                                     <div class="text-danger small mt-1">لا يوجد مساهمون مرتبطون بهذا المشروع.</div>
                                 @endif

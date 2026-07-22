@@ -76,6 +76,19 @@ class ShareholderLedgerNotePresenter
             ];
         }
 
+        if (str_contains($raw, 'صرف من صندوق') || (str_contains($raw, 'دخل حساب المساهم') && str_contains($raw, 'صرف'))) {
+            return [
+                'title' => 'صرف من الصندوق دخل على حسابك',
+                'badge' => 'دخلت',
+                'badge_class' => 'text-bg-success',
+                'lines' => self::lines([
+                    'المشروع' => $here,
+                    'المبلغ' => $amount,
+                ]),
+                'fallback' => null,
+            ];
+        }
+
         if (str_contains($raw, 'مقدم بيعة') || str_contains($raw, 'جزء من مقدم')) {
             $saleNo = self::matchOne('/بيعة\s*#(\d+)/u', $raw)
                 ?? ($entry?->sale_id ? (string) $entry->sale_id : null);
