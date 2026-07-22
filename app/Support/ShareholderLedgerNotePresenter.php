@@ -76,12 +76,16 @@ class ShareholderLedgerNotePresenter
             ];
         }
 
-        if (str_contains($raw, 'مقدم بيعة')) {
+        if (str_contains($raw, 'مقدم بيعة') || str_contains($raw, 'جزء من مقدم')) {
             $saleNo = self::matchOne('/بيعة\s*#(\d+)/u', $raw)
                 ?? ($entry?->sale_id ? (string) $entry->sale_id : null);
 
+            $title = str_contains($raw, 'جزء من مقدم')
+                ? 'جزء من المقدم على حسابك'
+                : 'مقدم بيعة على حسابك';
+
             return [
-                'title' => 'مقدم بيعة على حسابك',
+                'title' => $title,
                 'badge' => 'مقدم',
                 'badge_class' => 'text-bg-primary',
                 'lines' => self::lines([

@@ -42,6 +42,8 @@ class Sale extends Model
         'installment_start_date' => 'date',
         'installment_plan' => 'array',
         'is_mezzanine' => 'boolean',
+        'down_payment' => 'decimal:2',
+        'shareholder_down_payment_amount' => 'decimal:2',
     ];
 
     public function project(): BelongsTo

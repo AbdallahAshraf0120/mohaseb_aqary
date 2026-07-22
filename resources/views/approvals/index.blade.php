@@ -188,7 +188,13 @@
                                             @elseif ($section['key'] === 'sales')
                                                 <div class="fw-semibold">بيعة #{{ $row->id }}</div>
                                                 <div class="text-body-secondary">{{ $row->property?->name ?? '—' }} / {{ $row->client?->name ?? '—' }}</div>
-                                                <div class="text-body-secondary small">دخل حساب (المقدم): {{ $row->receivedByShareholder?->name ?? '—' }}</div>
+                                                <div class="text-body-secondary small">
+                                                    صندوق {{ number_format($row->cashboxDownPaymentAmount(), 2) }}
+                                                    · مساهم {{ number_format($row->shareholderDownPaymentAmount(), 2) }}
+                                                    @if ($row->receivedByShareholder)
+                                                        ({{ $row->receivedByShareholder->name }})
+                                                    @endif
+                                                </div>
                                             @elseif ($section['key'] === 'debt_payments')
                                                 <div class="fw-semibold">ذمة #{{ $row->debt_id }} — {{ $row->debt?->creditor_name ?? '—' }}</div>
                                                 <div class="text-body-secondary">{{ $row->note ?? '—' }}</div>
