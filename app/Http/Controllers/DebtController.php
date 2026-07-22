@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\Debt;
 use App\Models\DebtPayment;
 use App\Models\Project;
+use App\Services\CashboxBalanceService;
 use App\Services\CashboxLedgerService;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
@@ -15,10 +16,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use InvalidArgumentException;
 
 class DebtController extends Controller
 {
-    public function __construct(private readonly CashboxLedgerService $cashboxLedger) {}
+    public function __construct(
+        private readonly CashboxLedgerService $cashboxLedger,
+        private readonly CashboxBalanceService $cashboxBalanceService,
+    ) {}
 
     public function index(Project $project, Request $request): View
     {
@@ -105,20 +110,36 @@ class DebtController extends Controller
                 ->withInput();
         }
 
-        DB::transaction(function () use ($debt, $amount, $validated, $isAdmin, $user): void {
-            $payment = $debt->debtPayments()->create([
-                'amount' => $amount,
-                'note' => $validated['note'] ?? null,
-                'approval_status' => $isAdmin ? 'approved' : 'pending',
-                'approved_at' => $isAdmin ? now() : null,
-                'approved_by' => $isAdmin ? (int) $user->id : null,
-            ]);
-            $this->cashboxLedger->syncFromDebtPayment($payment->fresh(['debt']));
+        try {
+            $this->cashboxBalanceService->assertCanSpend((int) $project->id, $amount);
+        } catch (InvalidArgumentException $e) {
+            return redirect()
+                ->route('debts.edit', [$project, $debt])
+                ->with('error', $e->getMessage())
+                ->withInput();
+        }
 
-            if ($isAdmin) {
-                $this->recalculateDebtInline($debt);
-            }
-        });
+        try {
+            DB::transaction(function () use ($debt, $amount, $validated, $isAdmin, $user): void {
+                $payment = $debt->debtPayments()->create([
+                    'amount' => $amount,
+                    'note' => $validated['note'] ?? null,
+                    'approval_status' => $isAdmin ? 'approved' : 'pending',
+                    'approved_at' => $isAdmin ? now() : null,
+                    'approved_by' => $isAdmin ? (int) $user->id : null,
+                ]);
+                $this->cashboxLedger->syncFromDebtPayment($payment->fresh(['debt']));
+
+                if ($isAdmin) {
+                    $this->recalculateDebtInline($debt);
+                }
+            });
+        } catch (InvalidArgumentException $e) {
+            return redirect()
+                ->route('debts.edit', [$project, $debt])
+                ->with('error', $e->getMessage())
+                ->withInput();
+        }
 
         return redirect()
             ->route('debts.edit', [$project, $debt])

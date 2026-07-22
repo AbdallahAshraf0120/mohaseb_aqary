@@ -130,6 +130,9 @@ class ShareholderLedgerService
 
             if ($affectCashbox && $projectId !== null) {
                 $cashboxType = ShareholderLedgerEntry::cashboxTypeFor($type, $direction);
+                if ($cashboxType === 'expense') {
+                    app(CashboxBalanceService::class)->assertCanSpend($projectId, $amount);
+                }
                 $isAdmin = $user instanceof User && $user->isAdmin();
                 $tx = TreasuryTransaction::withoutProjectScope()->create([
                     'project_id' => $projectId,

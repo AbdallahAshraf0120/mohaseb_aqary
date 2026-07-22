@@ -17,20 +17,14 @@ class FundTransferService
 {
     public function __construct(
         private readonly ShareholderLedgerService $shareholderLedgerService,
+        private readonly CashboxBalanceService $cashboxBalanceService,
     ) {}
 
     public function balanceFor(string $type, int $id): float
     {
         $projectId = $this->resolveProjectId($type, $id);
 
-        $base = TreasuryTransaction::withoutProjectScope()
-            ->where('project_id', $projectId)
-            ->where('approval_status', 'approved');
-
-        $in = (float) (clone $base)->where('type', 'revenue')->sum('amount');
-        $out = (float) (clone $base)->where('type', 'expense')->sum('amount');
-
-        return round($in - $out, 2);
+        return $this->cashboxBalanceService->approvedBalance($projectId);
     }
 
     /**
@@ -65,10 +59,8 @@ class FundTransferService
             throw new InvalidArgumentException('المبلغ يجب أن يكون أكبر من صفر.');
         }
 
-        $balance = $this->balanceFor($fromType, $fromId);
-        if ($amount > $balance + 0.01) {
-            throw new InvalidArgumentException('رصيد المصدر غير كافٍ (المتاح: '.$balance.').');
-        }
+        $fromProjectId = $this->resolveProjectId($fromType, $fromId);
+        $this->cashboxBalanceService->assertCanSpend($fromProjectId, $amount);
 
         $shareholderId = isset($data['shareholder_id']) && $data['shareholder_id'] !== null && $data['shareholder_id'] !== ''
             ? (int) $data['shareholder_id']
@@ -89,7 +81,6 @@ class FundTransferService
             }
         }
 
-        $fromProjectId = $this->resolveProjectId($fromType, $fromId);
         $toProjectId = $this->resolveProjectId($toType, $toId);
         $isAdmin = $user instanceof User && $user->isAdmin();
         $date = (string) $data['transferred_at'];

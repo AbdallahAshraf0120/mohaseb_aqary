@@ -7,6 +7,9 @@
             <a href="{{ route('expenses.index') }}" class="btn btn-outline-secondary btn-sm">رجوع</a>
         </div>
         <div class="card-body">
+            @if (session('error'))
+                <div class="alert alert-danger">{{ session('error') }}</div>
+            @endif
             <form method="post" action="{{ route('expenses.update', [$project, $expense]) }}">
                 @method('PUT')
                 @include('expenses._form')

@@ -87,6 +87,14 @@
                             </div>
                         </div>
                     @endif
+                    @if (session('error'))
+                        <div class="px-4 pb-3">
+                            <div class="alert alert-danger alert-dismissible fade show mb-0" role="alert">
+                                {{ session('error') }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+                            </div>
+                        </div>
+                    @endif
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">

@@ -4,14 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use App\Models\TreasuryTransaction;
+use App\Services\CashboxBalanceService;
 use App\Support\LandTradingCashbox;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 class LandCashboxController extends Controller
 {
+    public function __construct(
+        private readonly CashboxBalanceService $cashboxBalanceService,
+    ) {}
+
     public function index(Request $request): View
     {
         $project = LandTradingCashbox::project();
@@ -78,6 +84,14 @@ class LandCashboxController extends Controller
         $user = $request->user();
         $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
         $projectId = LandTradingCashbox::projectId();
+
+        if ($data['type'] === 'expense') {
+            try {
+                $this->cashboxBalanceService->assertCanSpend($projectId, $data['amount']);
+            } catch (InvalidArgumentException $e) {
+                return back()->withInput()->with('error', $e->getMessage());
+            }
+        }
 
         TreasuryTransaction::withoutProjectScope()->create([
             'project_id' => $projectId,

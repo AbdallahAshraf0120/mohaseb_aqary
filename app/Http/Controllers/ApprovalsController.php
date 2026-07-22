@@ -11,6 +11,7 @@ use App\Models\Revenue;
 use App\Models\Sale;
 use App\Models\TreasuryTransaction;
 use App\Models\User;
+use App\Services\CashboxBalanceService;
 use App\Services\CashboxLedgerService;
 use App\Services\RevenueShareholderAttributionService;
 use App\Services\SaleShareholderAttributionService;
@@ -18,11 +19,13 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class ApprovalsController extends Controller
 {
     public function __construct(
         private readonly CashboxLedgerService $cashboxLedger,
+        private readonly CashboxBalanceService $cashboxBalanceService,
         private readonly RevenueShareholderAttributionService $revenueAttribution,
         private readonly SaleShareholderAttributionService $saleAttribution,
     ) {}
@@ -65,16 +68,20 @@ class ApprovalsController extends Controller
         $user = $request->user();
         abort_unless($user, 403);
 
-        DB::transaction(function () use ($type, $id, $user): void {
-            match ($type) {
-                'revenue' => $this->approveRevenue($id, (int) $user->id),
-                'expense' => $this->approveExpense($id, (int) $user->id),
-                'sale' => $this->approveSale($id, (int) $user->id),
-                'debt_payment' => $this->approveDebtPayment($id, (int) $user->id),
-                'manual_treasury' => $this->approveManualTreasury($id, (int) $user->id),
-                default => throw new \InvalidArgumentException('unknown_type'),
-            };
-        });
+        try {
+            DB::transaction(function () use ($type, $id, $user): void {
+                match ($type) {
+                    'revenue' => $this->approveRevenue($id, (int) $user->id),
+                    'expense' => $this->approveExpense($id, (int) $user->id),
+                    'sale' => $this->approveSale($id, (int) $user->id),
+                    'debt_payment' => $this->approveDebtPayment($id, (int) $user->id),
+                    'manual_treasury' => $this->approveManualTreasury($id, (int) $user->id),
+                    default => throw new \InvalidArgumentException('unknown_type'),
+                };
+            });
+        } catch (InvalidArgumentException $e) {
+            return redirect()->route('approvals.index', [$project])->with('error', $e->getMessage());
+        }
 
         return redirect()->route('approvals.index', [$project])->with('success', 'تم اعتماد العملية بنجاح.');
     }
@@ -248,6 +255,13 @@ class ApprovalsController extends Controller
     private function approveManualTreasury(int $id, int $userId): void
     {
         $tx = TreasuryTransaction::query()->whereNull('reference_type')->findOrFail($id);
+        if (($tx->type ?? '') === 'expense') {
+            $this->cashboxBalanceService->assertCanSpend(
+                (int) $tx->project_id,
+                (float) $tx->amount,
+                ['treasury_id' => (int) $tx->id]
+            );
+        }
         $tx->update([
             'approval_status' => 'approved',
             'approved_at' => now(),

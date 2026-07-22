@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Expense;
 use App\Models\ExpenseType;
 use App\Models\Project;
+use App\Services\CashboxBalanceService;
 use App\Services\CashboxLedgerService;
 use App\Support\CurrentProject;
 use App\Support\ListingFilters;
@@ -13,11 +14,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
 class ExpenseController extends Controller
 {
     public function __construct(
         private CashboxLedgerService $cashboxLedger,
+        private CashboxBalanceService $cashboxBalanceService,
     ) {}
 
     public function index(Project $project, Request $request): View
@@ -67,13 +70,27 @@ class ExpenseController extends Controller
 
         $user = $request->user();
         $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
+        $projectId = (int) app(CurrentProject::class)->id();
+
+        try {
+            $this->cashboxBalanceService->assertCanSpend($projectId, $data['amount']);
+        } catch (InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
         $data['approval_status'] = $isAdmin ? 'approved' : 'pending';
         if ($isAdmin) {
             $data['approved_at'] = now();
             $data['approved_by'] = (int) $user->id;
         }
         $expense = Expense::query()->create($data);
-        $this->cashboxLedger->syncFromExpense($expense);
+        try {
+            $this->cashboxLedger->syncFromExpense($expense);
+        } catch (InvalidArgumentException $e) {
+            $expense->delete();
+
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         return redirect()->route('expenses.index')->with('success', $isAdmin ? 'تم تسجيل المصروف واعتماده تلقائيًا.' : 'تم تسجيل المصروف كعملية معلقة حتى اعتماد الأدمن.');
     }
@@ -107,6 +124,19 @@ class ExpenseController extends Controller
     {
         $data = $this->validatedExpenseData($request);
 
+        try {
+            $this->cashboxBalanceService->assertCanSpend(
+                (int) $project->id,
+                $data['amount'],
+                [
+                    'reference_type' => Expense::class,
+                    'reference_id' => (int) $expense->id,
+                ]
+            );
+        } catch (InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
         $wasApproved = ($expense->approval_status ?? 'approved') === 'approved';
         if ($wasApproved) {
             $data['approval_status'] = 'pending';
@@ -118,7 +148,11 @@ class ExpenseController extends Controller
         }
 
         $expense->update($data);
-        $this->cashboxLedger->syncFromExpense($expense->refresh());
+        try {
+            $this->cashboxLedger->syncFromExpense($expense->refresh());
+        } catch (InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         $message = $wasApproved
             ? 'تم تحديث المصروف وأصبح معلقًا حتى إعادة الاعتماد.'

@@ -64,7 +64,11 @@ class ShareholderLedgerController extends Controller
             app(CurrentProject::class)->force(null);
         }
 
-        $this->ledgerService->create($shareholder, $data, $request->user());
+        try {
+            $this->ledgerService->create($shareholder, $data, $request->user());
+        } catch (\InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         $cashboxNote = $kind === 'project' && ShareholderLedgerEntry::affectsCashbox((string) $data['type'])
             ? ' وربطها بصندوق المشروع.'

@@ -12,6 +12,12 @@ use App\Support\LandTradingCashbox;
 
 class CashboxLedgerService
 {
+    private bool $enforceBalanceChecks = true;
+
+    public function __construct(
+        private readonly CashboxBalanceService $cashboxBalanceService,
+    ) {}
+
     public function syncFromRevenue(Revenue $revenue): void
     {
         TreasuryTransaction::query()->updateOrCreate(
@@ -43,6 +49,17 @@ class CashboxLedgerService
             $expense->category,
             $expense->description,
         ])));
+
+        if ($this->enforceBalanceChecks && ($expense->approval_status ?? '') === 'approved') {
+            $this->cashboxBalanceService->assertCanSpend(
+                (int) $expense->project_id,
+                (float) $expense->amount,
+                [
+                    'reference_type' => Expense::class,
+                    'reference_id' => (int) $expense->id,
+                ]
+            );
+        }
 
         TreasuryTransaction::query()->updateOrCreate(
             [
@@ -122,6 +139,17 @@ class CashboxLedgerService
             'دفعة #'.$payment->id,
         ]);
 
+        if ($this->enforceBalanceChecks && ($payment->approval_status ?? '') === 'approved') {
+            $this->cashboxBalanceService->assertCanSpend(
+                (int) $debt->project_id,
+                (float) $payment->amount,
+                [
+                    'reference_type' => DebtPayment::class,
+                    'reference_id' => (int) $payment->id,
+                ]
+            );
+        }
+
         TreasuryTransaction::query()->updateOrCreate(
             [
                 'project_id' => $debt->project_id,
@@ -158,13 +186,25 @@ class CashboxLedgerService
                 .($partName ? ' / جزء: '.$partName : '')
                 .' — '.$payment->kindLabel();
 
+        $landProjectId = LandTradingCashbox::projectId();
+        if ($this->enforceBalanceChecks && $isPurchase && ($payment->approval_status ?? '') === 'approved') {
+            $this->cashboxBalanceService->assertCanSpend(
+                $landProjectId,
+                (float) $payment->amount,
+                [
+                    'reference_type' => LandParcelPayment::class,
+                    'reference_id' => (int) $payment->id,
+                ]
+            );
+        }
+
         TreasuryTransaction::withoutProjectScope()->updateOrCreate(
             [
                 'reference_type' => LandParcelPayment::class,
                 'reference_id' => $payment->id,
             ],
             [
-                'project_id' => LandTradingCashbox::projectId(),
+                'project_id' => $landProjectId,
                 'type' => $type,
                 'amount' => $payment->amount,
                 'description' => $label.($payment->notes ? ' — '.$payment->notes : ''),
@@ -191,18 +231,24 @@ class CashboxLedgerService
             ->where('approval_status', 'approved')
             ->delete();
 
-        Revenue::query()->where('approval_status', 'approved')->orderBy('id')->each(fn (Revenue $r) => $this->syncFromRevenue($r));
-        Expense::query()->where('approval_status', 'approved')->orderBy('id')->each(fn (Expense $e) => $this->syncFromExpense($e));
-        Sale::query()->where('approval_status', 'approved')->orderBy('id')->each(fn (Sale $s) => $this->syncSaleDownPayment($s));
-        DebtPayment::query()
-            ->where('approval_status', 'approved')
-            ->with(['debt' => static fn ($q) => $q->withoutGlobalScopes()])
-            ->orderBy('id')
-            ->each(fn (DebtPayment $p) => $this->syncFromDebtPayment($p));
-        LandParcelPayment::query()
-            ->where('approval_status', 'approved')
-            ->orderBy('id')
-            ->each(fn (LandParcelPayment $p) => $this->syncFromLandParcelPayment($p));
+        $previous = $this->enforceBalanceChecks;
+        $this->enforceBalanceChecks = false;
+        try {
+            Revenue::query()->where('approval_status', 'approved')->orderBy('id')->each(fn (Revenue $r) => $this->syncFromRevenue($r));
+            Expense::query()->where('approval_status', 'approved')->orderBy('id')->each(fn (Expense $e) => $this->syncFromExpense($e));
+            Sale::query()->where('approval_status', 'approved')->orderBy('id')->each(fn (Sale $s) => $this->syncSaleDownPayment($s));
+            DebtPayment::query()
+                ->where('approval_status', 'approved')
+                ->with(['debt' => static fn ($q) => $q->withoutGlobalScopes()])
+                ->orderBy('id')
+                ->each(fn (DebtPayment $p) => $this->syncFromDebtPayment($p));
+            LandParcelPayment::query()
+                ->where('approval_status', 'approved')
+                ->orderBy('id')
+                ->each(fn (LandParcelPayment $p) => $this->syncFromLandParcelPayment($p));
+        } finally {
+            $this->enforceBalanceChecks = $previous;
+        }
     }
 
     private function revenueDescription(Revenue $revenue): string

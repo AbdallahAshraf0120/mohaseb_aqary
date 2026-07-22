@@ -5,13 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Setting;
 use App\Models\TreasuryTransaction;
+use App\Services\CashboxBalanceService;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 class CashboxController extends Controller
 {
+    public function __construct(
+        private readonly CashboxBalanceService $cashboxBalanceService,
+    ) {}
+
     public function index(Project $project, Request $request): View
     {
         $filters = ListingFilters::fromRequest($request);
@@ -76,6 +82,14 @@ class CashboxController extends Controller
 
         $user = $request->user();
         $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
+
+        if ($data['type'] === 'expense') {
+            try {
+                $this->cashboxBalanceService->assertCanSpend((int) $project->id, $data['amount']);
+            } catch (InvalidArgumentException $e) {
+                return back()->withInput()->with('error', $e->getMessage());
+            }
+        }
 
         TreasuryTransaction::query()->create([
             'type' => $data['type'],
