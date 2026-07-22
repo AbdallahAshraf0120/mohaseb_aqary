@@ -11,6 +11,7 @@ use App\Support\CurrentProject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
 class ShareholderLedgerController extends Controller
 {
@@ -66,7 +67,7 @@ class ShareholderLedgerController extends Controller
 
         try {
             $this->ledgerService->create($shareholder, $data, $request->user());
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
 
@@ -79,6 +80,44 @@ class ShareholderLedgerController extends Controller
             ->with('success', 'تم تسجيل حركة الجاري'.$cashboxNote);
     }
 
+    public function allocate(Request $request, Shareholder $shareholder, ShareholderLedgerEntry $ledger): RedirectResponse
+    {
+        abort_unless((int) $ledger->shareholder_id === (int) $shareholder->id, 404);
+
+        $data = $request->validate([
+            'target_project_id' => ['required', 'integer', 'exists:projects,id'],
+            'mode' => ['required', 'in:percentage,amount'],
+            'percentage' => ['nullable', 'numeric', 'min:0.01', 'max:100', 'required_if:mode,percentage'],
+            'amount' => ['nullable', 'numeric', 'min:0.01', 'required_if:mode,amount'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'target_project_id.required' => 'اختر المشروع الهدف.',
+            'percentage.required_if' => 'أدخل النسبة المئوية.',
+            'amount.required_if' => 'أدخل المبلغ.',
+        ]);
+
+        $shareAmount = $data['mode'] === 'percentage'
+            ? round(((float) $ledger->amount) * ((float) $data['percentage'] / 100), 2)
+            : round((float) $data['amount'], 2);
+
+        try {
+            $result = $this->ledgerService->allocateToProject(
+                $shareholder,
+                $ledger,
+                (int) $data['target_project_id'],
+                $shareAmount,
+                $request->user(),
+                $data['notes'] ?? null
+            );
+        } catch (InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('shareholders.show', $shareholder)
+            ->with('success', 'تم توزيع '.number_format((float) $result['amount'], 2).' ج.م من الحركة إلى المشروع المختار.');
+    }
+
     public function destroy(Shareholder $shareholder, ShareholderLedgerEntry $ledger): RedirectResponse
     {
         abort_unless((int) $ledger->shareholder_id === (int) $shareholder->id, 404);
@@ -88,7 +127,12 @@ class ShareholderLedgerController extends Controller
         } else {
             app(CurrentProject::class)->force(null);
         }
-        $this->ledgerService->delete($ledger);
+
+        try {
+            $this->ledgerService->delete($ledger);
+        } catch (InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return redirect()
             ->route('shareholders.show', $shareholder)

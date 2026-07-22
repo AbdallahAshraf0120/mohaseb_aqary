@@ -38,6 +38,7 @@ class ShareholderLedgerEntry extends Model
         'land_parcel_payment_id',
         'revenue_id',
         'sale_id',
+        'source_ledger_entry_id',
         'shareholder_id',
         'type',
         'direction',
@@ -79,6 +80,39 @@ class ShareholderLedgerEntry extends Model
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);
+    }
+
+    public function sourceLedgerEntry(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'source_ledger_entry_id');
+    }
+
+    public function allocations()
+    {
+        return $this->hasMany(self::class, 'source_ledger_entry_id');
+    }
+
+    /**
+     * المبلغ المتبقي القابل للتوزيع من حركة دائنة على مشروع.
+     */
+    public function remainingAllocatableAmount(): float
+    {
+        if ($this->direction !== self::DIRECTION_CREDIT || $this->project_id === null) {
+            return 0.0;
+        }
+
+        $sourceAmount = round((float) $this->amount, 2);
+        if (! \Illuminate\Support\Facades\Schema::hasColumn($this->getTable(), 'source_ledger_entry_id')) {
+            return $sourceAmount;
+        }
+
+        $allocated = round((float) static::withoutProjectScope()
+            ->where('source_ledger_entry_id', (int) $this->id)
+            ->where('direction', self::DIRECTION_DEBIT)
+            ->where('project_id', (int) $this->project_id)
+            ->sum('amount'), 2);
+
+        return round(max(0, $sourceAmount - $allocated), 2);
     }
 
     public function resolveRouteBinding($value, $field = null)

@@ -29,7 +29,8 @@ class ShareholderLedgerService
      *     skip_cashbox?: bool,
      *     land_parcel_payment_id?: int|null,
      *     revenue_id?: int|null,
-     *     sale_id?: int|null
+     *     sale_id?: int|null,
+     *     source_ledger_entry_id?: int|null
      * }  $data
      */
     public function create(Shareholder $shareholder, array $data, ?User $user = null): ShareholderLedgerEntry
@@ -125,6 +126,9 @@ class ShareholderLedgerService
             if (Schema::hasColumn('shareholder_ledger_entries', 'sale_id') && isset($data['sale_id'])) {
                 $entryPayload['sale_id'] = (int) $data['sale_id'];
             }
+            if (Schema::hasColumn('shareholder_ledger_entries', 'source_ledger_entry_id') && isset($data['source_ledger_entry_id'])) {
+                $entryPayload['source_ledger_entry_id'] = (int) $data['source_ledger_entry_id'];
+            }
 
             $entry = ShareholderLedgerEntry::withoutProjectScope()->create($entryPayload);
 
@@ -164,8 +168,122 @@ class ShareholderLedgerService
         });
     }
 
+    /**
+     * ينقل جزءًا من حركة دائنة على مشروع إلى مشروع آخر (مدين من المصدر + دائن للهدف) بدون تأثير على الصندوق.
+     *
+     * @return array{debit: ShareholderLedgerEntry, credit: ShareholderLedgerEntry, amount: float}
+     */
+    public function allocateToProject(
+        Shareholder $shareholder,
+        ShareholderLedgerEntry $source,
+        int $targetProjectId,
+        float|int|string $amount,
+        ?User $user = null,
+        ?string $notes = null
+    ): array {
+        if ((int) $source->shareholder_id !== (int) $shareholder->id) {
+            throw new InvalidArgumentException('الحركة لا تخص هذا المساهم.');
+        }
+        if ($source->direction !== ShareholderLedgerEntry::DIRECTION_CREDIT) {
+            throw new InvalidArgumentException('التوزيع متاح للحركات الدائنة فقط.');
+        }
+        if ($source->project_id === null) {
+            throw new InvalidArgumentException('التوزيع متاح لحركات المشاريع فقط.');
+        }
+
+        $sourceProjectId = (int) $source->project_id;
+        if ($targetProjectId === $sourceProjectId) {
+            throw new InvalidArgumentException('اختر مشروعًا مختلفًا عن مصدر الحركة.');
+        }
+
+        $memberTarget = ProjectShareholder::query()
+            ->where('shareholder_id', (int) $shareholder->id)
+            ->where('project_id', $targetProjectId)
+            ->exists();
+        if (! $memberTarget) {
+            throw new InvalidArgumentException('المساهم غير مرتبط بالمشروع الهدف. اربطه أولًا.');
+        }
+
+        $shareAmount = round((float) $amount, 2);
+        if ($shareAmount < 0.01) {
+            throw new InvalidArgumentException('المبلغ يجب أن يكون أكبر من صفر.');
+        }
+
+        $remaining = $source->remainingAllocatableAmount();
+        if ($shareAmount > $remaining + 0.01) {
+            throw new InvalidArgumentException(
+                'المبلغ أكبر من المتبقي القابل للتوزيع (المتاح: '.number_format($remaining, 2).' ج.م).'
+            );
+        }
+
+        $sourceProject = Project::query()->find($sourceProjectId);
+        $targetProject = Project::query()->find($targetProjectId);
+        $sourceName = $sourceProject?->name ?? ('مشروع #'.$sourceProjectId);
+        $targetName = $targetProject?->name ?? ('مشروع #'.$targetProjectId);
+        $pct = round(($shareAmount / max(0.01, (float) $source->amount)) * 100, 2);
+        $baseNote = trim((string) ($notes ?? ''));
+        $autoNote = sprintf(
+            'توزيع %.2f%% (%.2f ج.م) من حركة #%d — من «%s» إلى «%s»',
+            $pct,
+            $shareAmount,
+            (int) $source->id,
+            $sourceName,
+            $targetName
+        );
+        $finalNote = $baseNote !== '' ? $baseNote.' — '.$autoNote : $autoNote;
+        $entryDate = $source->entry_date?->toDateString() ?? now()->toDateString();
+
+        return DB::transaction(function () use (
+            $shareholder,
+            $source,
+            $sourceProjectId,
+            $targetProjectId,
+            $shareAmount,
+            $finalNote,
+            $entryDate,
+            $user
+        ): array {
+            $debit = $this->create($shareholder, [
+                'project_id' => $sourceProjectId,
+                'type' => ShareholderLedgerEntry::TYPE_ADJUSTMENT,
+                'direction' => ShareholderLedgerEntry::DIRECTION_DEBIT,
+                'amount' => $shareAmount,
+                'entry_date' => $entryDate,
+                'notes' => $finalNote,
+                'skip_cashbox' => true,
+                'source_ledger_entry_id' => (int) $source->id,
+            ], $user);
+
+            $credit = $this->create($shareholder, [
+                'project_id' => $targetProjectId,
+                'type' => ShareholderLedgerEntry::TYPE_ADJUSTMENT,
+                'direction' => ShareholderLedgerEntry::DIRECTION_CREDIT,
+                'amount' => $shareAmount,
+                'entry_date' => $entryDate,
+                'notes' => $finalNote,
+                'skip_cashbox' => true,
+                'source_ledger_entry_id' => (int) $source->id,
+            ], $user);
+
+            return [
+                'debit' => $debit,
+                'credit' => $credit,
+                'amount' => $shareAmount,
+            ];
+        });
+    }
+
     public function delete(ShareholderLedgerEntry $entry): void
     {
+        if (Schema::hasColumn('shareholder_ledger_entries', 'source_ledger_entry_id')) {
+            $hasChildren = ShareholderLedgerEntry::withoutProjectScope()
+                ->where('source_ledger_entry_id', (int) $entry->id)
+                ->exists();
+            if ($hasChildren) {
+                throw new InvalidArgumentException('لا يمكن حذف الحركة قبل حذف التوزيعات المرتبطة بها.');
+            }
+        }
+
         DB::transaction(function () use ($entry): void {
             $shareholder = $entry->shareholder()->first();
             $projectId = $entry->project_id !== null ? (int) $entry->project_id : null;

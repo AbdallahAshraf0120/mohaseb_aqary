@@ -117,6 +117,9 @@ Route::middleware('auth')->group(function (): void {
             ->name('shareholders.funding.update');
         Route::post('shareholders/{shareholder}/ledger', [ShareholderLedgerController::class, 'store'])
             ->name('shareholders.ledger.store');
+        Route::post('shareholders/{shareholder}/ledger/{ledger}/allocate', [ShareholderLedgerController::class, 'allocate'])
+            ->whereNumber('ledger')
+            ->name('shareholders.ledger.allocate');
         Route::delete('shareholders/{shareholder}/ledger/{ledger}', [ShareholderLedgerController::class, 'destroy'])
             ->whereNumber('ledger')
             ->name('shareholders.ledger.destroy');
