@@ -214,6 +214,23 @@ class ShareholderController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        // رصيد جاري بعد كل حركة (محسوب زمنيًا من الأقدم للأحدث)
+        $running = 0.0;
+        $runningById = [];
+        foreach ($ledgerEntries->sortBy([
+            ['entry_date', 'asc'],
+            ['id', 'asc'],
+        ]) as $entry) {
+            $signed = $entry->direction === ShareholderLedgerEntry::DIRECTION_CREDIT
+                ? (float) $entry->amount
+                : -(float) $entry->amount;
+            $running = round($running + $signed, 2);
+            $runningById[(int) $entry->id] = $running;
+        }
+        $ledgerEntries->each(function ($entry) use ($runningById): void {
+            $entry->setAttribute('running_balance', $runningById[(int) $entry->id] ?? 0.0);
+        });
+
         // أهداف التوزيع: مشاريع أخرى مرتبط بها المساهم (غير مشروع الحركة المصدر)
         $allocateTargetProjects = $memberships
             ->map(fn ($m) => $m->project)

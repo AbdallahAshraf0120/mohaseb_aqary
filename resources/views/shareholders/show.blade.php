@@ -423,6 +423,7 @@
                         <th>النوع</th>
                         <th>الاتجاه</th>
                         <th class="text-end">المبلغ</th>
+                        <th class="text-end">رصيد الجاري</th>
                         <th>الصندوق</th>
                         <th>ملاحظات</th>
                         <th class="text-end">عمليات</th>
@@ -457,6 +458,9 @@
                             </td>
                             <td class="text-end font-monospace fw-semibold {{ $entry->direction === 'credit' ? 'text-success' : 'text-danger' }}">
                                 {{ $entry->direction === 'credit' ? '+' : '−' }}{{ number_format((float) $entry->amount, 2) }}
+                            </td>
+                            <td class="text-end font-monospace fw-semibold {{ (float) ($entry->running_balance ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                {{ number_format((float) ($entry->running_balance ?? 0), 2) }}
                             </td>
                             <td class="small">
                                 @if ($entry->treasuryTransaction && $entry->project)
@@ -522,7 +526,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">لا توجد حركات جاري بعد.</td>
+                            <td colspan="9" class="text-center text-muted py-4">لا توجد حركات جاري بعد.</td>
                         </tr>
                     @endforelse
                     </tbody>
