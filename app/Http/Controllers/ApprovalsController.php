@@ -13,6 +13,7 @@ use App\Models\TreasuryTransaction;
 use App\Models\User;
 use App\Services\CashboxLedgerService;
 use App\Services\RevenueShareholderAttributionService;
+use App\Services\SaleShareholderAttributionService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class ApprovalsController extends Controller
     public function __construct(
         private readonly CashboxLedgerService $cashboxLedger,
         private readonly RevenueShareholderAttributionService $revenueAttribution,
+        private readonly SaleShareholderAttributionService $saleAttribution,
     ) {}
 
     public function index(Project $project): View
@@ -30,7 +32,7 @@ class ApprovalsController extends Controller
         $pending = [
             'revenues' => Revenue::query()->where('approval_status', 'pending')->with(['client:id,name', 'receivedByShareholder:id,name'])->latest('paid_at')->latest('id')->limit(25)->get(),
             'expenses' => Expense::query()->where('approval_status', 'pending')->latest('id')->limit(25)->get(),
-            'sales' => Sale::query()->where('approval_status', 'pending')->with(['client:id,name', 'property:id,name'])->latest('sale_date')->latest('id')->limit(25)->get(),
+            'sales' => Sale::query()->where('approval_status', 'pending')->with(['client:id,name', 'property:id,name', 'receivedByShareholder:id,name'])->latest('sale_date')->latest('id')->limit(25)->get(),
             'debt_payments' => DebtPayment::query()->where('approval_status', 'pending')->with('debt')->latest('id')->limit(25)->get(),
             'manual_treasury' => TreasuryTransaction::query()
                 ->whereNull('reference_type')
@@ -180,6 +182,7 @@ class ApprovalsController extends Controller
         ]);
         $sale->refresh();
         $this->cashboxLedger->syncSaleDownPayment($sale);
+        $this->saleAttribution->sync($sale, User::query()->find($userId));
 
         $contractId = (int) Contract::query()->withoutProjectScope()->where('sale_id', $sale->id)->value('id');
         if ($contractId > 0) {
@@ -200,6 +203,7 @@ class ApprovalsController extends Controller
         ]);
         $sale->refresh();
         $this->cashboxLedger->syncSaleDownPayment($sale);
+        $this->saleAttribution->sync($sale, User::query()->find($userId));
 
         $contractId = (int) Contract::query()->withoutProjectScope()->where('sale_id', $sale->id)->value('id');
         if ($contractId > 0) {

@@ -26,6 +26,7 @@
         'down_payment_percentage',
         $salePriceValue > 0 ? round(($downPaymentValue / $salePriceValue) * 100, 2) : ($paymentType === 'cash' ? 100 : 0)
     );
+    $projectShareholders = $projectShareholders ?? collect();
     $propertiesMeta = $properties->mapWithKeys(function ($p) {
         $registeredFloors = collect($p->registered_floors ?? [])
             ->map(static fn ($value) => (int) $value)
@@ -117,6 +118,20 @@
                value="{{ old('down_payment', $sale->down_payment ?? '') }}">
         <small class="text-muted">المقدم = سعر الوحدة × نسبة المقدم</small>
     </div>
+    <div class="col-md-6">
+        <label class="form-label">دخل حساب مين <span class="text-muted fw-normal">(المقدم)</span></label>
+        <select name="received_by_shareholder_id" id="received_by_shareholder_id" class="form-select"
+                {{ $projectShareholders->isNotEmpty() ? 'required' : '' }}>
+            <option value="">— اختر المساهم —</option>
+            @foreach ($projectShareholders as $row)
+                <option value="{{ $row->shareholder_id }}"
+                    @selected((string) old('received_by_shareholder_id', $sale->received_by_shareholder_id ?? '') === (string) $row->shareholder_id)>
+                    {{ $row->shareholder?->name }}
+                </option>
+            @endforeach
+        </select>
+        <small class="text-muted">يُرحَّل المقدم المعتمد لجاري المساهم المختار (بدون تكرار في الصندوق).</small>
+    </div>
 
     <div class="col-md-4 installment-field">
         <label class="form-label">مدة التقسيط (شهور)</label>
@@ -173,6 +188,7 @@
         </div>
         <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="add-secondary-payment">+ إضافة دفعة ثانوية</button>
     </div>
+
     <div class="col-md-4">
         <label class="form-label">تاريخ البيعة</label>
         <input type="date" name="sale_date" class="form-control"

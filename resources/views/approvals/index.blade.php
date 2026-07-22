@@ -182,6 +182,7 @@
                                             @elseif ($section['key'] === 'sales')
                                                 <div class="fw-semibold">بيعة #{{ $row->id }}</div>
                                                 <div class="text-body-secondary">{{ $row->property?->name ?? '—' }} / {{ $row->client?->name ?? '—' }}</div>
+                                                <div class="text-body-secondary small">دخل حساب (المقدم): {{ $row->receivedByShareholder?->name ?? '—' }}</div>
                                             @elseif ($section['key'] === 'debt_payments')
                                                 <div class="fw-semibold">ذمة #{{ $row->debt_id }} — {{ $row->debt?->creditor_name ?? '—' }}</div>
                                                 <div class="text-body-secondary">{{ $row->note ?? '—' }}</div>

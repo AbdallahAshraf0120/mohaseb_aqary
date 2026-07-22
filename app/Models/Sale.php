@@ -21,6 +21,7 @@ class Sale extends Model
         'sale_price',
         'payment_type',
         'down_payment',
+        'received_by_shareholder_id',
         'installment_months',
         'installment_start_date',
         'installment_plan',
@@ -55,6 +56,11 @@ class Sale extends Model
     public function property()
     {
         return $this->belongsTo(Property::class);
+    }
+
+    public function receivedByShareholder(): BelongsTo
+    {
+        return $this->belongsTo(Shareholder::class, 'received_by_shareholder_id');
     }
 
     public function contract()

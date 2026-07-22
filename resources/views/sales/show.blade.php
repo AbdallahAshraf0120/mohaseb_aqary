@@ -123,6 +123,10 @@
                                 <th class="text-body-secondary align-top py-2">المقدم</th>
                                 <td class="py-2 font-monospace">{{ number_format((float) $sale->down_payment, 2) }} ج.م</td>
                             </tr>
+                            <tr>
+                                <th class="text-body-secondary align-top py-2">دخل حساب (المقدم)</th>
+                                <td class="py-2 fw-medium">{{ $sale->receivedByShareholder?->name ?? '—' }}</td>
+                            </tr>
                             @if ($sale->payment_type === 'installment')
                                 <tr>
                                     <th class="text-body-secondary align-top py-2">مدة التقسيط</th>

@@ -70,6 +70,7 @@
                                 <th>العقار/العميل</th>
                                 <th>قيمة البيع</th>
                                 <th>المقدم</th>
+                                <th>دخل حساب</th>
                                 <th>الحالة</th>
                                 <th class="text-end">العمليات</th>
                             </tr>
@@ -88,6 +89,7 @@
                                     </td>
                                     <td>{{ number_format((float) $sale->sale_price, 2) }} ج.م</td>
                                     <td>{{ number_format((float) $sale->down_payment, 2) }} ج.م</td>
+                                    <td>{{ $sale->receivedByShareholder?->name ?? '—' }}</td>
                                     <td>
                                         @if (($sale->approval_status ?? 'approved') === 'approved')
                                             <span class="badge text-bg-success">معتمد</span>
@@ -111,7 +113,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted">لا توجد مبيعات مسجلة حتى الآن.</td>
+                                    <td colspan="9" class="text-center text-muted">لا توجد مبيعات مسجلة حتى الآن.</td>
                                 </tr>
                             @endforelse
                             </tbody>

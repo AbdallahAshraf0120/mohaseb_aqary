@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ProjectShareholder;
 use App\Models\Property;
 use App\Models\Sale;
+use App\Support\CurrentProject;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Validator;
 
 class StoreSaleRequest extends FormRequest
@@ -17,7 +20,7 @@ class StoreSaleRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'property_id' => ['required', 'exists:properties,id'],
             'floor_number' => ['required', 'integer', 'min:0'],
             'is_mezzanine' => ['sometimes', 'boolean'],
@@ -42,11 +45,38 @@ class StoreSaleRequest extends FormRequest
             'client_email' => ['nullable', 'email', 'max:255'],
             'client_national_id' => ['nullable', 'string', 'max:50'],
         ];
+
+        if (Schema::hasColumn('sales', 'received_by_shareholder_id')) {
+            $projectId = app(CurrentProject::class)->id();
+            $hasMembers = $projectId !== null
+                && ProjectShareholder::query()->where('project_id', $projectId)->exists();
+            $downPayment = (float) $this->input('down_payment', 0);
+
+            $rules['received_by_shareholder_id'] = ($hasMembers && $downPayment >= 0.01)
+                ? ['required', 'integer', 'exists:shareholders,id']
+                : ['nullable', 'integer', 'exists:shareholders,id'];
+        }
+
+        return $rules;
     }
 
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            if (Schema::hasColumn('sales', 'received_by_shareholder_id')) {
+                $shareholderId = $this->input('received_by_shareholder_id');
+                $projectId = app(CurrentProject::class)->id();
+                if ($shareholderId !== null && $shareholderId !== '' && $projectId !== null) {
+                    $member = ProjectShareholder::query()
+                        ->where('project_id', $projectId)
+                        ->where('shareholder_id', (int) $shareholderId)
+                        ->exists();
+                    if (! $member) {
+                        $validator->errors()->add('received_by_shareholder_id', 'المساهم (دخل حسابه) غير مرتبط بهذا المشروع.');
+                    }
+                }
+            }
+
             $property = Property::query()->find((int) $this->input('property_id'));
             if (! $property) {
                 return;
@@ -155,6 +185,10 @@ class StoreSaleRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if ($this->input('received_by_shareholder_id') === '') {
+            $this->merge(['received_by_shareholder_id' => null]);
+        }
+
         if ($this->has('apartment_model') && is_string($this->input('apartment_model'))) {
             $this->merge(['apartment_model' => trim($this->input('apartment_model'))]);
         }

@@ -7,22 +7,27 @@ use App\Http\Requests\UpdateSaleRequest;
 use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Project;
+use App\Models\ProjectShareholder;
 use App\Models\Property;
 use App\Models\Revenue;
 use App\Models\Sale;
 use App\Models\TreasuryTransaction;
 use App\Services\CashboxLedgerService;
+use App\Services\SaleShareholderAttributionService;
+use App\Support\CurrentProject;
 use App\Support\ListingFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class SaleController extends Controller
 {
     public function __construct(
         private CashboxLedgerService $cashboxLedger,
+        private SaleShareholderAttributionService $saleAttribution,
     ) {}
 
     public function index(Project $project, Request $request): View
@@ -51,7 +56,7 @@ class SaleController extends Controller
             'total_collected' => $totalCollected,
         ];
 
-        $listQuery = Sale::query()->with(['property:id,name', 'client:id,name,phone']);
+        $listQuery = Sale::query()->with(['property:id,name', 'client:id,name,phone', 'receivedByShareholder:id,name']);
         $this->applySaleListingFilters($listQuery, $filters);
         $sales = $listQuery->latest()->paginate(15)->withQueryString();
 
@@ -95,6 +100,7 @@ class SaleController extends Controller
                 'mushaa_floors',
                 'apartment_models'
             )->orderBy('name')->get(),
+            'projectShareholders' => $this->projectShareholders(),
             'modules' => $this->modules(),
         ]);
     }
@@ -106,7 +112,7 @@ class SaleController extends Controller
         $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
         $client = $this->createClientForNewSale($validated);
 
-        $sale = Sale::query()->create([
+        $salePayload = [
             'property_id' => $validated['property_id'],
             'client_id' => $client->id,
             'floor_number' => $validated['floor_number'],
@@ -124,10 +130,17 @@ class SaleController extends Controller
             'approval_status' => $isAdmin ? 'approved' : 'pending',
             'approved_at' => $isAdmin ? now() : null,
             'approved_by' => $isAdmin ? (int) $user->id : null,
-        ]);
+        ];
+        if (Schema::hasColumn('sales', 'received_by_shareholder_id')) {
+            $salePayload['received_by_shareholder_id'] = $validated['received_by_shareholder_id'] ?? null;
+        }
+
+        $sale = Sale::query()->create($salePayload);
 
         $this->syncContractForSale($sale);
-        $this->cashboxLedger->syncSaleDownPayment($sale->refresh());
+        $sale = $sale->refresh();
+        $this->cashboxLedger->syncSaleDownPayment($sale);
+        $this->saleAttribution->sync($sale, $user instanceof \App\Models\User ? $user : null);
 
         return redirect()->route('sales.index')->with('success', $isAdmin ? 'تم تسجيل البيعة واعتمادها تلقائيًا.' : 'تم تسجيل البيعة كعملية معلقة حتى اعتماد الأدمن.');
     }
@@ -138,6 +151,7 @@ class SaleController extends Controller
             'property.area:id,name',
             'property.land:id,name',
             'client',
+            'receivedByShareholder:id,name',
             'contract.revenues' => static fn ($q) => $q
                 ->where('approval_status', 'approved')
                 ->orderBy('paid_at')
@@ -192,6 +206,7 @@ class SaleController extends Controller
                 'mushaa_floors',
                 'apartment_models'
             )->orderBy('name')->get(),
+            'projectShareholders' => $this->projectShareholders(),
             'modules' => $this->modules(),
         ]);
     }
@@ -218,6 +233,9 @@ class SaleController extends Controller
             'broker_name' => $validated['broker_name'],
             'notes' => $validated['notes'] ?? null,
         ];
+        if (Schema::hasColumn('sales', 'received_by_shareholder_id')) {
+            $update['received_by_shareholder_id'] = $validated['received_by_shareholder_id'] ?? null;
+        }
         if ($wasApproved) {
             $update['approval_status'] = 'pending';
             $update['approved_at'] = null;
@@ -229,8 +247,10 @@ class SaleController extends Controller
 
         $sale->update($update);
 
-        $this->syncContractForSale($sale->refresh());
+        $sale = $sale->refresh();
+        $this->syncContractForSale($sale);
         $this->cashboxLedger->syncSaleDownPayment($sale);
+        $this->saleAttribution->sync($sale, $request->user() instanceof \App\Models\User ? $request->user() : null);
 
         $message = $wasApproved
             ? 'تم تحديث البيعة وأصبحت معلقة حتى إعادة الاعتماد.'
@@ -241,6 +261,7 @@ class SaleController extends Controller
 
     public function destroy(Request $request, Project $project, Sale $sale): RedirectResponse|JsonResponse
     {
+        $this->saleAttribution->removeLedgerForSale((int) $sale->id);
         $this->cashboxLedger->removeSaleDownPayment((int) $sale->id);
         $sale->delete();
 
@@ -255,6 +276,30 @@ class SaleController extends Controller
         }
 
         return redirect()->route('sales.index')->with('success', $message);
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, \App\Models\ProjectShareholder>
+     */
+    private function projectShareholders()
+    {
+        if (! Schema::hasTable('project_shareholder')) {
+            return collect();
+        }
+
+        $projectId = app(CurrentProject::class)->id();
+        if ($projectId === null) {
+            return collect();
+        }
+
+        return ProjectShareholder::query()
+            ->with('shareholder:id,name')
+            ->where('project_id', $projectId)
+            ->whereHas('shareholder')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (ProjectShareholder $row) => $row->shareholder !== null)
+            ->values();
     }
 
     private function createClientForNewSale(array $validated): Client

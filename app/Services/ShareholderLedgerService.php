@@ -28,7 +28,8 @@ class ShareholderLedgerService
      *     direction?: string|null,
      *     skip_cashbox?: bool,
      *     land_parcel_payment_id?: int|null,
-     *     revenue_id?: int|null
+     *     revenue_id?: int|null,
+     *     sale_id?: int|null
      * }  $data
      */
     public function create(Shareholder $shareholder, array $data, ?User $user = null): ShareholderLedgerEntry
@@ -120,6 +121,9 @@ class ShareholderLedgerService
             ];
             if (Schema::hasColumn('shareholder_ledger_entries', 'revenue_id') && isset($data['revenue_id'])) {
                 $entryPayload['revenue_id'] = (int) $data['revenue_id'];
+            }
+            if (Schema::hasColumn('shareholder_ledger_entries', 'sale_id') && isset($data['sale_id'])) {
+                $entryPayload['sale_id'] = (int) $data['sale_id'];
             }
 
             $entry = ShareholderLedgerEntry::withoutProjectScope()->create($entryPayload);
