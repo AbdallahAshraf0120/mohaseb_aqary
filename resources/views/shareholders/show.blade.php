@@ -55,7 +55,11 @@
                                     $aInv = (float) ($row->membership->actual_investment ?? $row->capital_deposits ?? 0);
                                 @endphp
                                 <tr>
-                                    <td class="fw-semibold">{{ $row->project->name }}</td>
+                                    <td class="fw-semibold">
+                                        <a href="{{ route('projects.landing', $row->project) }}" class="link-primary text-decoration-none">
+                                            {{ $row->project->name }}
+                                        </a>
+                                    </td>
                                     <td class="text-end font-monospace">{{ number_format($pInv, 2) }}</td>
                                     <td class="text-end">{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 2) }}%</td>
                                     <td class="text-end font-monospace">{{ number_format($aInv, 2) }}</td>
@@ -114,7 +118,7 @@
                                 <tr>
                                     <td class="fw-semibold">
                                         @if ($row->parcel)
-                                            <a href="{{ route('land-trading.show', $row->parcel) }}">{{ $row->parcel->name }}</a>
+                                            <a href="{{ route('land-trading.show', $row->parcel) }}" class="link-primary text-decoration-none">{{ $row->parcel->name }}</a>
                                         @else
                                             —
                                         @endif
@@ -263,9 +267,15 @@
                         <tr>
                             <td class="font-monospace small">{{ $payment->paid_at?->format('Y-m-d') }}</td>
                             <td class="small">
-                                {{ $payment->landParcel?->name ?? '—' }}
-                                @if ($payment->part)
-                                    <span class="text-body-secondary">/ {{ $payment->part->name }}</span>
+                                @if ($payment->landParcel)
+                                    <a href="{{ route('land-trading.show', $payment->landParcel) }}" class="link-primary text-decoration-none fw-semibold">
+                                        {{ $payment->landParcel->name }}
+                                    </a>
+                                    @if ($payment->part)
+                                        <span class="text-body-secondary">/ {{ $payment->part->name }}</span>
+                                    @endif
+                                @else
+                                    —
                                 @endif
                             </td>
                             <td>
@@ -277,20 +287,30 @@
                             <td class="text-end font-monospace">{{ number_format((float) $payment->amount, 2) }}</td>
                             <td class="small">
                                 @if ($payment->side === 'purchase')
-                                    <strong class="{{ (int) $payment->paid_by_shareholder_id === (int) $shareholder->id ? '' : 'text-body-secondary' }}">
-                                        {{ $payment->paidByShareholder?->name ?? '—' }}
-                                    </strong>
+                                    @if ($payment->paidByShareholder)
+                                        <a href="{{ route('shareholders.show', $payment->paidByShareholder) }}"
+                                           class="fw-semibold link-dark text-decoration-none {{ (int) $payment->paid_by_shareholder_id === (int) $shareholder->id ? '' : 'text-body-secondary' }}">
+                                            {{ $payment->paidByShareholder->name }}
+                                        </a>
+                                    @else
+                                        —
+                                    @endif
                                 @else
                                     <span class="text-body-secondary">المشتري</span>
                                 @endif
                             </td>
                             <td class="small">
                                 @if ($payment->side === 'sale')
-                                    <strong class="{{ (int) $payment->received_by_shareholder_id === (int) $shareholder->id ? '' : 'text-body-secondary' }}">
-                                        {{ $payment->receivedByShareholder?->name ?? '—' }}
-                                    </strong>
+                                    @if ($payment->receivedByShareholder)
+                                        <a href="{{ route('shareholders.show', $payment->receivedByShareholder) }}"
+                                           class="fw-semibold link-dark text-decoration-none {{ (int) $payment->received_by_shareholder_id === (int) $shareholder->id ? '' : 'text-body-secondary' }}">
+                                            {{ $payment->receivedByShareholder->name }}
+                                        </a>
+                                    @else
+                                        —
+                                    @endif
                                 @else
-                                    <span class="text-body-secondary">صندوق الأراضي</span>
+                                    <a href="{{ route('land-cashbox.index') }}" class="text-body-secondary text-decoration-none">صندوق الأراضي</a>
                                 @endif
                             </td>
                             <td class="small">{{ $payment->approval_status }}</td>
@@ -414,9 +434,15 @@
                             <td class="font-monospace small">{{ $entry->entry_date?->format('Y-m-d') }}</td>
                             <td class="small fw-semibold">
                                 @if ($entry->project)
-                                    <span class="badge text-bg-primary">مشروع</span> {{ $entry->project->name }}
+                                    <span class="badge text-bg-primary">مشروع</span>
+                                    <a href="{{ route('projects.landing', $entry->project) }}" class="link-primary text-decoration-none">
+                                        {{ $entry->project->name }}
+                                    </a>
                                 @elseif ($entry->landParcel)
-                                    <span class="badge text-bg-warning">أرض</span> {{ $entry->landParcel->name }}
+                                    <span class="badge text-bg-warning">أرض</span>
+                                    <a href="{{ route('land-trading.show', $entry->landParcel) }}" class="link-primary text-decoration-none">
+                                        {{ $entry->landParcel->name }}
+                                    </a>
                                 @else
                                     —
                                 @endif
@@ -433,7 +459,16 @@
                                 {{ $entry->direction === 'credit' ? '+' : '−' }}{{ number_format((float) $entry->amount, 2) }}
                             </td>
                             <td class="small">
-                                @if ($entry->treasuryTransaction)
+                                @if ($entry->treasuryTransaction && $entry->project)
+                                    @php
+                                        $st = $entry->treasuryTransaction->approval_status;
+                                        $badge = $st === 'approved' ? 'text-bg-success' : ($st === 'pending' ? 'text-bg-warning' : 'text-bg-secondary');
+                                        $label = $st === 'approved' ? 'معتمد' : ($st === 'pending' ? 'معلّق' : $st);
+                                    @endphp
+                                    <a href="{{ route('cashbox.index', $entry->project) }}" class="text-decoration-none">
+                                        <span class="badge {{ $badge }}">{{ $label }}</span>
+                                    </a>
+                                @elseif ($entry->treasuryTransaction)
                                     @php
                                         $st = $entry->treasuryTransaction->approval_status;
                                         $badge = $st === 'approved' ? 'text-bg-success' : ($st === 'pending' ? 'text-bg-warning' : 'text-bg-secondary');
@@ -514,7 +549,11 @@
                     <tbody>
                     @forelse ($projectBreakdown as $row)
                         <tr>
-                            <td>{{ $row->project->name }}</td>
+                            <td>
+                                <a href="{{ route('projects.landing', $row->project) }}" class="link-primary text-decoration-none fw-semibold">
+                                    {{ $row->project->name }}
+                                </a>
+                            </td>
                             <td class="text-end font-monospace">{{ number_format((float) $row->attributed_operating, 2) }}</td>
                             <td class="text-end font-monospace">{{ number_format((float) $row->attributed_cost, 2) }}</td>
                             <td class="text-end font-monospace {{ $row->approx_current >= 0 ? 'text-success' : 'text-danger' }}">
@@ -552,8 +591,20 @@
                         @php($p = $item->property)
                         <tr>
                             <td>{{ $loop->iteration }}</td>
-                            <td>{{ $p->name }}</td>
-                            <td>{{ $p->project?->name ?? $p->project_id }}</td>
+                            <td>
+                                <a href="{{ route('properties.show', [$p->project_id, $p]) }}" class="link-primary text-decoration-none fw-semibold">
+                                    {{ $p->name }}
+                                </a>
+                            </td>
+                            <td>
+                                @if ($p->project)
+                                    <a href="{{ route('projects.landing', $p->project) }}" class="link-primary text-decoration-none">
+                                        {{ $p->project->name }}
+                                    </a>
+                                @else
+                                    {{ $p->project_id }}
+                                @endif
+                            </td>
                             <td>{{ $p->area?->name ?? '—' }}</td>
                             <td><span class="badge text-bg-primary">{{ number_format((float) $item->percentage, 2) }}%</span></td>
                             <td class="text-end">

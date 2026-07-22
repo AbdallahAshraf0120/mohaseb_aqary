@@ -75,13 +75,21 @@
                     @forelse ($shareholders as $shareholder)
                         <tr>
                             <td>{{ $shareholders->firstItem() + $loop->index }}</td>
-                            <td class="fw-semibold">{{ $shareholder->name }}</td>
+                            <td class="fw-semibold">
+                                <a href="{{ route('shareholders.show', $shareholder) }}" class="link-primary text-decoration-none">
+                                    {{ $shareholder->name }}
+                                </a>
+                            </td>
                             <td>
                                 @forelse ($shareholder->projectMemberships as $m)
-                                    <span class="badge text-bg-light border me-1 mb-1">
-                                        {{ $m->project?->name ?? '—' }}
-                                        <span class="text-muted">({{ number_format((float) $m->share_percentage, 1) }}%)</span>
-                                    </span>
+                                    @if ($m->project)
+                                        <a href="{{ route('projects.landing', $m->project) }}" class="badge text-bg-light border me-1 mb-1 text-decoration-none">
+                                            {{ $m->project->name }}
+                                            <span class="text-muted">({{ number_format((float) $m->share_percentage, 1) }}%)</span>
+                                        </a>
+                                    @else
+                                        <span class="badge text-bg-light border me-1 mb-1">—</span>
+                                    @endif
                                 @empty
                                     <span class="text-muted">—</span>
                                 @endforelse
