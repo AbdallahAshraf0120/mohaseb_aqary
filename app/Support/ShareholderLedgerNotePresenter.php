@@ -5,7 +5,7 @@ namespace App\Support;
 use App\Models\ShareholderLedgerEntry;
 
 /**
- * يعرض ملاحظات دفتر الجاري بشكل بسيط للمستخدم.
+ * يعرض ملاحظات دفتر الجاري بجملة واحدة واضحة حسب صف الحركة.
  */
 class ShareholderLedgerNotePresenter
 {
@@ -22,55 +22,49 @@ class ShareholderLedgerNotePresenter
     {
         $raw = trim((string) ($notes ?? ''));
         if ($raw === '') {
-            return [
-                'title' => '—',
-                'badge' => null,
-                'badge_class' => 'text-bg-light border',
-                'lines' => [],
-                'fallback' => null,
-            ];
+            return self::empty();
         }
 
         $isDebit = $entry && $entry->direction === ShareholderLedgerEntry::DIRECTION_DEBIT;
-        $amount = $entry ? number_format((float) $entry->amount, 2).' ج.م' : null;
         $here = $entry?->project?->name ?? $entry?->landParcel?->name;
 
         $from = self::matchOne('/من\s*«([^»]+)»/u', $raw);
         $to = self::matchOne('/إلى\s*«([^»]+)»/u', $raw);
         $pct = null;
-
         if (preg_match('/توزيع\s+([\d.]+)%/u', $raw, $m)) {
             $pct = (rtrim(rtrim($m[1], '0'), '.') ?: $m[1]).'٪';
         }
 
-        $isTransferNote = ($from !== null || $to !== null)
+        $isTransfer = ($from !== null || $to !== null)
             && (str_contains($raw, 'توزيع') || str_contains($raw, 'تحويل') || str_contains($raw, 'استلام'));
 
-        if ($isTransferNote) {
+        if ($isTransfer) {
+            // صف المدين = الفلوس طلعت من الوجهة دي
             if ($isDebit) {
+                $other = $to ?: 'مشروع آخر';
+
                 return [
-                    'title' => 'فلوس خرجت لمشروع تاني',
-                    'badge' => 'خرجت',
+                    'title' => 'اتحوّل من هنا إلى «'.$other.'»',
+                    'badge' => 'تحويل',
                     'badge_class' => 'text-bg-danger',
                     'lines' => self::lines([
-                        'من' => $here ?? $from,
-                        'إلى' => $to,
-                        'المبلغ' => $amount,
-                        'النسبة' => $pct,
+                        'الوجهة' => $other,
+                        'نسبة التوزيع' => $pct,
                     ]),
                     'fallback' => null,
                 ];
             }
 
+            // صف الدائن = الفلوس وصلت للوجهة دي
+            $other = $from ?: 'مشروع آخر';
+
             return [
-                'title' => 'فلوس دخلت من مشروع تاني',
-                'badge' => 'دخلت',
+                'title' => 'وصل هنا من «'.$other.'»',
+                'badge' => 'تحويل',
                 'badge_class' => 'text-bg-success',
                 'lines' => self::lines([
-                    'من' => $from,
-                    'إلى' => $here ?? $to,
-                    'المبلغ' => $amount,
-                    'النسبة' => $pct,
+                    'المصدر' => $other,
+                    'نسبة التوزيع' => $pct,
                 ]),
                 'fallback' => null,
             ];
@@ -78,13 +72,10 @@ class ShareholderLedgerNotePresenter
 
         if (str_contains($raw, 'صرف من صندوق') || (str_contains($raw, 'دخل حساب المساهم') && str_contains($raw, 'صرف'))) {
             return [
-                'title' => 'صرف من الصندوق دخل على حسابك',
-                'badge' => 'دخلت',
+                'title' => 'صرف من صندوق المشروع ودخل على حسابك',
+                'badge' => 'صرف',
                 'badge_class' => 'text-bg-success',
-                'lines' => self::lines([
-                    'المشروع' => $here,
-                    'المبلغ' => $amount,
-                ]),
+                'lines' => [],
                 'fallback' => null,
             ];
         }
@@ -92,19 +83,16 @@ class ShareholderLedgerNotePresenter
         if (str_contains($raw, 'مقدم بيعة') || str_contains($raw, 'جزء من مقدم')) {
             $saleNo = self::matchOne('/بيعة\s*#(\d+)/u', $raw)
                 ?? ($entry?->sale_id ? (string) $entry->sale_id : null);
-
-            $title = str_contains($raw, 'جزء من مقدم')
-                ? 'جزء من المقدم على حسابك'
-                : 'مقدم بيعة على حسابك';
+            $isPartial = str_contains($raw, 'جزء من مقدم');
 
             return [
-                'title' => $title,
+                'title' => $isPartial
+                    ? 'جزء من مقدم بيعة دخل على حسابك'
+                    : 'مقدم بيعة دخل على حسابك',
                 'badge' => 'مقدم',
                 'badge_class' => 'text-bg-primary',
                 'lines' => self::lines([
-                    'المشروع' => $here,
                     'رقم البيعة' => $saleNo,
-                    'المبلغ' => $amount,
                 ]),
                 'fallback' => null,
             ];
@@ -115,14 +103,12 @@ class ShareholderLedgerNotePresenter
             $receipt = self::matchOne('/إيصال\s*#(\d+)/u', $raw);
 
             return [
-                'title' => 'تحصيل على حسابك',
+                'title' => 'تحصيل دخل على حسابك',
                 'badge' => 'تحصيل',
                 'badge_class' => 'text-bg-info',
                 'lines' => self::lines([
-                    'المشروع' => $here,
                     'النوع' => $cat,
-                    'الإيصال' => $receipt,
-                    'المبلغ' => $amount,
+                    'رقم الإيصال' => $receipt,
                 ]),
                 'fallback' => null,
             ];
@@ -134,16 +120,30 @@ class ShareholderLedgerNotePresenter
                 'badge' => 'صندوق',
                 'badge_class' => 'text-bg-warning',
                 'lines' => [],
-                'fallback' => self::shorten(str_replace(['تحويل صناديق — ', 'تحويل صناديق'], '', $raw), 100),
+                'fallback' => null,
             ];
         }
 
         return [
-            'title' => 'ملاحظة',
+            'title' => self::shorten($raw, 80),
             'badge' => null,
             'badge_class' => 'text-bg-light border',
             'lines' => [],
-            'fallback' => $raw,
+            'fallback' => null,
+        ];
+    }
+
+    /**
+     * @return array{title: string, badge: null, badge_class: string, lines: list<empty>, fallback: null}
+     */
+    private static function empty(): array
+    {
+        return [
+            'title' => '—',
+            'badge' => null,
+            'badge_class' => 'text-bg-light border',
+            'lines' => [],
+            'fallback' => null,
         ];
     }
 
