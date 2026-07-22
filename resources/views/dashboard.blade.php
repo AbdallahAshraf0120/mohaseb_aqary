@@ -47,7 +47,7 @@
             </a>
         </div>
         <div class="col-xl-3 col-md-6">
-            <a href="{{ route('revenues.index') }}" class="dashboard-kpi-link d-block h-100">
+            <a href="{{ route('cashbox.index') }}" class="dashboard-kpi-link d-block h-100">
                 <div class="dashboard-kpi-card text-bg-success shadow-sm h-100">
                     <div class="p-4">
                         <div class="d-flex justify-content-between align-items-start gap-2">
@@ -55,16 +55,19 @@
                                 <div class="opacity-75 small mb-1">إجمالي الوارد</div>
                                 <div class="fs-4 fw-bold font-monospace text-truncate" title="{{ $fmt($treasuryIn) }}">{{ $fmt($treasuryIn) }}</div>
                                 <div class="opacity-75 small mt-1">{{ $currencyLabel }}</div>
+                                @if (($transfersIn ?? 0) > 0.009)
+                                    <div class="opacity-75 small mt-1">+ تحويلات واردة {{ $fmt($transfersIn) }}</div>
+                                @endif
                             </div>
                             <i class="fa-solid fa-arrow-trend-up fa-2x opacity-50 flex-shrink-0"></i>
                         </div>
                     </div>
-                    <div class="px-4 py-2 small bg-black bg-opacity-10">التحصيل <i class="fa-solid fa-arrow-left ms-1"></i></div>
+                    <div class="px-4 py-2 small bg-black bg-opacity-10">الصندوق <i class="fa-solid fa-arrow-left ms-1"></i></div>
                 </div>
             </a>
         </div>
         <div class="col-xl-3 col-md-6">
-            <a href="{{ route('expenses.index') }}" class="dashboard-kpi-link d-block h-100">
+            <a href="{{ route('cashbox.index') }}" class="dashboard-kpi-link d-block h-100">
                 <div class="dashboard-kpi-card text-bg-danger shadow-sm h-100">
                     <div class="p-4">
                         <div class="d-flex justify-content-between align-items-start gap-2">
@@ -72,11 +75,14 @@
                                 <div class="opacity-75 small mb-1">إجمالي المصروف</div>
                                 <div class="fs-4 fw-bold font-monospace text-truncate" title="{{ $fmt($treasuryOut) }}">{{ $fmt($treasuryOut) }}</div>
                                 <div class="opacity-75 small mt-1">{{ $currencyLabel }}</div>
+                                @if (($transfersOut ?? 0) > 0.009)
+                                    <div class="opacity-75 small mt-1">+ تحويلات صادرة {{ $fmt($transfersOut) }}</div>
+                                @endif
                             </div>
                             <i class="fa-solid fa-arrow-trend-down fa-2x opacity-50 flex-shrink-0"></i>
                         </div>
                     </div>
-                    <div class="px-4 py-2 small bg-black bg-opacity-10">المصروفات <i class="fa-solid fa-arrow-left ms-1"></i></div>
+                    <div class="px-4 py-2 small bg-black bg-opacity-10">الصندوق <i class="fa-solid fa-arrow-left ms-1"></i></div>
                 </div>
             </a>
         </div>

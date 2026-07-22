@@ -6,6 +6,7 @@ use App\Models\Area;
 use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Debt;
+use App\Models\FundTransfer;
 use App\Models\Project;
 use App\Models\Property;
 use App\Models\Revenue;
@@ -22,9 +23,22 @@ class DashboardController extends Controller
         $setting = Setting::query()->first();
         $currency = $setting?->currency ?? 'EGP';
 
-        $treasuryIn = (float) TreasuryTransaction::query()->where('type', 'revenue')->where('approval_status', 'approved')->sum('amount');
-        $treasuryOut = (float) TreasuryTransaction::query()->where('type', 'expense')->where('approval_status', 'approved')->sum('amount');
-        $balance = $treasuryIn - $treasuryOut;
+        $approved = TreasuryTransaction::query()->where('approval_status', 'approved');
+
+        // رصيد الصندوق يشمل كل الحركات (بما فيها تحويلات الصناديق)
+        $treasuryInAll = (float) (clone $approved)->where('type', 'revenue')->sum('amount');
+        $treasuryOutAll = (float) (clone $approved)->where('type', 'expense')->sum('amount');
+        $balance = $treasuryInAll - $treasuryOutAll;
+
+        // كروت الوارد/المصروف: بدون تحويلات صناديق (دي مش تحصيل ولا مصروف تشغيلي)
+        $operating = (clone $approved)->where(function ($q): void {
+            $q->whereNull('reference_type')
+                ->orWhere('reference_type', '!=', FundTransfer::class);
+        });
+        $treasuryIn = (float) (clone $operating)->where('type', 'revenue')->sum('amount');
+        $treasuryOut = (float) (clone $operating)->where('type', 'expense')->sum('amount');
+        $transfersIn = round($treasuryInAll - $treasuryIn, 2);
+        $transfersOut = round($treasuryOutAll - $treasuryOut, 2);
 
         $stats = [
             'properties' => Property::query()->count(),
@@ -64,6 +78,8 @@ class DashboardController extends Controller
             'currency' => $currency,
             'treasuryIn' => $treasuryIn,
             'treasuryOut' => $treasuryOut,
+            'transfersIn' => $transfersIn,
+            'transfersOut' => $transfersOut,
             'balance' => $balance,
             'stats' => $stats,
             'recentSales' => $recentSales,
