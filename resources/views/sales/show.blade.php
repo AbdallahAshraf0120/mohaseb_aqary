@@ -124,8 +124,15 @@
                                 <td class="py-2 font-monospace">{{ number_format((float) $sale->down_payment, 2) }} ج.م</td>
                             </tr>
                             <tr>
-                                <th class="text-body-secondary align-top py-2">دخل حساب (المقدم)</th>
-                                <td class="py-2 fw-medium">{{ $sale->receivedByShareholder?->name ?? '—' }}</td>
+                                <th class="text-body-secondary align-top py-2">منه للصندوق</th>
+                                <td class="py-2 font-monospace">{{ number_format($sale->cashboxDownPaymentAmount(), 2) }} ج.م</td>
+                            </tr>
+                            <tr>
+                                <th class="text-body-secondary align-top py-2">منه لحساب مساهم</th>
+                                <td class="py-2">
+                                    <div class="font-monospace">{{ number_format($sale->shareholderDownPaymentAmount(), 2) }} ج.م</div>
+                                    <div class="fw-medium">{{ $sale->receivedByShareholder?->name ?? '—' }}</div>
+                                </td>
                             </tr>
                             @if ($sale->payment_type === 'installment')
                                 <tr>

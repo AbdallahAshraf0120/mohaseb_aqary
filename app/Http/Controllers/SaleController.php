@@ -134,6 +134,17 @@ class SaleController extends Controller
         if (Schema::hasColumn('sales', 'received_by_shareholder_id')) {
             $salePayload['received_by_shareholder_id'] = $validated['received_by_shareholder_id'] ?? null;
         }
+        if (Schema::hasColumn('sales', 'shareholder_down_payment_amount')) {
+            $sharePart = isset($validated['shareholder_down_payment_amount'])
+                ? round((float) $validated['shareholder_down_payment_amount'], 2)
+                : 0.0;
+            if (($salePayload['received_by_shareholder_id'] ?? null) === null || $sharePart < 0.01) {
+                $salePayload['received_by_shareholder_id'] = null;
+                $salePayload['shareholder_down_payment_amount'] = null;
+            } else {
+                $salePayload['shareholder_down_payment_amount'] = $sharePart;
+            }
+        }
 
         $sale = Sale::query()->create($salePayload);
 
@@ -235,6 +246,17 @@ class SaleController extends Controller
         ];
         if (Schema::hasColumn('sales', 'received_by_shareholder_id')) {
             $update['received_by_shareholder_id'] = $validated['received_by_shareholder_id'] ?? null;
+        }
+        if (Schema::hasColumn('sales', 'shareholder_down_payment_amount')) {
+            $sharePart = isset($validated['shareholder_down_payment_amount'])
+                ? round((float) $validated['shareholder_down_payment_amount'], 2)
+                : 0.0;
+            if (($update['received_by_shareholder_id'] ?? null) === null || $sharePart < 0.01) {
+                $update['received_by_shareholder_id'] = null;
+                $update['shareholder_down_payment_amount'] = null;
+            } else {
+                $update['shareholder_down_payment_amount'] = $sharePart;
+            }
         }
         if ($wasApproved) {
             $update['approval_status'] = 'pending';

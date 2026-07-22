@@ -118,11 +118,23 @@
                value="{{ old('down_payment', $sale->down_payment ?? '') }}">
         <small class="text-muted">المقدم = سعر الوحدة × نسبة المقدم</small>
     </div>
-    <div class="col-md-6">
-        <label class="form-label">دخل حساب مين <span class="text-muted fw-normal">(المقدم)</span></label>
-        <select name="received_by_shareholder_id" id="received_by_shareholder_id" class="form-select"
-                {{ $projectShareholders->isNotEmpty() ? 'required' : '' }}>
-            <option value="">— اختر المساهم —</option>
+    <div class="col-md-3">
+        <label class="form-label">منه للصندوق</label>
+        <input type="number" step="0.01" min="0" id="cashbox_down_payment_amount" class="form-control font-monospace" readonly
+               value="{{ old('cashbox_down_payment_preview', '') }}">
+        <small class="text-muted">يُحسب تلقائيًا = المقدم − حساب المساهم</small>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">منه لحساب مساهم</label>
+        <input type="number" step="0.01" min="0" name="shareholder_down_payment_amount" id="shareholder_down_payment_amount"
+               class="form-control font-monospace @error('shareholder_down_payment_amount') is-invalid @enderror"
+               value="{{ old('shareholder_down_payment_amount', $sale->shareholder_down_payment_amount ?? '') }}">
+        @error('shareholder_down_payment_amount') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">دخل حساب مين</label>
+        <select name="received_by_shareholder_id" id="received_by_shareholder_id" class="form-select @error('received_by_shareholder_id') is-invalid @enderror">
+            <option value="">— الصندوق فقط (بدون مساهم) —</option>
             @foreach ($projectShareholders as $row)
                 <option value="{{ $row->shareholder_id }}"
                     @selected((string) old('received_by_shareholder_id', $sale->received_by_shareholder_id ?? '') === (string) $row->shareholder_id)>
@@ -130,7 +142,8 @@
                 </option>
             @endforeach
         </select>
-        <small class="text-muted">يُرحَّل المقدم المعتمد لجاري المساهم المختار (بدون تكرار في الصندوق).</small>
+        @error('received_by_shareholder_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        <small class="text-muted">يمكن تقسيم المقدم: جزء للصندوق وجزء لحساب المساهم.</small>
     </div>
 
     <div class="col-md-4 installment-field">
@@ -247,7 +260,30 @@
         const salePriceInput = document.getElementById('sale_price');
         const downPaymentInput = document.getElementById('down_payment');
         const downPaymentPercentageInput = document.getElementById('down_payment_percentage');
+        const shareholderDownInput = document.getElementById('shareholder_down_payment_amount');
+        const cashboxDownInput = document.getElementById('cashbox_down_payment_amount');
+        const shareholderSelect = document.getElementById('received_by_shareholder_id');
         const installmentFields = document.querySelectorAll('.installment-field');
+
+        function syncDownPaymentSplitPreview() {
+            if (!downPaymentInput || !cashboxDownInput) {
+                return;
+            }
+            const down = Math.max(0, parseFloat(downPaymentInput.value || '0') || 0);
+            let share = Math.max(0, parseFloat(shareholderDownInput?.value || '0') || 0);
+            if (share > down) {
+                share = down;
+                if (shareholderDownInput) {
+                    shareholderDownInput.value = String(Math.round(share * 100) / 100);
+                }
+            }
+            const cash = Math.round((down - share) * 100) / 100;
+            cashboxDownInput.value = String(cash);
+
+            if (shareholderSelect) {
+                shareholderSelect.required = share >= 0.01;
+            }
+        }
 
         const selectedFloor = {{ $selectedFloor }};
         const selectedIsMezzanine = @json($selectedIsMezzanine);
@@ -427,11 +463,13 @@
                 downPaymentInput.value = String(price);
                 downPaymentInput.readOnly = true;
                 downPaymentPercentageInput.readOnly = true;
+                syncDownPaymentSplitPreview();
                 return;
             }
 
             downPaymentInput.readOnly = false;
             downPaymentPercentageInput.readOnly = false;
+            syncDownPaymentSplitPreview();
         }
 
         function clampPercent(value) {
@@ -447,6 +485,7 @@
             const percent = clampPercent(parseFloat(downPaymentPercentageInput.value || '0'));
             downPaymentPercentageInput.value = String(percent);
             downPaymentInput.value = String(Math.round((price * (percent / 100)) * 100) / 100);
+            syncDownPaymentSplitPreview();
         }
 
         function recalcPercentageFromDownPayment() {
@@ -458,10 +497,12 @@
             const down = Math.max(0, parseFloat(downPaymentInput.value || '0'));
             if (price <= 0) {
                 downPaymentPercentageInput.value = '0';
+                syncDownPaymentSplitPreview();
                 return;
             }
 
             downPaymentPercentageInput.value = String(Math.round((down / price) * 10000) / 100);
+            syncDownPaymentSplitPreview();
         }
 
         document.getElementById('add-secondary-payment')?.addEventListener('click', () => {
@@ -490,7 +531,21 @@
         downPaymentInput?.addEventListener('input', () => {
             if (paymentType?.value === 'installment') {
                 recalcPercentageFromDownPayment();
+            } else {
+                syncDownPaymentSplitPreview();
             }
+        });
+        shareholderDownInput?.addEventListener('input', syncDownPaymentSplitPreview);
+        shareholderSelect?.addEventListener('change', () => {
+            if (shareholderSelect.value && shareholderDownInput && !(parseFloat(shareholderDownInput.value || '0') > 0)) {
+                // لو اختار مساهم والمبلغ فاضي، اقترح كل المقدم لحسابه (يمكن تعديله)
+                const down = Math.max(0, parseFloat(downPaymentInput?.value || '0') || 0);
+                shareholderDownInput.value = String(Math.round(down * 100) / 100);
+            }
+            if (!shareholderSelect.value && shareholderDownInput) {
+                shareholderDownInput.value = '';
+            }
+            syncDownPaymentSplitPreview();
         });
 
         refreshPropertyMeta();
@@ -498,5 +553,6 @@
         if (paymentType?.value === 'installment') {
             recalcPercentageFromDownPayment();
         }
+        syncDownPaymentSplitPreview();
     })();
 </script>

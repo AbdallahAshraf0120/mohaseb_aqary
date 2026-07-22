@@ -22,6 +22,7 @@ class Sale extends Model
         'payment_type',
         'down_payment',
         'received_by_shareholder_id',
+        'shareholder_down_payment_amount',
         'installment_months',
         'installment_start_date',
         'installment_plan',
@@ -61,6 +62,36 @@ class Sale extends Model
     public function receivedByShareholder(): BelongsTo
     {
         return $this->belongsTo(Shareholder::class, 'received_by_shareholder_id');
+    }
+
+    /**
+     * جزء المقدم المنسوب لحساب المساهم (الجاري).
+     */
+    public function shareholderDownPaymentAmount(): float
+    {
+        $down = round((float) ($this->down_payment ?? 0), 2);
+        if ($down < 0.01 || $this->received_by_shareholder_id === null) {
+            return 0.0;
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn($this->getTable(), 'shareholder_down_payment_amount')
+            && $this->shareholder_down_payment_amount !== null
+            && $this->shareholder_down_payment_amount !== '') {
+            return round(min($down, max(0, (float) $this->shareholder_down_payment_amount)), 2);
+        }
+
+        // سلوك قديم: كل المقدم لحساب المساهم عند اختيار مساهم
+        return $down;
+    }
+
+    /**
+     * جزء المقدم الذي يدخل صندوق المشروع.
+     */
+    public function cashboxDownPaymentAmount(): float
+    {
+        $down = round((float) ($this->down_payment ?? 0), 2);
+
+        return round(max(0, $down - $this->shareholderDownPaymentAmount()), 2);
     }
 
     public function contract()

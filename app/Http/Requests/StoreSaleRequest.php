@@ -47,14 +47,10 @@ class StoreSaleRequest extends FormRequest
         ];
 
         if (Schema::hasColumn('sales', 'received_by_shareholder_id')) {
-            $projectId = app(CurrentProject::class)->id();
-            $hasMembers = $projectId !== null
-                && ProjectShareholder::query()->where('project_id', $projectId)->exists();
-            $downPayment = (float) $this->input('down_payment', 0);
-
-            $rules['received_by_shareholder_id'] = ($hasMembers && $downPayment >= 0.01)
-                ? ['required', 'integer', 'exists:shareholders,id']
-                : ['nullable', 'integer', 'exists:shareholders,id'];
+            $rules['received_by_shareholder_id'] = ['nullable', 'integer', 'exists:shareholders,id'];
+        }
+        if (Schema::hasColumn('sales', 'shareholder_down_payment_amount')) {
+            $rules['shareholder_down_payment_amount'] = ['nullable', 'numeric', 'min:0'];
         }
 
         return $rules;
@@ -63,8 +59,36 @@ class StoreSaleRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            $downPayment = round((float) $this->input('down_payment', 0), 2);
+            $sharePart = 0.0;
+            if (Schema::hasColumn('sales', 'shareholder_down_payment_amount')) {
+                $rawShare = $this->input('shareholder_down_payment_amount');
+                $sharePart = ($rawShare === null || $rawShare === '')
+                    ? 0.0
+                    : round((float) $rawShare, 2);
+                if ($sharePart > $downPayment + 0.009) {
+                    $validator->errors()->add(
+                        'shareholder_down_payment_amount',
+                        'مبلغ حساب المساهم لا يمكن أن يتجاوز المقدم ('.number_format($downPayment, 2).' ج.م).'
+                    );
+                }
+            } elseif (Schema::hasColumn('sales', 'received_by_shareholder_id')
+                && $this->input('received_by_shareholder_id')) {
+                $sharePart = $downPayment;
+            }
+
+            $shareholderId = $this->input('received_by_shareholder_id');
+            if ($sharePart >= 0.01 && ($shareholderId === null || $shareholderId === '')) {
+                $validator->errors()->add('received_by_shareholder_id', 'اختر المساهم لجزء المقدم الداخل لحسابه.');
+            }
+            if (($shareholderId !== null && $shareholderId !== '') && $sharePart < 0.01 && Schema::hasColumn('sales', 'shareholder_down_payment_amount')) {
+                $validator->errors()->add(
+                    'shareholder_down_payment_amount',
+                    'أدخل مبلغ حساب المساهم، أو اترك اختيار المساهم فارغًا ليذهب المقدم كله للصندوق.'
+                );
+            }
+
             if (Schema::hasColumn('sales', 'received_by_shareholder_id')) {
-                $shareholderId = $this->input('received_by_shareholder_id');
                 $projectId = app(CurrentProject::class)->id();
                 if ($shareholderId !== null && $shareholderId !== '' && $projectId !== null) {
                     $member = ProjectShareholder::query()
@@ -187,6 +211,9 @@ class StoreSaleRequest extends FormRequest
     {
         if ($this->input('received_by_shareholder_id') === '') {
             $this->merge(['received_by_shareholder_id' => null]);
+        }
+        if ($this->input('shareholder_down_payment_amount') === '') {
+            $this->merge(['shareholder_down_payment_amount' => null]);
         }
 
         if ($this->has('apartment_model') && is_string($this->input('apartment_model'))) {

@@ -88,7 +88,15 @@
                                         @endif
                                     </td>
                                     <td>{{ number_format((float) $sale->sale_price, 2) }} ج.م</td>
-                                    <td>{{ number_format((float) $sale->down_payment, 2) }} ج.م</td>
+                                    <td>
+                                        <div class="font-monospace">{{ number_format((float) $sale->down_payment, 2) }} ج.م</div>
+                                        @if ($sale->shareholderDownPaymentAmount() >= 0.01 || $sale->cashboxDownPaymentAmount() + 0.009 < (float) $sale->down_payment)
+                                            <div class="small text-body-secondary">
+                                                صندوق {{ number_format($sale->cashboxDownPaymentAmount(), 2) }}
+                                                · مساهم {{ number_format($sale->shareholderDownPaymentAmount(), 2) }}
+                                            </div>
+                                        @endif
+                                    </td>
                                     <td>{{ $sale->receivedByShareholder?->name ?? '—' }}</td>
                                     <td>
                                         @if (($sale->approval_status ?? 'approved') === 'approved')

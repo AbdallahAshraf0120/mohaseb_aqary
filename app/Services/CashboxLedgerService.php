@@ -89,16 +89,27 @@ class CashboxLedgerService
      */
     public function syncSaleDownPayment(Sale $sale): void
     {
-        $amount = (float) ($sale->down_payment ?? 0);
+        $amount = $sale->cashboxDownPaymentAmount();
         if ($amount <= 0) {
             $this->removeSaleDownPayment($sale->id);
 
             return;
         }
 
-        $label = $sale->payment_type === 'cash'
-            ? 'كاش / بيعة #'.$sale->id
-            : 'مقدم / دفعة بيعة #'.$sale->id;
+        $down = round((float) ($sale->down_payment ?? 0), 2);
+        $sharePart = $sale->shareholderDownPaymentAmount();
+        if ($sale->payment_type === 'cash') {
+            $label = 'كاش / بيعة #'.$sale->id;
+        } elseif ($sharePart >= 0.01 && $sharePart + 0.009 < $down) {
+            $label = sprintf(
+                'مقدم للصندوق %.2f من أصل %.2f / بيعة #%d',
+                $amount,
+                $down,
+                (int) $sale->id
+            );
+        } else {
+            $label = 'مقدم / دفعة بيعة #'.$sale->id;
+        }
 
         TreasuryTransaction::query()->updateOrCreate(
             [

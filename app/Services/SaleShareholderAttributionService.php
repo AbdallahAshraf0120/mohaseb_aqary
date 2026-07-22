@@ -47,7 +47,7 @@ class SaleShareholderAttributionService
             ? (int) $sale->received_by_shareholder_id
             : null;
 
-        $amount = round((float) ($sale->down_payment ?? 0), 2);
+        $amount = $sale->shareholderDownPaymentAmount();
 
         if ($shareholderId === null
             || $amount < 0.01
@@ -67,7 +67,16 @@ class SaleShareholderAttributionService
             return;
         }
 
-        $note = sprintf('مقدم بيعة دخل حساب المساهم — بيعة #%d', (int) $sale->id);
+        $down = round((float) ($sale->down_payment ?? 0), 2);
+        $cashboxPart = $sale->cashboxDownPaymentAmount();
+        $note = $cashboxPart >= 0.01
+            ? sprintf(
+                'جزء من مقدم البيعة لحساب المساهم (%.2f من أصل %.2f) — بيعة #%d',
+                $amount,
+                $down,
+                (int) $sale->id
+            )
+            : sprintf('مقدم بيعة دخل حساب المساهم — بيعة #%d', (int) $sale->id);
 
         $payload = [
             'project_id' => $projectId,
