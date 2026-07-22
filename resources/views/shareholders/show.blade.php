@@ -484,23 +484,30 @@
                                     <span class="text-muted">—</span>
                                 @endif
                             </td>
-                            <td class="small" style="max-width: 18rem;">
+                            <td style="min-width: 14rem; max-width: 20rem;">
                                 @php
                                     $noteView = \App\Support\ShareholderLedgerNotePresenter::present($entry->notes, $entry);
                                 @endphp
                                 @if ($noteView['title'] === '—')
-                                    <span class="text-muted">—</span>
+                                    <span class="text-muted small">—</span>
                                 @else
-                                    <div class="d-flex flex-wrap align-items-center gap-1 mb-1">
-                                        @if ($noteView['badge'])
-                                            <span class="badge text-bg-light border">{{ $noteView['badge'] }}</span>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        @if (!empty($noteView['badge']))
+                                            <span class="badge {{ $noteView['badge_class'] ?? 'text-bg-light border' }}">{{ $noteView['badge'] }}</span>
                                         @endif
                                         <span class="fw-semibold">{{ $noteView['title'] }}</span>
                                     </div>
-                                    @if ($noteView['detail'])
-                                        <div class="text-body-secondary" style="font-size: .8rem; line-height: 1.35;">
-                                            {{ $noteView['detail'] }}
+                                    @if (!empty($noteView['lines']))
+                                        <div class="small lh-sm">
+                                            @foreach ($noteView['lines'] as $line)
+                                                <div class="d-flex gap-2">
+                                                    <span class="text-body-secondary flex-shrink-0" style="min-width: 3.2rem;">{{ $line['label'] }}:</span>
+                                                    <span class="fw-semibold">{{ $line['value'] }}</span>
+                                                </div>
+                                            @endforeach
                                         </div>
+                                    @elseif (!empty($noteView['fallback']))
+                                        <div class="small text-body-secondary">{{ $noteView['fallback'] }}</div>
                                     @endif
                                 @endif
                             </td>

@@ -5,12 +5,18 @@ namespace App\Support;
 use App\Models\ShareholderLedgerEntry;
 
 /**
- * يعرض ملاحظات دفتر الجاري بلغة أوضح للعميل.
+ * يعرض ملاحظات دفتر الجاري بشكل بسيط للمستخدم.
  */
 class ShareholderLedgerNotePresenter
 {
     /**
-     * @return array{title: string, detail: string|null, badge: string|null}
+     * @return array{
+     *     title: string,
+     *     badge: string|null,
+     *     badge_class: string,
+     *     lines: list<array{label: string, value: string}>,
+     *     fallback: string|null
+     * }
      */
     public static function present(?string $notes, ?ShareholderLedgerEntry $entry = null): array
     {
@@ -18,120 +24,139 @@ class ShareholderLedgerNotePresenter
         if ($raw === '') {
             return [
                 'title' => '—',
-                'detail' => null,
                 'badge' => null,
+                'badge_class' => 'text-bg-light border',
+                'lines' => [],
+                'fallback' => null,
             ];
         }
 
         $isDebit = $entry && $entry->direction === ShareholderLedgerEntry::DIRECTION_DEBIT;
-        $amountFormatted = null;
+        $amount = $entry ? number_format((float) $entry->amount, 2).' ج.م' : null;
+        $here = $entry?->project?->name ?? $entry?->landParcel?->name;
+
+        $from = self::matchOne('/من\s*«([^»]+)»/u', $raw);
+        $to = self::matchOne('/إلى\s*«([^»]+)»/u', $raw);
         $pct = null;
-        $from = null;
-        $to = null;
-        $movementId = null;
 
-        if (preg_match('/توزيع\s+([\d.]+)%\s*\(([\d.,]+)\s*ج\.?\s*م\.?\)/u', $raw, $m)) {
-            $pct = rtrim(rtrim($m[1], '0'), '.') ?: $m[1];
-            $amountFormatted = number_format((float) str_replace(',', '', $m[2]), 2);
-        }
-        if (preg_match('/من حركة\s*#(\d+)/u', $raw, $m)) {
-            $movementId = $m[1];
-        }
-        if (preg_match('/من\s*«([^»]+)»/u', $raw, $m)) {
-            $from = trim($m[1]);
-        }
-        if (preg_match('/إلى\s*«([^»]+)»/u', $raw, $m)) {
-            $to = trim($m[1]);
+        if (preg_match('/توزيع\s+([\d.]+)%/u', $raw, $m)) {
+            $pct = (rtrim(rtrim($m[1], '0'), '.') ?: $m[1]).'٪';
         }
 
-        if ($pct !== null && ($from !== null || $to !== null)) {
+        $isTransferNote = ($from !== null || $to !== null)
+            && (str_contains($raw, 'توزيع') || str_contains($raw, 'تحويل') || str_contains($raw, 'استلام'));
+
+        if ($isTransferNote) {
             if ($isDebit) {
-                $title = $to
-                    ? sprintf('تحويل إلى «%s»', $to)
-                    : 'تحويل إلى مشروع آخر';
-            } else {
-                $title = $from
-                    ? sprintf('استلام من «%s»', $from)
-                    : 'استلام من مشروع آخر';
-            }
-
-            $parts = [];
-            if ($amountFormatted !== null) {
-                $parts[] = $amountFormatted.' ج.م';
-            }
-            if ($pct !== null) {
-                $parts[] = $pct.'٪ من الحركة';
-            }
-            if ($from && $to) {
-                $parts[] = 'من '.$from.' ← '.$to;
+                return [
+                    'title' => 'فلوس خرجت لمشروع تاني',
+                    'badge' => 'خرجت',
+                    'badge_class' => 'text-bg-danger',
+                    'lines' => self::lines([
+                        'من' => $here ?? $from,
+                        'إلى' => $to,
+                        'المبلغ' => $amount,
+                        'النسبة' => $pct,
+                    ]),
+                    'fallback' => null,
+                ];
             }
 
             return [
-                'title' => $title,
-                'detail' => $parts !== [] ? implode('  ·  ', $parts) : null,
-                'badge' => 'توزيع',
+                'title' => 'فلوس دخلت من مشروع تاني',
+                'badge' => 'دخلت',
+                'badge_class' => 'text-bg-success',
+                'lines' => self::lines([
+                    'من' => $from,
+                    'إلى' => $here ?? $to,
+                    'المبلغ' => $amount,
+                    'النسبة' => $pct,
+                ]),
+                'fallback' => null,
             ];
         }
 
-        if (preg_match('/مقدم بيعة/u', $raw)) {
-            $saleNo = null;
-            if (preg_match('/بيعة\s*#(\d+)/u', $raw, $m)) {
-                $saleNo = $m[1];
-            } elseif ($entry?->sale_id) {
-                $saleNo = (string) $entry->sale_id;
-            }
+        if (str_contains($raw, 'مقدم بيعة')) {
+            $saleNo = self::matchOne('/بيعة\s*#(\d+)/u', $raw)
+                ?? ($entry?->sale_id ? (string) $entry->sale_id : null);
 
             return [
-                'title' => 'مقدم بيعة دخل حساب المساهم',
-                'detail' => $saleNo ? ('بيعة رقم '.$saleNo) : null,
+                'title' => 'مقدم بيعة على حسابك',
                 'badge' => 'مقدم',
+                'badge_class' => 'text-bg-primary',
+                'lines' => self::lines([
+                    'المشروع' => $here,
+                    'رقم البيعة' => $saleNo,
+                    'المبلغ' => $amount,
+                ]),
+                'fallback' => null,
             ];
         }
 
-        if (preg_match('/تحصيل/u', $raw) && preg_match('/دخل حساب المساهم/u', $raw)) {
-            $cat = null;
-            $receipt = null;
-            if (preg_match('/تحصيل(?:\s+مشروع\s*#\d+)?\s*—\s*(.+?)\s*—\s*دخل/u', $raw, $m)) {
-                $cat = trim($m[1]);
-            }
-            if (preg_match('/إيصال\s*#(\d+)/u', $raw, $m)) {
-                $receipt = $m[1];
-            }
-
-            $detailParts = array_filter([$cat, $receipt ? 'إيصال '.$receipt : null]);
+        if (str_contains($raw, 'تحصيل') && str_contains($raw, 'دخل حساب')) {
+            $cat = self::matchOne('/تحصيل(?:\s+مشروع\s*#\d+)?\s*—\s*(.+?)\s*—\s*دخل/u', $raw);
+            $receipt = self::matchOne('/إيصال\s*#(\d+)/u', $raw);
 
             return [
-                'title' => 'تحصيل دخل حساب المساهم',
-                'detail' => $detailParts !== [] ? implode('  ·  ', $detailParts) : null,
+                'title' => 'تحصيل على حسابك',
                 'badge' => 'تحصيل',
+                'badge_class' => 'text-bg-info',
+                'lines' => self::lines([
+                    'المشروع' => $here,
+                    'النوع' => $cat,
+                    'الإيصال' => $receipt,
+                    'المبلغ' => $amount,
+                ]),
+                'fallback' => null,
             ];
         }
 
         if (str_contains($raw, 'تحويل صناديق')) {
             return [
                 'title' => 'تحويل بين الصناديق',
-                'detail' => self::shorten(str_replace(['تحويل صناديق — ', 'تحويل صناديق'], '', $raw), 90),
-                'badge' => 'تحويل',
-            ];
-        }
-
-        // ملاحظة المستخدم قبل الجزء الآلي
-        if (preg_match('/^(.+?)\s*—\s*(توزيع|استلام|تحويل|مقدم|تحصيل)/u', $raw, $m)
-            && mb_strlen(trim($m[1])) >= 2
-            && mb_strlen(trim($m[1])) <= 40
-        ) {
-            return [
-                'title' => trim($m[1]),
-                'detail' => self::shorten(trim(substr($raw, strlen($m[1]) + 3)), 100),
-                'badge' => null,
+                'badge' => 'صندوق',
+                'badge_class' => 'text-bg-warning',
+                'lines' => [],
+                'fallback' => self::shorten(str_replace(['تحويل صناديق — ', 'تحويل صناديق'], '', $raw), 100),
             ];
         }
 
         return [
-            'title' => self::shorten($raw, 72),
-            'detail' => mb_strlen($raw) > 72 ? $raw : null,
+            'title' => 'ملاحظة',
             'badge' => null,
+            'badge_class' => 'text-bg-light border',
+            'lines' => [],
+            'fallback' => $raw,
         ];
+    }
+
+    /**
+     * @param  array<string, string|null>  $map
+     * @return list<array{label: string, value: string}>
+     */
+    private static function lines(array $map): array
+    {
+        $out = [];
+        foreach ($map as $label => $value) {
+            $value = trim((string) ($value ?? ''));
+            if ($value === '') {
+                continue;
+            }
+            $out[] = ['label' => $label, 'value' => $value];
+        }
+
+        return $out;
+    }
+
+    private static function matchOne(string $pattern, string $raw): ?string
+    {
+        if (! preg_match($pattern, $raw, $m)) {
+            return null;
+        }
+
+        $v = trim((string) ($m[1] ?? ''));
+
+        return $v !== '' ? $v : null;
     }
 
     private static function shorten(string $text, int $max): string
