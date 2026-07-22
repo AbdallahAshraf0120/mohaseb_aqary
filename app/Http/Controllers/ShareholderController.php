@@ -214,6 +214,12 @@ class ShareholderController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        // أهداف التوزيع: مشاريع أخرى مرتبط بها المساهم (غير مشروع الحركة المصدر)
+        $allocateTargetProjects = $memberships
+            ->map(fn ($m) => $m->project)
+            ->filter()
+            ->values();
+
         $landPayments = collect();
         if (Schema::hasTable('land_parcel_payments')) {
             $sid = (int) $shareholder->id;
