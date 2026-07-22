@@ -862,8 +862,11 @@
 
                 allocateModal.addEventListener('show.bs.modal', function (event) {
                     const button = event.relatedTarget;
-                    if (!button || !form) return;
+                    if (!button || !button.hasAttribute('data-allocate-action') || !form) return;
+                    populateFromButton(button);
+                });
 
+                function populateFromButton(button) {
                     form.action = button.getAttribute('data-allocate-action') || '#';
                     sourceAmount = parseFloat(button.getAttribute('data-allocate-amount') || '0') || 0;
                     remaining = parseFloat(button.getAttribute('data-allocate-remaining') || '0') || 0;
@@ -888,7 +891,7 @@
                     if (modePct) modePct.checked = true;
                     filterTargets();
                     syncMode();
-                });
+                }
 
                 if (modePct) modePct.addEventListener('change', syncMode);
                 if (modeAmt) modeAmt.addEventListener('change', syncMode);
@@ -907,13 +910,34 @@
                     });
                 });
 
-                @if ($errors->hasAny(['target_project_id', 'percentage', 'amount', 'mode', 'notes']))
+                @if (session('open_allocate_ledger_id') || $errors->hasAny(['target_project_id', 'percentage', 'amount', 'mode', 'notes']))
                     (function () {
-                        const btn = document.querySelector('[data-allocate-action]');
-                        if (btn) {
-                            // Prefer last submitted entry if present in old input context — reopen first eligible
-                            bootstrap.Modal.getOrCreateInstance(allocateModal).show();
-                        }
+                        const id = @json(session('open_allocate_ledger_id'));
+                        const btn = id
+                            ? document.querySelector('[data-allocate-id="' + id + '"]')
+                            : document.querySelector('[data-allocate-action]');
+                        if (!btn) return;
+                        populateFromButton(btn);
+                        @if (old('percentage') !== null)
+                            if (pctInput) pctInput.value = @json(old('percentage'));
+                        @endif
+                        @if (old('amount') !== null)
+                            if (amountInput) amountInput.value = @json(old('amount'));
+                        @endif
+                        @if (old('mode') === 'amount')
+                            if (modeAmt) modeAmt.checked = true;
+                        @else
+                            if (modePct) modePct.checked = true;
+                        @endif
+                        @if (old('target_project_id'))
+                            if (targetSelect) targetSelect.value = @json((string) old('target_project_id'));
+                        @endif
+                        @if (old('notes'))
+                            const notesEl = document.getElementById('allocate-notes');
+                            if (notesEl) notesEl.value = @json(old('notes'));
+                        @endif
+                        syncMode();
+                        bootstrap.Modal.getOrCreateInstance(allocateModal).show();
                     })();
                 @endif
             })();

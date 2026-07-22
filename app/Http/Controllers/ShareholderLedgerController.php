@@ -84,7 +84,7 @@ class ShareholderLedgerController extends Controller
     {
         abort_unless((int) $ledger->shareholder_id === (int) $shareholder->id, 404);
 
-        $data = $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'target_project_id' => ['required', 'integer', 'exists:projects,id'],
             'mode' => ['required', 'in:percentage,amount'],
             'percentage' => ['nullable', 'numeric', 'min:0.01', 'max:100', 'required_if:mode,percentage'],
@@ -95,6 +95,15 @@ class ShareholderLedgerController extends Controller
             'percentage.required_if' => 'أدخل النسبة المئوية.',
             'amount.required_if' => 'أدخل المبلغ.',
         ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('open_allocate_ledger_id', (int) $ledger->id);
+        }
+
+        $data = $validator->validated();
 
         $shareAmount = $data['mode'] === 'percentage'
             ? round(((float) $ledger->amount) * ((float) $data['percentage'] / 100), 2)
@@ -110,7 +119,10 @@ class ShareholderLedgerController extends Controller
                 $data['notes'] ?? null
             );
         } catch (InvalidArgumentException $e) {
-            return back()->withInput()->with('error', $e->getMessage());
+            return back()
+                ->withInput()
+                ->with('error', $e->getMessage())
+                ->with('open_allocate_ledger_id', (int) $ledger->id);
         }
 
         return redirect()
