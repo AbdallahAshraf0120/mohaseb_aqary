@@ -169,7 +169,8 @@ class ShareholderLedgerService
     }
 
     /**
-     * ينقل جزءًا من حركة دائنة على مشروع إلى مشروع آخر (مدين من المصدر + دائن للهدف) بدون تأثير على الصندوق.
+     * ينقل جزءًا من حركة دائنة على مشروع إلى مشروع آخر:
+     * مدين من المصدر + دائن للهدف في الجاري، مع تحويل نقدي بين صناديق المشروعين.
      *
      * @return array{debit: ShareholderLedgerEntry, credit: ShareholderLedgerEntry, amount: float}
      */
@@ -216,6 +217,9 @@ class ShareholderLedgerService
             );
         }
 
+        // التوزيع ينقل نقدًا من صندوق المشروع المصدر إلى صندوق الهدف
+        app(CashboxBalanceService::class)->assertCanSpend($sourceProjectId, $shareAmount);
+
         $sourceProject = Project::query()->find($sourceProjectId);
         $targetProject = Project::query()->find($targetProjectId);
         $sourceName = $sourceProject?->name ?? ('مشروع #'.$sourceProjectId);
@@ -232,6 +236,13 @@ class ShareholderLedgerService
         );
         $finalNote = $baseNote !== '' ? $baseNote.' — '.$autoNote : $autoNote;
         $entryDate = $source->entry_date?->toDateString() ?? now()->toDateString();
+        $isAdmin = $user instanceof User && $user->isAdmin();
+        $cashboxDesc = sprintf(
+            'توزيع جاري مساهم — %s — من «%s» إلى «%s»',
+            $shareholder->name,
+            $sourceName,
+            $targetName
+        );
 
         return DB::transaction(function () use (
             $shareholder,
@@ -241,7 +252,9 @@ class ShareholderLedgerService
             $shareAmount,
             $finalNote,
             $entryDate,
-            $user
+            $user,
+            $isAdmin,
+            $cashboxDesc
         ): array {
             $debit = $this->create($shareholder, [
                 'project_id' => $sourceProjectId,
@@ -265,9 +278,35 @@ class ShareholderLedgerService
                 'source_ledger_entry_id' => (int) $source->id,
             ], $user);
 
+            $fromTx = TreasuryTransaction::withoutProjectScope()->create([
+                'project_id' => $sourceProjectId,
+                'type' => 'expense',
+                'amount' => $shareAmount,
+                'description' => $cashboxDesc,
+                'reference_type' => 'shareholder_ledger_entry',
+                'reference_id' => (int) $debit->id,
+                'approval_status' => $isAdmin ? 'approved' : 'pending',
+                'approved_at' => $isAdmin ? now() : null,
+                'approved_by' => $isAdmin ? (int) $user->id : null,
+            ]);
+            $debit->update(['treasury_transaction_id' => (int) $fromTx->id]);
+
+            $toTx = TreasuryTransaction::withoutProjectScope()->create([
+                'project_id' => $targetProjectId,
+                'type' => 'revenue',
+                'amount' => $shareAmount,
+                'description' => $cashboxDesc,
+                'reference_type' => 'shareholder_ledger_entry',
+                'reference_id' => (int) $credit->id,
+                'approval_status' => $isAdmin ? 'approved' : 'pending',
+                'approved_at' => $isAdmin ? now() : null,
+                'approved_by' => $isAdmin ? (int) $user->id : null,
+            ]);
+            $credit->update(['treasury_transaction_id' => (int) $toTx->id]);
+
             return [
-                'debit' => $debit,
-                'credit' => $credit,
+                'debit' => $debit->fresh(['treasuryTransaction']) ?? $debit,
+                'credit' => $credit->fresh(['treasuryTransaction']) ?? $credit,
                 'amount' => $shareAmount,
             ];
         });

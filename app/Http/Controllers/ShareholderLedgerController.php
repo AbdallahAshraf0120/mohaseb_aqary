@@ -127,7 +127,7 @@ class ShareholderLedgerController extends Controller
 
         return redirect()
             ->route('shareholders.show', $shareholder)
-            ->with('success', 'تم توزيع '.number_format((float) $result['amount'], 2).' ج.م من الحركة إلى المشروع المختار.');
+            ->with('success', 'تم توزيع '.number_format((float) $result['amount'], 2).' ج.م إلى المشروع المختار مع تحويلها لصندوقه.');
     }
 
     public function destroy(Shareholder $shareholder, ShareholderLedgerEntry $ledger): RedirectResponse

@@ -636,7 +636,7 @@
                     <div class="modal-header border-bottom-0 pb-0">
                         <div>
                             <h5 class="modal-title fw-semibold mb-1" id="allocateLedgerModalLabel">توزيع من حركة الجاري</h5>
-                            <div class="small text-body-secondary">انقل نسبة أو مبلغ من هذه الحركة إلى مشروع آخر — بدون تأثير على الصندوق</div>
+                            <div class="small text-body-secondary">ينقل المبلغ لمشروع آخر في الجاري، ويحوّل نفس المبلغ من صندوق المصدر إلى صندوق الهدف</div>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
                     </div>
@@ -728,7 +728,7 @@
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">معاينة المبلغ</label>
                                     <div class="form-control-plaintext font-monospace fs-5 fw-semibold text-primary" id="allocate-preview-amount">—</div>
-                                    <div class="small text-body-secondary" id="allocate-preview-hint">سيُخصم من مشروع المصدر ويُضاف لمشروع الهدف.</div>
+                                    <div class="small text-body-secondary" id="allocate-preview-hint">يُخصم من جاري وصندوق المصدر، ويُضاف لجاري وصندوق الهدف.</div>
                                 </div>
                             </div>
 
