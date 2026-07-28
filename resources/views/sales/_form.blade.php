@@ -116,7 +116,7 @@
         <label class="form-label">المقدم</label>
         <input type="number" step="0.01" min="0" name="down_payment" id="down_payment" class="form-control"
                value="{{ old('down_payment', $sale->down_payment ?? '') }}">
-        <small class="text-muted">المقدم = سعر الوحدة × نسبة المقدم</small>
+        <small class="text-muted">يمكنك التحكم يدويًا في النسبة أو المقدم؛ وتُحدَّث القيمة المقابلة تلقائيًا.</small>
     </div>
     <div class="col-md-3">
         <label class="form-label">منه للصندوق</label>
@@ -459,16 +459,16 @@
 
             const price = Math.max(0, parseFloat(salePriceInput.value || '0'));
             if (!isInstallment) {
-                downPaymentPercentageInput.value = '100';
-                downPaymentInput.value = String(price);
-                downPaymentInput.readOnly = true;
-                downPaymentPercentageInput.readOnly = true;
+                // في الكاش: اقترح افتراضيًا كامل السعر فقط عند الفراغ/الصفر، مع إبقاء الحقول قابلة للتعديل.
+                const currentDown = Math.max(0, parseFloat(downPaymentInput.value || '0') || 0);
+                if (price > 0 && currentDown <= 0) {
+                    downPaymentInput.value = String(Math.round(price * 100) / 100);
+                    downPaymentPercentageInput.value = '100';
+                }
                 syncDownPaymentSplitPreview();
                 return;
             }
 
-            downPaymentInput.readOnly = false;
-            downPaymentPercentageInput.readOnly = false;
             syncDownPaymentSplitPreview();
         }
 
@@ -528,13 +528,7 @@
         installmentSchedule?.addEventListener('change', refreshPaymentType);
         salePriceInput?.addEventListener('input', recalcDownPaymentFromPercentage);
         downPaymentPercentageInput?.addEventListener('input', recalcDownPaymentFromPercentage);
-        downPaymentInput?.addEventListener('input', () => {
-            if (paymentType?.value === 'installment') {
-                recalcPercentageFromDownPayment();
-            } else {
-                syncDownPaymentSplitPreview();
-            }
-        });
+        downPaymentInput?.addEventListener('input', recalcPercentageFromDownPayment);
         shareholderDownInput?.addEventListener('input', syncDownPaymentSplitPreview);
         shareholderSelect?.addEventListener('change', () => {
             if (shareholderSelect.value && shareholderDownInput && !(parseFloat(shareholderDownInput.value || '0') > 0)) {
