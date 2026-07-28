@@ -32,13 +32,7 @@ class StoreRevenueRequest extends FormRequest
         ];
 
         if (Schema::hasColumn('revenues', 'received_by_shareholder_id')) {
-            $projectId = app(CurrentProject::class)->id();
-            $hasMembers = $projectId !== null
-                && ProjectShareholder::query()->where('project_id', $projectId)->exists();
-
-            $rules['received_by_shareholder_id'] = $hasMembers
-                ? ['required', 'integer', 'exists:shareholders,id']
-                : ['nullable', 'integer', 'exists:shareholders,id'];
+            $rules['received_by_shareholder_id'] = ['nullable', 'integer', 'exists:shareholders,id'];
         }
 
         return $rules;

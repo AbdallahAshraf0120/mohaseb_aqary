@@ -44,7 +44,7 @@
         <label class="form-label">قيمة التحصيل</label>
         <input type="number" step="0.01" min="0.01" name="amount" id="revenue_amount" class="form-control"
                value="{{ old('amount', $revenue->amount ?? '') }}" required>
-        <small class="text-muted">يُقترح تلقائياً من <strong>القسط القادم</strong> (جدول البيعة) عند اختيار العقد؛ يمكنك التعديل إن لزم.</small>
+        <small class="text-muted">يُقترح تلقائياً من <strong>القسط القادم</strong> (جدول البيعة) عند اختيار العقد؛ ويمكنك إدخال إجمالي أكثر من قسط (مثل قسطين) عند رغبة العميل.</small>
         <div class="mt-1">
             <button type="button" class="btn btn-outline-secondary btn-sm" id="apply-suggested-amount">تطبيق مبلغ القسط القادم</button>
         </div>
@@ -73,7 +73,7 @@
 
     <div class="col-md-6">
         <label class="form-label">دخل حساب مين</label>
-        <select name="received_by_shareholder_id" class="form-select" {{ $projectShareholders->isNotEmpty() ? 'required' : '' }}>
+        <select name="received_by_shareholder_id" class="form-select">
             <option value="">— اختر المساهم —</option>
             @foreach ($projectShareholders as $row)
                 <option value="{{ $row->shareholder_id }}"
@@ -82,7 +82,7 @@
                 </option>
             @endforeach
         </select>
-        <small class="text-muted">يُرحَّل التحصيل المعتمد لجاري المساهم المختار (بدون تكرار في الصندوق).</small>
+        <small class="text-muted">اختياري: إذا اخترت مساهمًا يُرحَّل التحصيل المعتمد لجاري المساهم، وإذا تركته فارغًا تُسجَّل التحصيلة في الصندوق.</small>
     </div>
 
     <div class="col-md-6">
