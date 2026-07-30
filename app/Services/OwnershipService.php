@@ -371,7 +371,7 @@ class OwnershipService
             $capitalOnly = $shareholder->capitalDepositsTotal(null, $landParcelId);
             $purchaseAttributed = $this->attributedPurchaseTotal((int) $shareholder->id, $landParcelId);
             // Align capital deposits so capital + purchases ≈ planned (purchases stay attributed separately)
-            $targetCapital = max(0.01, round($plannedInv - $purchaseAttributed, 5));
+            $targetCapital = max(0.00001, round($plannedInv - $purchaseAttributed, 5));
             if ($plannedInv >= 0.00001) {
                 if ($targetCapital >= 0.00001) {
                     $this->ledgerService->setFundingAmount(

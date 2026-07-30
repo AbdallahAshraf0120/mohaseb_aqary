@@ -205,7 +205,7 @@
                                 @error('amount')
                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
-                                <div class="form-text">أقل قيمة مسموحة 0.01 {{ $currencyLabel }}</div>
+                                <div class="form-text">أقل قيمة مسموحة 0.00001 {{ $currencyLabel }}</div>
                             </div>
                             <div class="mb-4">
                                 <label class="form-label fw-semibold" for="cashbox-desc">الوصف <span class="text-muted fw-normal">(اختياري)</span></label>

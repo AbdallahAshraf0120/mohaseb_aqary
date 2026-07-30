@@ -189,7 +189,7 @@ class StoreSaleRequest extends FormRequest
                 $plan = $this->input('installment_plan');
                 $remaining = (float) ($plan['remaining_amount'] ?? 0);
                 $secondaryTotal = (float) ($plan['secondary_payments_total'] ?? 0);
-                if ($secondaryTotal > $remaining + 0.01) {
+                if ($secondaryTotal > $remaining + 0.00001) {
                     $validator->errors()->add(
                         'secondary_payments',
                         'إجمالي الدفعات الثانوية لا يمكن أن يتجاوز المتبقي بعد المقدم ('.number_format($remaining, 5).' ج.م).'

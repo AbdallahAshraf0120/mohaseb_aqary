@@ -211,7 +211,7 @@ class ShareholderLedgerService
         }
 
         $remaining = $source->remainingAllocatableAmount();
-        if ($shareAmount > $remaining + 0.01) {
+        if ($shareAmount > $remaining + 0.00001) {
             throw new InvalidArgumentException(
                 'المبلغ أكبر من المتبقي القابل للتوزيع (المتاح: '.number_format($remaining, 5).' ج.م).'
             );
@@ -224,7 +224,7 @@ class ShareholderLedgerService
         $targetProject = Project::query()->find($targetProjectId);
         $sourceName = $sourceProject?->name ?? ('مشروع #'.$sourceProjectId);
         $targetName = $targetProject?->name ?? ('مشروع #'.$targetProjectId);
-        $pct = round(($shareAmount / max(0.01, (float) $source->amount)) * 100, 5);
+        $pct = round(($shareAmount / max(0.00001, (float) $source->amount)) * 100, 5);
         $baseNote = trim((string) ($notes ?? ''));
         $debitAuto = sprintf(
             'تحويل إلى «%s» — توزيع %.2f%% (%.2f ج.م) من حركة #%d — من «%s»',

@@ -126,9 +126,9 @@ class LandTradingController extends Controller
         $filters->applyWhereDate($query, 'sale_date');
 
         if ($collection === 'remaining' && Schema::hasTable('land_parcel_payments')) {
-            $query->havingRaw('COALESCE(sale_collected, 0) < COALESCE(sale_price, 0) - 0.01');
+            $query->havingRaw('COALESCE(sale_collected, 0) < COALESCE(sale_price, 0) - 0.00001');
         } elseif ($collection === 'paid' && Schema::hasTable('land_parcel_payments')) {
-            $query->havingRaw('COALESCE(sale_collected, 0) >= COALESCE(sale_price, 0) - 0.01')
+            $query->havingRaw('COALESCE(sale_collected, 0) >= COALESCE(sale_price, 0) - 0.00001')
                 ->whereNotNull('sale_price')
                 ->where('sale_price', '>', 0);
         }

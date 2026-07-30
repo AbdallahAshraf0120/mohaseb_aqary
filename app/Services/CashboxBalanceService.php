@@ -44,7 +44,7 @@ class CashboxBalanceService
         }
 
         $balance = $this->approvedBalance($projectId, $exclude);
-        if ($amount > $balance + 0.01) {
+        if ($amount > $balance + 0.00001) {
             throw new InvalidArgumentException(
                 'رصيد الصندوق غير كافٍ للصرف (المتاح: '.number_format($balance, 5).' ج.م).'
             );

@@ -71,7 +71,7 @@ class UpdateShareholderFundingRequest extends FormRequest
                     ->where('shareholder_id', '!=', (int) $shareholder->id)
                     ->sum($pctColumn), 5);
 
-                if (round($othersPct + $percentage, 5) > 100.01) {
+                if (round($othersPct + $percentage, 5) > 100.00001) {
                     $remaining = max(0, round(100 - $othersPct, 5));
                     $validator->errors()->add(
                         'share_percentage',
@@ -114,7 +114,7 @@ class UpdateShareholderFundingRequest extends FormRequest
                 ->where('shareholder_id', '!=', (int) $shareholder->id)
                 ->sum($pctColumn), 5);
 
-            if (round($othersPct + $percentage, 5) > 100.01) {
+            if (round($othersPct + $percentage, 5) > 100.00001) {
                 $remaining = max(0, round(100 - $othersPct, 5));
                 $validator->errors()->add(
                     'share_percentage',

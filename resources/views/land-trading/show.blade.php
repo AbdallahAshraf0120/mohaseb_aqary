@@ -913,7 +913,7 @@
                             <td class="text-end">{{ number_format((float) ($row->planned_percentage ?? $row->share_percentage ?? 0), 5) }}%</td>
                             <td class="text-end font-monospace">{{ number_format($actualInv, 5) }}</td>
                             <td class="text-end">{{ number_format((float) ($row->actual_percentage ?? 0), 5) }}%</td>
-                            <td class="text-end font-monospace {{ $gap > 0.00001 ? 'text-danger' : ($gap < -0.01 ? 'text-success' : '') }}">
+                            <td class="text-end font-monospace {{ $gap > 0.00001 ? 'text-danger' : ($gap < -0.00001 ? 'text-success' : '') }}">
                                 {{ number_format($gap, 5) }}
                             </td>
                             <td class="text-end">

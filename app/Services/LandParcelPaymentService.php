@@ -95,7 +95,7 @@ class LandParcelPaymentService
                 $remaining = $parcel->remainingTotal($side);
             }
 
-            if ($amount > $remaining + 0.01) {
+            if ($amount > $remaining + 0.00001) {
                 throw new InvalidArgumentException('المبلغ أكبر من المتبقي ('.$remaining.').');
             }
 

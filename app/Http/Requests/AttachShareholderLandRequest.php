@@ -72,7 +72,7 @@ class AttachShareholderLandRequest extends FormRequest
                 ->where('land_parcel_id', $parcelId)
                 ->sum($pctColumn), 5);
 
-            if (round($existingPct + $percentage, 5) > 100.01) {
+            if (round($existingPct + $percentage, 5) > 100.00001) {
                 $remaining = max(0, round(100 - $existingPct, 5));
                 $validator->errors()->add(
                     'share_percentage',

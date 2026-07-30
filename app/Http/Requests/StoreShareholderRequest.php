@@ -79,7 +79,7 @@ class StoreShareholderRequest extends FormRequest
             ->where('project_id', (int) $project->id)
             ->sum($pctColumn), 5);
 
-        if (round($existingPct + $percentage, 5) > 100.01) {
+        if (round($existingPct + $percentage, 5) > 100.00001) {
             $remaining = max(0, round(100 - $existingPct, 5));
             $validator->errors()->add(
                 'share_percentage',
@@ -119,7 +119,7 @@ class StoreShareholderRequest extends FormRequest
             ->where('land_parcel_id', (int) $parcel->id)
             ->sum($pctColumn), 5);
 
-        if (round($existingPct + $percentage, 5) > 100.01) {
+        if (round($existingPct + $percentage, 5) > 100.00001) {
             $remaining = max(0, round(100 - $existingPct, 5));
             $validator->errors()->add(
                 'share_percentage',
