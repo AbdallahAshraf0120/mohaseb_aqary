@@ -40,13 +40,18 @@ return new class extends Migration
 
             $type = $isPercent ? 'DECIMAL(12,5)' : 'DECIMAL(18,5)';
 
-            $defaultSql = '';
-            if ($col->COLUMN_DEFAULT !== null) {
-                $defaultSql = ' DEFAULT '.(is_numeric($col->COLUMN_DEFAULT)
-                    ? $col->COLUMN_DEFAULT
-                    : DB::getPdo()->quote((string) $col->COLUMN_DEFAULT));
-            } elseif ($nullable === 'NOT NULL') {
-                $defaultSql = ' DEFAULT 0';
+            // Hostinger/MySQL قد ترجع COLUMN_DEFAULT كنص 'NULL' بدل null الحقيقي
+            $rawDefault = $col->COLUMN_DEFAULT;
+            $defaultIsNull = $rawDefault === null
+                || strtoupper(trim((string) $rawDefault)) === 'NULL';
+
+            if ($defaultIsNull) {
+                $defaultSql = $nullable === 'NULL' ? ' DEFAULT NULL' : ' DEFAULT 0';
+            } elseif (is_numeric($rawDefault)) {
+                $defaultSql = ' DEFAULT '.$rawDefault;
+            } else {
+                // قيمة افتراضية غير صالحة لعمود decimal — لا نمرّرها كنص
+                $defaultSql = $nullable === 'NULL' ? ' DEFAULT NULL' : ' DEFAULT 0';
             }
 
             $comment = trim((string) ($col->COLUMN_COMMENT ?? ''));
