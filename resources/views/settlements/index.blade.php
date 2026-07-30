@@ -11,21 +11,21 @@
         <div class="col-md-4">
             <div class="rounded-4 border p-4 h-100 bg-body-secondary bg-opacity-25">
                 <div class="small text-body-secondary mb-1">إجمالي التحصيلات</div>
-                <div class="fs-4 fw-bold font-monospace text-success-emphasis">{{ number_format((float) $revenues, 2) }}</div>
+                <div class="fs-4 fw-bold font-monospace text-success-emphasis">{{ number_format((float) $revenues, 5) }}</div>
                 <div class="small text-muted">ج.م</div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="rounded-4 border p-4 h-100 bg-body-secondary bg-opacity-25">
                 <div class="small text-body-secondary mb-1">إجمالي المصروفات</div>
-                <div class="fs-4 fw-bold font-monospace text-danger-emphasis">{{ number_format((float) $expenses, 2) }}</div>
+                <div class="fs-4 fw-bold font-monospace text-danger-emphasis">{{ number_format((float) $expenses, 5) }}</div>
                 <div class="small text-muted">ج.م</div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="rounded-4 border p-4 h-100 bg-primary-subtle">
                 <div class="small text-body-secondary mb-1">صافي التسوية (تحصيل − مصروف)</div>
-                <div class="fs-4 fw-bold font-monospace">{{ number_format((float) $net, 2) }}</div>
+                <div class="fs-4 fw-bold font-monospace">{{ number_format((float) $net, 5) }}</div>
                 <div class="small text-muted">ملخص تشغيلي للمشروع</div>
             </div>
         </div>
@@ -35,7 +35,7 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="mb-0 fw-semibold">أرصدة جاري المساهمين</h5>
             <span class="badge text-bg-light border">
-                إجمالي الأرصدة: {{ number_format((float) ($shareholderLedgerTotal ?? 0), 2) }} ج.م
+                إجمالي الأرصدة: {{ number_format((float) ($shareholderLedgerTotal ?? 0), 5) }} ج.م
             </span>
         </div>
         <div class="card-body">
@@ -57,10 +57,10 @@
                         <tr>
                             <td>{{ $loop->iteration }}</td>
                             <td class="fw-semibold">{{ $shareholder->name }}</td>
-                            <td>{{ number_format((float) $shareholder->share_percentage, 2) }}%</td>
-                            <td class="text-end font-monospace">{{ number_format((float) ($shareholder->capital_deposits_total ?? 0), 2) }}</td>
+                            <td>{{ number_format((float) $shareholder->share_percentage, 5) }}%</td>
+                            <td class="text-end font-monospace">{{ number_format((float) ($shareholder->capital_deposits_total ?? 0), 5) }}</td>
                             <td class="text-end font-monospace fw-semibold {{ ($shareholder->ledger_balance ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
-                                {{ number_format((float) ($shareholder->ledger_balance ?? 0), 2) }}
+                                {{ number_format((float) ($shareholder->ledger_balance ?? 0), 5) }}
                             </td>
                             <td class="text-end">
                                 <a href="{{ route('shareholders.show', $shareholder) }}" class="btn btn-outline-info btn-sm">الجاري</a>

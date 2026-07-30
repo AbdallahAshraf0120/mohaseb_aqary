@@ -28,9 +28,9 @@ class Project extends Model
     protected function casts(): array
     {
         return [
-            'capital' => 'decimal:2',
-            'planned_capital' => 'decimal:2',
-            'actual_capital' => 'decimal:2',
+            'capital' => 'decimal:5',
+            'planned_capital' => 'decimal:5',
+            'actual_capital' => 'decimal:5',
             'is_active' => 'boolean',
             'is_draft' => 'boolean',
             'is_land_trading_cashbox' => 'boolean',
@@ -91,22 +91,22 @@ class Project extends Model
     /** نسبة المساهم من رأس المال المخطط: (تمويل المساهم ÷ رأس المال المخطط) × 100. */
     public function shareholderPercentageForInvestment(float|int|string $investment): float
     {
-        $capital = round((float) ($this->planned_capital ?? $this->capital ?? 0), 2);
+        $capital = round((float) ($this->planned_capital ?? $this->capital ?? 0), 5);
         if ($capital <= 0) {
             return 0.0;
         }
 
-        return round(((float) $investment / $capital) * 100, 2);
+        return round(((float) $investment / $capital) * 100, 5);
     }
 
     public function plannedCapitalAmount(): float
     {
-        return round((float) ($this->planned_capital ?? $this->capital ?? 0), 2);
+        return round((float) ($this->planned_capital ?? $this->capital ?? 0), 5);
     }
 
     public function actualCapitalAmount(): float
     {
-        return round((float) ($this->actual_capital ?? 0), 2);
+        return round((float) ($this->actual_capital ?? 0), 5);
     }
 
     public function areas(): HasMany

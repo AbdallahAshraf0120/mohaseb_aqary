@@ -6,7 +6,7 @@
         $netContractValue = max(0, (float) $contract->total_price - $downPayment);
         $total = (float) $contract->total_price;
         $paid = (float) $contract->paid_amount;
-        $progressPct = $total > 0.01 ? min(100, round(($paid / $total) * 100, 1)) : 0;
+        $progressPct = $total > 0.00001 ? min(100, round(($paid / $total) * 100, 1)) : 0;
     @endphp
 
     <div class="card shadow-sm border-0 mb-3">
@@ -37,8 +37,8 @@
                     <div class="progress-bar bg-success" style="width: {{ $progressPct }}%"></div>
                 </div>
                 <div class="d-flex flex-wrap justify-content-between gap-2 mt-2 small">
-                    <span>المدفوع: <strong class="font-monospace">{{ number_format($paid, 2) }}</strong> ج.م</span>
-                    <span>المتبقي: <strong class="font-monospace">{{ number_format((float) $contract->remaining_amount, 2) }}</strong> ج.م</span>
+                    <span>المدفوع: <strong class="font-monospace">{{ number_format($paid, 5) }}</strong> ج.م</span>
+                    <span>المتبقي: <strong class="font-monospace">{{ number_format((float) $contract->remaining_amount, 5) }}</strong> ج.م</span>
                 </div>
             </div>
 
@@ -106,23 +106,23 @@
                             <tbody>
                             <tr>
                                 <th class="text-body-secondary align-top py-2" style="width: 40%">إجمالي السعر</th>
-                                <td class="py-2 font-monospace fw-medium">{{ number_format($total, 2) }} ج.م</td>
+                                <td class="py-2 font-monospace fw-medium">{{ number_format($total, 5) }} ج.م</td>
                             </tr>
                             <tr>
                                 <th class="text-body-secondary align-top py-2">المقدم</th>
-                                <td class="py-2 font-monospace">{{ number_format($downPayment, 2) }} ج.م</td>
+                                <td class="py-2 font-monospace">{{ number_format($downPayment, 5) }} ج.م</td>
                             </tr>
                             <tr>
                                 <th class="text-body-secondary align-top py-2">بعد المقدم</th>
-                                <td class="py-2 font-monospace">{{ number_format($netContractValue, 2) }} ج.م</td>
+                                <td class="py-2 font-monospace">{{ number_format($netContractValue, 5) }} ج.م</td>
                             </tr>
                             <tr>
                                 <th class="text-body-secondary align-top py-2">المسدَّد</th>
-                                <td class="py-2 font-monospace text-success-emphasis">{{ number_format($paid, 2) }} ج.م</td>
+                                <td class="py-2 font-monospace text-success-emphasis">{{ number_format($paid, 5) }} ج.م</td>
                             </tr>
                             <tr>
                                 <th class="text-body-secondary align-top py-2">المتبقي</th>
-                                <td class="py-2 font-monospace fw-semibold">{{ number_format((float) $contract->remaining_amount, 2) }} ج.م</td>
+                                <td class="py-2 font-monospace fw-semibold">{{ number_format((float) $contract->remaining_amount, 5) }} ج.م</td>
                             </tr>
                             </tbody>
                         </table>

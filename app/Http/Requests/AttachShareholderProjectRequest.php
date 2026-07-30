@@ -25,7 +25,7 @@ class AttachShareholderProjectRequest extends FormRequest
                 'integer',
                 Rule::exists('projects', 'id')->where(fn ($q) => $q->where('is_draft', false)),
             ],
-            'share_percentage' => ['required', 'numeric', 'min:0.01', 'max:100'],
+            'share_percentage' => ['required', 'numeric', 'min:0.00001', 'max:100'],
             'total_investment' => ['nullable', 'numeric', 'min:0'],
         ];
     }
@@ -61,13 +61,13 @@ class AttachShareholderProjectRequest extends FormRequest
             $pctColumn = Schema::hasColumn('project_shareholder', 'planned_percentage')
                 ? 'planned_percentage'
                 : 'share_percentage';
-            $percentage = round((float) $this->input('share_percentage'), 2);
+            $percentage = round((float) $this->input('share_percentage'), 5);
             $existingPct = round((float) ProjectShareholder::query()
                 ->where('project_id', $projectId)
-                ->sum($pctColumn), 2);
+                ->sum($pctColumn), 5);
 
-            if (round($existingPct + $percentage, 2) > 100.01) {
-                $remaining = max(0, round(100 - $existingPct, 2));
+            if (round($existingPct + $percentage, 5) > 100.01) {
+                $remaining = max(0, round(100 - $existingPct, 5));
                 $validator->errors()->add(
                     'share_percentage',
                     "مجموع نسب المساهمين يتجاوز 100٪. المتبقي: {$remaining}٪."

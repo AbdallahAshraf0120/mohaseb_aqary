@@ -68,7 +68,7 @@ class FundTransferController extends Controller
             'from_id' => ['required', 'integer', 'min:1'],
             'to_type' => ['required', 'in:project,land_cashbox'],
             'to_id' => ['required', 'integer', 'min:1'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.00001'],
             'transferred_at' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'shareholder_id' => ['nullable', 'integer', 'exists:shareholders,id'],

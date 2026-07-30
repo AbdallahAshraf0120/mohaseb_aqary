@@ -33,7 +33,7 @@ class StoreSaleRequest extends FormRequest
             'installment_start_date' => ['nullable', 'date', 'required_if:payment_type,installment'],
             'secondary_payments' => ['nullable', 'array', 'max:30'],
             'secondary_payments.*.label' => ['nullable', 'string', 'max:255'],
-            'secondary_payments.*.amount' => ['required', 'numeric', 'min:0.01'],
+            'secondary_payments.*.amount' => ['required', 'numeric', 'min:0.00001'],
             'secondary_payments.*.due_date' => ['required', 'date'],
             // Built in prepareForValidation(); must be in rules so validated() includes it on store/update.
             'installment_plan' => ['nullable', 'array', 'required_if:payment_type,installment'],
@@ -59,17 +59,17 @@ class StoreSaleRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $downPayment = round((float) $this->input('down_payment', 0), 2);
+            $downPayment = round((float) $this->input('down_payment', 0), 5);
             $sharePart = 0.0;
             if (Schema::hasColumn('sales', 'shareholder_down_payment_amount')) {
                 $rawShare = $this->input('shareholder_down_payment_amount');
                 $sharePart = ($rawShare === null || $rawShare === '')
                     ? 0.0
-                    : round((float) $rawShare, 2);
-                if ($sharePart > $downPayment + 0.009) {
+                    : round((float) $rawShare, 5);
+                if ($sharePart > $downPayment + 0.000009) {
                     $validator->errors()->add(
                         'shareholder_down_payment_amount',
-                        'مبلغ حساب المساهم لا يمكن أن يتجاوز المقدم ('.number_format($downPayment, 2).' ج.م).'
+                        'مبلغ حساب المساهم لا يمكن أن يتجاوز المقدم ('.number_format($downPayment, 5).' ج.م).'
                     );
                 }
             } elseif (Schema::hasColumn('sales', 'received_by_shareholder_id')
@@ -78,10 +78,10 @@ class StoreSaleRequest extends FormRequest
             }
 
             $shareholderId = $this->input('received_by_shareholder_id');
-            if ($sharePart >= 0.01 && ($shareholderId === null || $shareholderId === '')) {
+            if ($sharePart >= 0.00001 && ($shareholderId === null || $shareholderId === '')) {
                 $validator->errors()->add('received_by_shareholder_id', 'اختر المساهم لجزء المقدم الداخل لحسابه.');
             }
-            if (($shareholderId !== null && $shareholderId !== '') && $sharePart < 0.01 && Schema::hasColumn('sales', 'shareholder_down_payment_amount')) {
+            if (($shareholderId !== null && $shareholderId !== '') && $sharePart < 0.00001 && Schema::hasColumn('sales', 'shareholder_down_payment_amount')) {
                 $validator->errors()->add(
                     'shareholder_down_payment_amount',
                     'أدخل مبلغ حساب المساهم، أو اترك اختيار المساهم فارغًا ليذهب المقدم كله للصندوق.'
@@ -192,12 +192,12 @@ class StoreSaleRequest extends FormRequest
                 if ($secondaryTotal > $remaining + 0.01) {
                     $validator->errors()->add(
                         'secondary_payments',
-                        'إجمالي الدفعات الثانوية لا يمكن أن يتجاوز المتبقي بعد المقدم ('.number_format($remaining, 2).' ج.م).'
+                        'إجمالي الدفعات الثانوية لا يمكن أن يتجاوز المتبقي بعد المقدم ('.number_format($remaining, 5).' ج.م).'
                     );
                 }
                 $cnt = (int) ($plan['installments_count'] ?? 0);
                 $base = (float) ($plan['installment_base_for_schedule'] ?? 0);
-                if ($cnt > 0 && $base < 0.01) {
+                if ($cnt > 0 && $base < 0.00001) {
                     $validator->errors()->add(
                         'secondary_payments',
                         'لا يتبقى مبلغ كافٍ لأقساط التقسيط المنتظمة بعد الدفعات الثانوية؛ قلّل الدفعات الثانوية أو غيّر المقدم/السعر.'
@@ -237,19 +237,19 @@ class StoreSaleRequest extends FormRequest
             'semiannual' => 6,
             default => 1,
         };
-        $remaining = max(0, round($salePrice - $downPaymentValue, 2));
+        $remaining = max(0, round($salePrice - $downPaymentValue, 5));
 
         $secondaryRows = $isCash
             ? []
             : self::normalizeSecondaryPaymentsInput($this->input('secondary_payments', []));
-        $secondaryTotal = round((float) collect($secondaryRows)->sum(static fn (array $r) => (float) $r['amount']), 2);
-        $installmentBaseForSchedule = max(0, round($remaining - $secondaryTotal, 2));
+        $secondaryTotal = round((float) collect($secondaryRows)->sum(static fn (array $r) => (float) $r['amount']), 5);
+        $installmentBaseForSchedule = max(0, round($remaining - $secondaryTotal, 5));
 
         $installmentsCount = ($installmentMonths && ! $isCash)
             ? max(1, (int) ceil($installmentMonths / $intervalMonths))
             : 0;
         $installmentAmount = ($installmentsCount > 0 && $installmentBaseForSchedule > 0)
-            ? round($installmentBaseForSchedule / $installmentsCount, 2)
+            ? round($installmentBaseForSchedule / $installmentsCount, 5)
             : 0;
 
         $this->merge([
@@ -309,7 +309,7 @@ class StoreSaleRequest extends FormRequest
                 if ($due === null || $due === '' || $amount === null || $amount === '') {
                     return null;
                 }
-                $amt = round((float) $amount, 2);
+                $amt = round((float) $amount, 5);
                 if ($amt <= 0) {
                     return null;
                 }

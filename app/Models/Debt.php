@@ -22,6 +22,12 @@ class Debt extends Model
         'status',
     ];
 
+    protected $casts = [
+        'total_amount' => 'decimal:5',
+        'paid_amount' => 'decimal:5',
+        'remaining_amount' => 'decimal:5',
+    ];
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);

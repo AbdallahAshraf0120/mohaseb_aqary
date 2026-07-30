@@ -96,11 +96,11 @@ class CashboxLedgerService
             return;
         }
 
-        $down = round((float) ($sale->down_payment ?? 0), 2);
+        $down = round((float) ($sale->down_payment ?? 0), 5);
         $sharePart = $sale->shareholderDownPaymentAmount();
         if ($sale->payment_type === 'cash') {
             $label = 'كاش / بيعة #'.$sale->id;
-        } elseif ($sharePart >= 0.01 && $sharePart + 0.009 < $down) {
+        } elseif ($sharePart >= 0.00001 && $sharePart + 0.000009 < $down) {
             $label = sprintf(
                 'مقدم للصندوق %.2f من أصل %.2f / بيعة #%d',
                 $amount,

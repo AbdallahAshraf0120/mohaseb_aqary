@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $fmt = fn (float $n): string => number_format($n, 2, '.', ',');
+        $fmt = fn (float $n): string => number_format($n, 5, '.', ',');
     @endphp
 
     @if (session('success'))
@@ -87,7 +87,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">المبلغ</label>
-                                    <input type="number" step="0.01" min="0.01" name="amount" class="form-control font-monospace" value="{{ old('amount') }}" required>
+                                    <input type="number" step="0.00001" min="0.00001" name="amount" class="form-control font-monospace" value="{{ old('amount') }}" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">التاريخ</label>

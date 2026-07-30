@@ -44,7 +44,7 @@ class LandParcelPayment extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal:2',
+            'amount' => 'decimal:5',
             'paid_at' => 'date',
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',

@@ -2,9 +2,9 @@
 
 @section('content')
     <x-partials.module-kpis :items="[
-        ['label' => 'إجمالي أصل الشراء', 'value' => number_format((float) ($debtKpis['total_amount'] ?? 0), 2) . ' ج.م'],
-        ['label' => 'ما سُدِّد للمورد', 'value' => number_format((float) ($debtKpis['paid_amount'] ?? 0), 2) . ' ج.م'],
-        ['label' => 'المتبقي على المشروع', 'value' => number_format((float) ($debtKpis['remaining_amount'] ?? 0), 2) . ' ج.م'],
+        ['label' => 'إجمالي أصل الشراء', 'value' => number_format((float) ($debtKpis['total_amount'] ?? 0), 5) . ' ج.م'],
+        ['label' => 'ما سُدِّد للمورد', 'value' => number_format((float) ($debtKpis['paid_amount'] ?? 0), 5) . ' ج.م'],
+        ['label' => 'المتبقي على المشروع', 'value' => number_format((float) ($debtKpis['remaining_amount'] ?? 0), 5) . ' ج.م'],
     ]" />
 
     <x-listing.filters
@@ -44,9 +44,9 @@
                             <td>{{ $debts->firstItem() + $loop->index }}</td>
                             <td class="fw-medium">{{ $debt->counterpartyLabel() }}</td>
                             <td class="small text-muted">{{ $debt->purchase_description ?? '—' }}</td>
-                            <td class="text-end font-monospace">{{ number_format((float) $debt->total_amount, 2) }}</td>
-                            <td class="text-end font-monospace">{{ number_format((float) $debt->paid_amount, 2) }}</td>
-                            <td class="text-end font-monospace">{{ number_format((float) $debt->remaining_amount, 2) }}</td>
+                            <td class="text-end font-monospace">{{ number_format((float) $debt->total_amount, 5) }}</td>
+                            <td class="text-end font-monospace">{{ number_format((float) $debt->paid_amount, 5) }}</td>
+                            <td class="text-end font-monospace">{{ number_format((float) $debt->remaining_amount, 5) }}</td>
                             <td>{{ $debt->status }}</td>
                             <td class="text-end text-nowrap">
                                 @if ((float) $debt->remaining_amount > 0.009)

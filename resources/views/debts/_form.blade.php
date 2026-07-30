@@ -9,12 +9,12 @@
     </div>
     <div class="col-md-6">
         <label class="form-label" for="debt-total">إجمالي قيمة الشراء (ج.م)</label>
-        <input id="debt-total" type="number" step="0.01" min="0.01" name="total_amount" class="form-control font-monospace" required
+        <input id="debt-total" type="number" step="0.00001" min="0.00001" name="total_amount" class="form-control font-monospace" required
                value="{{ old('total_amount', $debt->total_amount ?? '') }}">
     </div>
     <div class="col-md-6">
         <label class="form-label" for="debt-paid">ما سُدِّد حتى الآن (ج.م)</label>
-        <input id="debt-paid" type="number" step="0.01" min="0" name="paid_amount" class="form-control font-monospace"
+        <input id="debt-paid" type="number" step="0.00001" min="0" name="paid_amount" class="form-control font-monospace"
                value="{{ old('paid_amount', isset($debt) ? $debt->paid_amount : 0) }}">
         <div class="form-text">يُحدَّث المتبقي والحالة (مفتوح/مغلق) تلقائياً عند الحفظ. لا يمكن أن يقل المجموع عن سدادات الصندوق المسجَّلة.</div>
     </div>

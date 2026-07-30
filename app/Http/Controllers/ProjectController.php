@@ -60,7 +60,7 @@ class ProjectController extends Controller
         $data['is_active'] = true;
         $data['is_draft'] = false;
         if ($this->projectsHaveCapitalColumn()) {
-            $capital = round((float) ($data['capital'] ?? 0), 2);
+            $capital = round((float) ($data['capital'] ?? 0), 5);
             $data['capital'] = $capital;
             if (Schema::hasColumn('projects', 'planned_capital')) {
                 $data['planned_capital'] = $capital;
@@ -108,7 +108,7 @@ class ProjectController extends Controller
             'code' => $code,
         ];
         if ($this->projectsHaveCapitalColumn()) {
-            $capital = round((float) ($data['capital'] ?? 0), 2);
+            $capital = round((float) ($data['capital'] ?? 0), 5);
             $payload['capital'] = $capital;
             if (Schema::hasColumn('projects', 'planned_capital')) {
                 $payload['planned_capital'] = $capital;
@@ -246,7 +246,7 @@ class ProjectController extends Controller
             return;
         }
 
-        $capital = round((float) $project->capital, 2);
+        $capital = round((float) $project->capital, 5);
         $existing = TreasuryTransaction::withoutProjectScope()
             ->where('project_id', (int) $project->id)
             ->where('reference_type', 'project_capital')

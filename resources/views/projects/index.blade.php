@@ -28,7 +28,7 @@
                                         @endif
                                         @if ((float) $p->capital > 0)
                                             <div class="small text-success-emphasis mt-1">
-                                                رأس المال: <span class="font-monospace fw-semibold">{{ number_format((float) $p->capital, 2) }}</span> ج.م
+                                                رأس المال: <span class="font-monospace fw-semibold">{{ number_format((float) $p->capital, 5) }}</span> ج.م
                                             </div>
                                         @endif
                                         <div class="small text-body-secondary mt-1">
@@ -130,7 +130,7 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label" for="project-capital">رأس مال المشروع (ج.م)</label>
-                                <input type="number" step="0.01" min="0" class="form-control font-monospace @error('capital') is-invalid @enderror" id="project-capital" name="capital" value="{{ old('capital', '0') }}" placeholder="0.00">
+                                <input type="number" step="0.00001" min="0" class="form-control font-monospace @error('capital') is-invalid @enderror" id="project-capital" name="capital" value="{{ old('capital', '0') }}" placeholder="0.00">
                                 @error('capital')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror

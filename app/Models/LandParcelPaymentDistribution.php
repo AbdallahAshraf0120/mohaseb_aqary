@@ -27,8 +27,8 @@ class LandParcelPaymentDistribution extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal:2',
-            'percentage_used' => 'decimal:2',
+            'amount' => 'decimal:5',
+            'percentage_used' => 'decimal:5',
         ];
     }
 

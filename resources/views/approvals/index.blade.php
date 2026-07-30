@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $fmt = fn (float $n): string => number_format($n, 2, '.', ',');
+        $fmt = fn (float $n): string => number_format($n, 5, '.', ',');
         $totalPending = (int) (($counts['revenues'] ?? 0) + ($counts['expenses'] ?? 0) + ($counts['sales'] ?? 0) + ($counts['debt_payments'] ?? 0) + ($counts['manual_treasury'] ?? 0));
     @endphp
 
@@ -189,8 +189,8 @@
                                                 <div class="fw-semibold">بيعة #{{ $row->id }}</div>
                                                 <div class="text-body-secondary">{{ $row->property?->name ?? '—' }} / {{ $row->client?->name ?? '—' }}</div>
                                                 <div class="text-body-secondary small">
-                                                    صندوق {{ number_format($row->cashboxDownPaymentAmount(), 2) }}
-                                                    · مساهم {{ number_format($row->shareholderDownPaymentAmount(), 2) }}
+                                                    صندوق {{ number_format($row->cashboxDownPaymentAmount(), 5) }}
+                                                    · مساهم {{ number_format($row->shareholderDownPaymentAmount(), 5) }}
                                                     @if ($row->receivedByShareholder)
                                                         ({{ $row->receivedByShareholder->name }})
                                                     @endif

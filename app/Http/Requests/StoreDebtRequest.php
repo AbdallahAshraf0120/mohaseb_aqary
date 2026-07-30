@@ -20,7 +20,7 @@ class StoreDebtRequest extends FormRequest
         return [
             'creditor_name' => ['required', 'string', 'max:255'],
             'purchase_description' => ['nullable', 'string', 'max:2000'],
-            'total_amount' => ['required', 'numeric', 'min:0.01'],
+            'total_amount' => ['required', 'numeric', 'min:0.00001'],
             'paid_amount' => ['nullable', 'numeric', 'min:0'],
         ];
     }

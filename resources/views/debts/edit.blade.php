@@ -11,7 +11,7 @@
     <div class="card app-surface mb-4" id="pay-from-cashbox">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">سداد من الصندوق</h5>
-            <span class="text-muted small">المتاح: <span class="font-monospace">{{ number_format((float) ($remainingAvailable ?? $debt->remaining_amount), 2) }}</span> ج.م</span>
+            <span class="text-muted small">المتاح: <span class="font-monospace">{{ number_format((float) ($remainingAvailable ?? $debt->remaining_amount), 5) }}</span> ج.م</span>
         </div>
         <div class="card-body">
             @php
@@ -23,10 +23,10 @@
                     <div class="row g-3 align-items-end">
                         <div class="col-md-4">
                             <label class="form-label" for="pay-amount">المبلغ (ج.م)</label>
-                            <input id="pay-amount" type="number" name="amount" step="0.01" min="0.01"
-                                   max="{{ number_format($avail, 2, '.', '') }}"
+                            <input id="pay-amount" type="number" name="amount" step="0.00001" min="0.00001"
+                                   max="{{ number_format($avail, 5, '.', '') }}"
                                    class="form-control font-monospace @error('amount') is-invalid @enderror @error('pay_amount') is-invalid @enderror"
-                                   value="{{ old('amount', number_format($avail, 2, '.', '')) }}" required>
+                                   value="{{ old('amount', number_format($avail, 5, '.', '')) }}" required>
                             @error('amount')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -74,7 +74,7 @@
                             <tr>
                                 <td>{{ $p->id }}</td>
                                 <td>{{ $p->created_at?->timezone(config('app.timezone'))->format('Y-m-d H:i') }}</td>
-                                <td class="text-end font-monospace">{{ number_format((float) $p->amount, 2) }}</td>
+                                <td class="text-end font-monospace">{{ number_format((float) $p->amount, 5) }}</td>
                                 <td>{{ $p->note ?: '—' }}</td>
                                 <td>
                                     @if (($p->approval_status ?? 'approved') === 'approved')

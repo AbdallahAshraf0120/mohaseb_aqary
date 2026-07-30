@@ -56,15 +56,15 @@ class LandParcel extends Model
     protected function casts(): array
     {
         return [
-            'area_size' => 'decimal:2',
-            'purchase_price_per_m2' => 'decimal:2',
-            'sale_price_per_m2' => 'decimal:2',
-            'purchase_price' => 'decimal:2',
-            'planned_capital' => 'decimal:2',
-            'actual_capital' => 'decimal:2',
-            'purchase_down_payment' => 'decimal:2',
-            'sale_price' => 'decimal:2',
-            'sale_down_payment' => 'decimal:2',
+            'area_size' => 'decimal:5',
+            'purchase_price_per_m2' => 'decimal:5',
+            'sale_price_per_m2' => 'decimal:5',
+            'purchase_price' => 'decimal:5',
+            'planned_capital' => 'decimal:5',
+            'actual_capital' => 'decimal:5',
+            'purchase_down_payment' => 'decimal:5',
+            'sale_price' => 'decimal:5',
+            'sale_down_payment' => 'decimal:5',
             'purchase_date' => 'date',
             'sale_date' => 'date',
             'purchase_installment_start_date' => 'date',
@@ -116,7 +116,7 @@ class LandParcel extends Model
             $query->where('id', '!=', $exceptPartId);
         }
 
-        return round((float) $query->sum('area_size'), 2);
+        return round((float) $query->sum('area_size'), 5);
     }
 
     /** @deprecated استخدم allocatedPartsArea */
@@ -131,7 +131,7 @@ class LandParcel extends Model
             return null;
         }
 
-        return round(max(0, (float) $this->area_size - $this->allocatedPartsArea($exceptPartId)), 2);
+        return round(max(0, (float) $this->area_size - $this->allocatedPartsArea($exceptPartId)), 5);
     }
 
     /** نسبة الجزء من إجمالي مساحة الأرض. */
@@ -142,7 +142,7 @@ class LandParcel extends Model
             return null;
         }
 
-        return round(((float) $partArea / $total) * 100, 2);
+        return round(((float) $partArea / $total) * 100, 5);
     }
 
     public function totalFromPurchasePerM2(?float $area = null): ?float
@@ -153,7 +153,7 @@ class LandParcel extends Model
             return null;
         }
 
-        return round($rate * $m2, 2);
+        return round($rate * $m2, 5);
     }
 
     public function totalFromSalePerM2(?float $area = null): ?float
@@ -164,12 +164,12 @@ class LandParcel extends Model
             return null;
         }
 
-        return round($rate * $m2, 2);
+        return round($rate * $m2, 5);
     }
 
     public function partsSaleTotal(): float
     {
-        return round((float) $this->parts()->sum('sale_price'), 2);
+        return round((float) $this->parts()->sum('sale_price'), 5);
     }
 
     public function partsCollectedTotal(): float
@@ -178,7 +178,7 @@ class LandParcel extends Model
             ->where('side', LandParcelPayment::SIDE_SALE)
             ->where('approval_status', 'approved')
             ->whereNotNull('land_parcel_part_id')
-            ->sum('amount'), 2);
+            ->sum('amount'), 5);
     }
 
     public function statusLabel(): string
@@ -198,22 +198,22 @@ class LandParcel extends Model
     /** أساس النسبة المخططة: رأس المال المخطط / سعر شراء الأرض. */
     public function shareholderPercentageForInvestment(float|int|string $investment): float
     {
-        $capital = round((float) ($this->planned_capital ?? $this->purchase_price ?? 0), 2);
+        $capital = round((float) ($this->planned_capital ?? $this->purchase_price ?? 0), 5);
         if ($capital <= 0) {
             return 0.0;
         }
 
-        return round(((float) $investment / $capital) * 100, 2);
+        return round(((float) $investment / $capital) * 100, 5);
     }
 
     public function plannedCapitalAmount(): float
     {
-        return round((float) ($this->planned_capital ?? $this->purchase_price ?? 0), 2);
+        return round((float) ($this->planned_capital ?? $this->purchase_price ?? 0), 5);
     }
 
     public function actualCapitalAmount(): float
     {
-        return round((float) ($this->actual_capital ?? 0), 2);
+        return round((float) ($this->actual_capital ?? 0), 5);
     }
 
     public function approvedPaidTotal(string $side, ?int $partId = null): float
@@ -230,7 +230,7 @@ class LandParcel extends Model
             }
         }
 
-        return round((float) $query->sum('amount'), 2);
+        return round((float) $query->sum('amount'), 5);
     }
 
     public function remainingTotal(string $side, ?int $partId = null): float
@@ -248,7 +248,7 @@ class LandParcel extends Model
             ? (float) $this->purchase_price
             : (float) ($this->sale_price ?? 0);
 
-        return round(max(0, $price - $this->approvedPaidTotal($side, $partId)), 2);
+        return round(max(0, $price - $this->approvedPaidTotal($side, $partId)), 5);
     }
 
     /** إجمالي محصّل البيع (بيع كامل + أجزاء). */
@@ -257,7 +257,7 @@ class LandParcel extends Model
         return round((float) $this->payments()
             ->where('side', LandParcelPayment::SIDE_SALE)
             ->where('approval_status', 'approved')
-            ->sum('amount'), 2);
+            ->sum('amount'), 5);
     }
 
     /**
@@ -282,7 +282,7 @@ class LandParcel extends Model
             $rows[] = [
                 'number' => 0,
                 'due_date' => Carbon::parse(($anchorDate?->toDateString() ?: now()->toDateString()))->startOfDay(),
-                'amount' => round($downPayment, 2),
+                'amount' => round($downPayment, 5),
                 'kind' => 'down_payment',
                 'label' => 'مقدم',
             ];
@@ -293,7 +293,7 @@ class LandParcel extends Model
                 $rows[] = [
                     'number' => 0,
                     'due_date' => Carbon::parse(($anchorDate?->toDateString() ?: now()->toDateString()))->startOfDay(),
-                    'amount' => round($totalPrice - $downPayment, 2),
+                    'amount' => round($totalPrice - $downPayment, 5),
                     'kind' => 'other',
                     'label' => 'المتبقي كاش',
                 ];
@@ -310,15 +310,15 @@ class LandParcel extends Model
         }
 
         if ($count >= 1 && $baseForSchedule > 0) {
-            $per = (float) ($plan['installment_amount'] ?? round($baseForSchedule / $count, 2));
+            $per = (float) ($plan['installment_amount'] ?? round($baseForSchedule / $count, 5));
             $cursor = Carbon::parse($startDate)->startOfDay();
             $acc = 0.0;
             for ($i = 1; $i <= $count; $i++) {
                 $due = $cursor->copy();
                 if ($i === $count) {
-                    $amount = round($baseForSchedule - $acc, 2);
+                    $amount = round($baseForSchedule - $acc, 5);
                 } else {
-                    $amount = round($per, 2);
+                    $amount = round($per, 5);
                     $acc += $amount;
                 }
                 $rows[] = [
@@ -351,10 +351,10 @@ class LandParcel extends Model
         $out = [];
         foreach ($schedule as $row) {
             $due = (float) $row['amount'];
-            $paid = round(min(max(0.0, $paidPool), $due), 2);
+            $paid = round(min(max(0.0, $paidPool), $due), 5);
             $paidPool -= $paid;
-            $balance = round($due - $paid, 2);
-            $status = $balance <= 0.01 ? 'مسدد' : ($paid > 0 ? 'جزئي' : 'مستحق');
+            $balance = round($due - $paid, 5);
+            $status = $balance <= 0.00001 ? 'مسدد' : ($paid > 0 ? 'جزئي' : 'مستحق');
             $out[] = [
                 'number' => $row['number'],
                 'due_date' => $row['due_date'],

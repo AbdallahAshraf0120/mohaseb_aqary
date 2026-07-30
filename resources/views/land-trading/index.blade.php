@@ -6,8 +6,8 @@
         ['label' => 'مملوكة', 'value' => (int) ($kpis['owned'] ?? 0)],
         ['label' => 'للبيع', 'value' => (int) ($kpis['for_sale'] ?? 0)],
         ['label' => 'مباعة', 'value' => (int) ($kpis['sold'] ?? 0)],
-        ['label' => 'إجمالي الشراء', 'value' => number_format((float) ($kpis['purchase_total'] ?? 0), 2)],
-        ['label' => 'صافي الربح (المباع)', 'value' => number_format((float) ($kpis['profit'] ?? 0), 2)],
+        ['label' => 'إجمالي الشراء', 'value' => number_format((float) ($kpis['purchase_total'] ?? 0), 5)],
+        ['label' => 'صافي الربح (المباع)', 'value' => number_format((float) ($kpis['profit'] ?? 0), 5)],
     ]" />
 
     <x-listing.filters
@@ -105,16 +105,16 @@
                             </td>
                             <td>
                                 @if ($parcel->area_size !== null)
-                                    <span class="font-monospace">{{ number_format((float) $parcel->area_size, 2) }}</span>
+                                    <span class="font-monospace">{{ number_format((float) $parcel->area_size, 5) }}</span>
                                     <span class="small text-body-secondary">م²</span>
                                 @else
                                     —
                                 @endif
                             </td>
                             <td><span class="badge {{ $badge }}">{{ $parcel->statusLabel() }}</span></td>
-                            <td class="font-monospace">{{ number_format((float) $parcel->purchase_price, 2) }}</td>
+                            <td class="font-monospace">{{ number_format((float) $parcel->purchase_price, 5) }}</td>
                             <td class="font-monospace">
-                                {{ $parcel->sale_price !== null ? number_format((float) $parcel->sale_price, 2) : '—' }}
+                                {{ $parcel->sale_price !== null ? number_format((float) $parcel->sale_price, 5) : '—' }}
                             </td>
                             <td class="text-end">
                                 <a href="{{ route('land-trading.show', $parcel) }}" class="btn btn-outline-info btn-sm">عرض</a>

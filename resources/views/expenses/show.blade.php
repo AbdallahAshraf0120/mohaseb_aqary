@@ -34,7 +34,7 @@
                 <div class="col-md-4">
                     <div class="rounded-3 border p-4 h-100 text-center text-md-start bg-body-secondary bg-opacity-25">
                         <div class="small text-body-secondary mb-2">قيمة المصروف</div>
-                        <div class="fs-3 fw-bold font-monospace text-danger">{{ number_format((float) $expense->amount, 2) }}</div>
+                        <div class="fs-3 fw-bold font-monospace text-danger">{{ number_format((float) $expense->amount, 5) }}</div>
                         <div class="small text-body-secondary">جنيه مصري</div>
                         <div class="mt-3">
                             <span class="badge {{ $statusBadge['class'] }}">{{ $statusBadge['label'] }}</span>

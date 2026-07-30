@@ -2,9 +2,9 @@
 
 @section('content')
     <x-partials.module-kpis :items="[
-        ['label' => 'إجمالي المصروفات', 'value' => number_format((float) ($expenseStats['sum_amount'] ?? 0), 2) . ' ج.م'],
+        ['label' => 'إجمالي المصروفات', 'value' => number_format((float) ($expenseStats['sum_amount'] ?? 0), 5) . ' ج.م'],
         ['label' => 'عدد الحركات', 'value' => (int) ($expenseStats['count'] ?? 0)],
-        ['label' => 'متوسط الحركة', 'value' => ($expenseStats['count'] ?? 0) > 0 ? number_format((float) ($expenseStats['avg_amount'] ?? 0), 2) . ' ج.م' : '—'],
+        ['label' => 'متوسط الحركة', 'value' => ($expenseStats['count'] ?? 0) > 0 ? number_format((float) ($expenseStats['avg_amount'] ?? 0), 5) . ' ج.م' : '—'],
     ]" />
 
     <x-listing.filters
@@ -45,7 +45,7 @@
                             <td class="font-monospace">{{ $expense->spent_at?->format('Y-m-d') ?? '—' }}</td>
                             <td class="font-monospace small text-body-secondary">{{ $expense->created_at?->format('Y-m-d H:i') ?? '—' }}</td>
                             <td>{{ $expense->expenseType?->name ?: ($expense->category ?: '—') }}</td>
-                            <td>{{ number_format((float) $expense->amount, 2) }}</td>
+                            <td>{{ number_format((float) $expense->amount, 5) }}</td>
                             <td>{{ $expense->description ?: '-' }}</td>
                             <td>
                                 @if (($expense->approval_status ?? 'approved') === 'approved')

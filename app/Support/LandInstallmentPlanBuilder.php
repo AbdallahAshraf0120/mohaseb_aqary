@@ -26,7 +26,7 @@ class LandInstallmentPlanBuilder
         $downPaymentValue = $downPaymentInput === null || $downPaymentInput === ''
             ? ($isCash ? $totalPrice : 0.0)
             : (float) $downPaymentInput;
-        $downPaymentValue = round(max(0, min($downPaymentValue, $totalPrice)), 2);
+        $downPaymentValue = round(max(0, min($downPaymentValue, $totalPrice)), 5);
 
         if ($isCash) {
             return [
@@ -48,10 +48,10 @@ class LandInstallmentPlanBuilder
             default => 1,
         };
         $months = max(1, (int) ($monthsInput ?: 1));
-        $remaining = max(0, round($totalPrice - $downPaymentValue, 2));
+        $remaining = max(0, round($totalPrice - $downPaymentValue, 5));
         $installmentsCount = max(1, (int) ceil($months / $intervalMonths));
         $installmentAmount = $installmentsCount > 0 && $remaining > 0
-            ? round($remaining / $installmentsCount, 2)
+            ? round($remaining / $installmentsCount, 5)
             : 0.0;
         $startDate = filled($startDateInput) ? (string) $startDateInput : null;
 

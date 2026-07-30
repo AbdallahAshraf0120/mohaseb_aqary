@@ -3,10 +3,10 @@
 @section('content')
     <x-partials.module-kpis :items="[
         ['label' => 'عدد البيعات', 'value' => $stats['sales_count']],
-        ['label' => 'إجمالي قيمة المبيعات', 'value' => number_format($stats['total_sale_price'], 2) . ' ج.م'],
-        ['label' => 'إجمالي المقدمات', 'value' => number_format($stats['total_down_payment'], 2) . ' ج.م'],
-        ['label' => 'إجمالي التحصيلات', 'value' => number_format($stats['total_collected_revenues'], 2) . ' ج.م'],
-        ['label' => 'متبقي على العقود', 'value' => number_format($stats['total_remaining_contracts'], 2) . ' ج.م'],
+        ['label' => 'إجمالي قيمة المبيعات', 'value' => number_format($stats['total_sale_price'], 5) . ' ج.م'],
+        ['label' => 'إجمالي المقدمات', 'value' => number_format($stats['total_down_payment'], 5) . ' ج.م'],
+        ['label' => 'إجمالي التحصيلات', 'value' => number_format($stats['total_collected_revenues'], 5) . ' ج.م'],
+        ['label' => 'متبقي على العقود', 'value' => number_format($stats['total_remaining_contracts'], 5) . ' ج.م'],
     ]" />
 
     <div class="card app-surface mb-4">
@@ -79,7 +79,7 @@
                         <div>
                             <span class="fw-semibold">بيعة #{{ $sale->id }}</span>
                             <span class="text-body-secondary">— {{ $sale->property?->name ?? '—' }}</span>
-                            <span class="badge text-bg-primary ms-1">{{ number_format((float) $sale->sale_price, 2) }} ج.م</span>
+                            <span class="badge text-bg-primary ms-1">{{ number_format((float) $sale->sale_price, 5) }} ج.م</span>
                         </div>
                         <a href="{{ route('sales.show', [$project, $sale]) }}" class="btn btn-sm btn-outline-primary">تفاصيل البيعة</a>
                     </div>
@@ -89,7 +89,7 @@
                             <div class="col-md-4"><strong>نموذج الشقة:</strong> {{ $sale->apartment_model ?: '—' }}</div>
                             <div class="col-md-4"><strong>تاريخ البيعة:</strong> {{ $sale->sale_date?->format('Y-m-d') ?? '—' }}</div>
                             <div class="col-md-4"><strong>نوع السداد:</strong> {{ $sale->payment_type === 'cash' ? 'كاش' : 'تقسيط' }}</div>
-                            <div class="col-md-4"><strong>المقدم:</strong> {{ number_format((float) $sale->down_payment, 2) }} ج.م</div>
+                            <div class="col-md-4"><strong>المقدم:</strong> {{ number_format((float) $sale->down_payment, 5) }} ج.م</div>
                             <div class="col-md-4"><strong>البروكر:</strong> {{ $sale->broker_name ?: '—' }}</div>
                         </div>
 
@@ -116,25 +116,25 @@
                                     </tr>
                                     <tr>
                                         <th class="bg-body-secondary">قيمة القسط (متساوية)</th>
-                                        <td><strong>{{ number_format($instAmount, 2) }}</strong> ج.م</td>
+                                        <td><strong>{{ number_format($instAmount, 5) }}</strong> ج.م</td>
                                     </tr>
                                     <tr>
                                         <th class="bg-body-secondary">المتبقي حسب الخطة (بعد المقدم)</th>
-                                        <td>{{ number_format($planRemaining, 2) }} ج.م</td>
+                                        <td>{{ number_format($planRemaining, 5) }} ج.م</td>
                                     </tr>
                                     @if (is_array($secondaryPlan) && count($secondaryPlan) > 0)
                                         <tr>
                                             <th class="bg-body-secondary">دفعات ثانوية</th>
-                                            <td>{{ count($secondaryPlan) }} بندًا — {{ number_format($secondaryPlanTotal, 2) }} ج.م</td>
+                                            <td>{{ count($secondaryPlan) }} بندًا — {{ number_format($secondaryPlanTotal, 5) }} ج.م</td>
                                         </tr>
                                         <tr>
                                             <th class="bg-body-secondary">المقسّط على الأقساط المنتظمة</th>
-                                            <td>{{ number_format($installmentBasePlan, 2) }} ج.م</td>
+                                            <td>{{ number_format($installmentBasePlan, 5) }} ج.م</td>
                                         </tr>
                                     @endif
                                     <tr>
                                         <th class="bg-body-secondary">إجمالي الأقساط المتوقع</th>
-                                        <td>{{ number_format($instCount * $instAmount, 2) }} ج.م <span class="text-muted small">(عدد × قيمة القسط)</span></td>
+                                        <td>{{ number_format($instCount * $instAmount, 5) }} ج.م <span class="text-muted small">(عدد × قيمة القسط)</span></td>
                                     </tr>
                                     </tbody>
                                 </table>
@@ -146,9 +146,9 @@
                         @if ($contract)
                             <h6 class="text-body-secondary border-top pt-3 mb-2">العقد المرتبط</h6>
                             <div class="row g-2 small mb-2">
-                                <div class="col-md-4"><strong>إجمالي العقد:</strong> {{ number_format((float) $contract->total_price, 2) }} ج.م</div>
-                                <div class="col-md-4"><strong>المدفوع (حسب العقد):</strong> {{ number_format((float) $contract->paid_amount, 2) }} ج.م</div>
-                                <div class="col-md-4"><strong>المتبقي (حسب العقد):</strong> {{ number_format((float) $contract->remaining_amount, 2) }} ج.م</div>
+                                <div class="col-md-4"><strong>إجمالي العقد:</strong> {{ number_format((float) $contract->total_price, 5) }} ج.م</div>
+                                <div class="col-md-4"><strong>المدفوع (حسب العقد):</strong> {{ number_format((float) $contract->paid_amount, 5) }} ج.م</div>
+                                <div class="col-md-4"><strong>المتبقي (حسب العقد):</strong> {{ number_format((float) $contract->remaining_amount, 5) }} ج.م</div>
                                 <div class="col-md-6"><strong>من:</strong> {{ $contract->start_date?->format('Y-m-d') ?? '—' }}
                                     <strong class="ms-2">إلى:</strong> {{ $contract->end_date?->format('Y-m-d') ?? '—' }}</div>
                                 <div class="col-md-6 text-md-end">
@@ -159,7 +159,7 @@
                             <h6 class="text-body-secondary mb-2">حركات التحصيل على هذا العقد</h6>
                             @if ($revenues->isNotEmpty())
                                 <p class="small text-muted mb-1">عدد الحركات: <strong>{{ $revenues->count() }}</strong>
-                                    — مجموع المبالغ: <strong>{{ number_format($paidFromRevenues, 2) }}</strong> ج.م</p>
+                                    — مجموع المبالغ: <strong>{{ number_format($paidFromRevenues, 5) }}</strong> ج.م</p>
                                 <div class="table-responsive">
                                     <table class="table table-sm table-striped mb-0">
                                         <thead>
@@ -176,7 +176,7 @@
                                             <tr>
                                                 <td>{{ $rev->id }}</td>
                                                 <td>{{ $rev->paid_at?->format('Y-m-d') ?? '—' }}</td>
-                                                <td class="text-end">{{ number_format((float) $rev->amount, 2) }}</td>
+                                                <td class="text-end">{{ number_format((float) $rev->amount, 5) }}</td>
                                                 <td>{{ $rev->payment_method ?? '—' }}</td>
                                                 <td class="small">{{ $rev->notes ?: '—' }}</td>
                                             </tr>

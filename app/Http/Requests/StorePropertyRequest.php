@@ -112,7 +112,7 @@ class StorePropertyRequest extends FormRequest
             if (abs($sum - 100.0) > 0.021) {
                 $v->errors()->add(
                     'shareholder_percentages',
-                    'عند إدخال نسب للمساهمين على العقار يجب أن يكون مجموع النسب الموجبة مساوياً لـ 100٪ (المجموع الحالي: '.number_format($sum, 2).'٪).'
+                    'عند إدخال نسب للمساهمين على العقار يجب أن يكون مجموع النسب الموجبة مساوياً لـ 100٪ (المجموع الحالي: '.number_format($sum, 5).'٪).'
                 );
             }
         });

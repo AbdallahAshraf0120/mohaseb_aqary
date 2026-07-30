@@ -50,7 +50,7 @@ class SaleShareholderAttributionService
         $amount = $sale->shareholderDownPaymentAmount();
 
         if ($shareholderId === null
-            || $amount < 0.01
+            || $amount < 0.00001
             || ($sale->approval_status ?? '') !== 'approved') {
             return;
         }
@@ -67,9 +67,9 @@ class SaleShareholderAttributionService
             return;
         }
 
-        $down = round((float) ($sale->down_payment ?? 0), 2);
+        $down = round((float) ($sale->down_payment ?? 0), 5);
         $cashboxPart = $sale->cashboxDownPaymentAmount();
-        $note = $cashboxPart >= 0.01
+        $note = $cashboxPart >= 0.00001
             ? sprintf(
                 'جزء من مقدم البيعة لحساب المساهم (%.2f من أصل %.2f) — بيعة #%d',
                 $amount,

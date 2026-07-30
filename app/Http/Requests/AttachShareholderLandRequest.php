@@ -21,7 +21,7 @@ class AttachShareholderLandRequest extends FormRequest
     {
         return [
             'land_parcel_id' => ['required', 'integer', Rule::exists('land_parcels', 'id')],
-            'share_percentage' => ['required', 'numeric', 'min:0.01', 'max:100'],
+            'share_percentage' => ['required', 'numeric', 'min:0.00001', 'max:100'],
             'total_investment' => ['nullable', 'numeric', 'min:0'],
         ];
     }
@@ -54,7 +54,7 @@ class AttachShareholderLandRequest extends FormRequest
                 return;
             }
 
-            $capital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 2);
+            $capital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 5);
             if ($capital <= 0) {
                 $validator->errors()->add(
                     'land_parcel_id',
@@ -67,13 +67,13 @@ class AttachShareholderLandRequest extends FormRequest
             $pctColumn = Schema::hasColumn('land_parcel_shareholder', 'planned_percentage')
                 ? 'planned_percentage'
                 : 'share_percentage';
-            $percentage = round((float) $this->input('share_percentage'), 2);
+            $percentage = round((float) $this->input('share_percentage'), 5);
             $existingPct = round((float) LandParcelShareholder::query()
                 ->where('land_parcel_id', $parcelId)
-                ->sum($pctColumn), 2);
+                ->sum($pctColumn), 5);
 
-            if (round($existingPct + $percentage, 2) > 100.01) {
-                $remaining = max(0, round(100 - $existingPct, 2));
+            if (round($existingPct + $percentage, 5) > 100.01) {
+                $remaining = max(0, round(100 - $existingPct, 5));
                 $validator->errors()->add(
                     'share_percentage',
                     "مجموع نسب المساهمين يتجاوز 100٪. المتبقي: {$remaining}٪."

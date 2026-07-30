@@ -54,7 +54,7 @@ class ContractWordDocumentService
 
         $down = (float) ($sale?->down_payment ?? 0);
         $total = (float) $contract->total_price;
-        $netAfterDown = max(0, round($total - $down, 2));
+        $netAfterDown = max(0, round($total - $down, 5));
 
         return [
             'contract_number' => $contractRef,
@@ -87,7 +87,7 @@ class ContractWordDocumentService
 
     private function money(float $v): string
     {
-        return number_format(round($v, 2), 2, '.', '');
+        return number_format(round($v, 5), 2, '.', '');
     }
 
     private function paymentTypeLabel(?Sale $sale): string

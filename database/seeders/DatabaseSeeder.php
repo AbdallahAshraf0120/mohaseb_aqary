@@ -168,7 +168,7 @@ class DatabaseSeeder extends Seeder
                 return [
                     'shareholder_id' => $s->id,
                     'shareholder_name' => $s->name,
-                    'percentage' => round(($basePercentages[$idx] / $total) * 100, 2),
+                    'percentage' => round(($basePercentages[$idx] / $total) * 100, 5),
                 ];
             })->values()->all();
 
@@ -266,7 +266,7 @@ class DatabaseSeeder extends Seeder
             $secondaryRows = [];
             $secondaryTotal = 0.0;
             if ($paymentType !== 'cash' && \fake()->boolean(25) && $remaining > 120_000) {
-                $amt = round(min($remaining * 0.12, (float) \fake()->numberBetween(30_000, 150_000)), 2);
+                $amt = round(min($remaining * 0.12, (float) \fake()->numberBetween(30_000, 150_000)), 5);
                 if ($amt >= 5000 && $amt < $remaining - 50_000) {
                     $secondaryRows[] = [
                         'label' => 'دفعة تشطيب',
@@ -276,9 +276,9 @@ class DatabaseSeeder extends Seeder
                     $secondaryTotal = $amt;
                 }
             }
-            $secondaryTotal = round($secondaryTotal, 2);
-            $baseForSchedule = max(0, round($remaining - $secondaryTotal, 2));
-            $installmentAmount = ($installmentsCount && $baseForSchedule > 0) ? round($baseForSchedule / $installmentsCount, 2) : 0;
+            $secondaryTotal = round($secondaryTotal, 5);
+            $baseForSchedule = max(0, round($remaining - $secondaryTotal, 5));
+            $installmentAmount = ($installmentsCount && $baseForSchedule > 0) ? round($baseForSchedule / $installmentsCount, 5) : 0;
 
             return Sale::query()->updateOrCreate(
                 [
@@ -401,8 +401,8 @@ class DatabaseSeeder extends Seeder
         collect(range(1, $supplierDebtCount))->each(function (int $i) use ($pid, $slug, $carrierClientId, $suppliers): void {
             $total = (float) \fake()->numberBetween(80_000, 3_500_000);
             $paidRatio = \fake()->randomFloat(2, 0, 0.9);
-            $paid = round($total * $paidRatio, 2);
-            $remaining = round(max(0, $total - $paid), 2);
+            $paid = round($total * $paidRatio, 5);
+            $remaining = round(max(0, $total - $paid), 5);
             $creditor = $suppliers[($i - 1) % count($suppliers)];
 
             $purchaseDescription = "شراء للمشروع — {$slug} — بند {$i} (لم يُسدَّد بالكامل بعد)";
@@ -421,7 +421,7 @@ class DatabaseSeeder extends Seeder
                     'total_amount' => $total,
                     'paid_amount' => $paid,
                     'remaining_amount' => $remaining,
-                    'status' => $remaining > 0.01 ? 'open' : 'closed',
+                    'status' => $remaining > 0.00001 ? 'open' : 'closed',
                 ]
             );
         });

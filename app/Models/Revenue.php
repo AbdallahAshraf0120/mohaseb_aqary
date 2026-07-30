@@ -31,6 +31,7 @@ class Revenue extends Model
     ];
 
     protected $casts = [
+        'amount' => 'decimal:5',
         'paid_at' => 'date',
     ];
 

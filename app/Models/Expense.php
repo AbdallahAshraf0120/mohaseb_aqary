@@ -26,6 +26,7 @@ class Expense extends Model
     ];
 
     protected $casts = [
+        'amount' => 'decimal:5',
         'spent_at' => 'date',
     ];
 

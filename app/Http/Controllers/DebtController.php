@@ -94,19 +94,19 @@ class DebtController extends Controller
     public function payFromCashbox(Request $request, Project $project, Debt $debt): RedirectResponse
     {
         $validated = $request->validate([
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.00001'],
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
         $user = $request->user();
         $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
 
-        $amount = round((float) $validated['amount'], 2);
-        $remaining = round($this->debtRemainingApproved($debt), 2);
+        $amount = round((float) $validated['amount'], 5);
+        $remaining = round($this->debtRemainingApproved($debt), 5);
         if ($amount - $remaining > 0.009) {
             return redirect()
                 ->route('debts.edit', [$project, $debt])
-                ->withErrors(['pay_amount' => 'المبلغ أكبر من المتبقي في الذمة ('.number_format($remaining, 2).' ج.م).'])
+                ->withErrors(['pay_amount' => 'المبلغ أكبر من المتبقي في الذمة ('.number_format($remaining, 5).' ج.م).'])
                 ->withInput();
         }
 
@@ -148,15 +148,15 @@ class DebtController extends Controller
 
     private function debtRemainingApproved(Debt $debt): float
     {
-        $total = round((float) $debt->total_amount, 2);
+        $total = round((float) $debt->total_amount, 5);
         $paid = round((float) DebtPayment::query()
             ->where('debt_id', $debt->id)
             ->where('approval_status', 'approved')
-            ->sum('amount'), 2);
+            ->sum('amount'), 5);
         $pending = round((float) DebtPayment::query()
             ->where('debt_id', $debt->id)
             ->where('approval_status', 'pending')
-            ->sum('amount'), 2);
+            ->sum('amount'), 5);
 
         return max(0.0, $total - $paid - $pending);
     }
@@ -164,17 +164,17 @@ class DebtController extends Controller
     private function recalculateDebtInline(Debt $debt): void
     {
         $debt->refresh();
-        $total = round((float) $debt->total_amount, 2);
+        $total = round((float) $debt->total_amount, 5);
         $paid = round((float) DebtPayment::query()
             ->where('debt_id', $debt->id)
             ->where('approval_status', 'approved')
-            ->sum('amount'), 2);
+            ->sum('amount'), 5);
         $paid = min($paid, $total);
-        $remaining = round(max(0.0, $total - $paid), 2);
+        $remaining = round(max(0.0, $total - $paid), 5);
         $debt->update([
             'paid_amount' => $paid,
             'remaining_amount' => $remaining,
-            'status' => $remaining > 0.01 ? 'open' : 'closed',
+            'status' => $remaining > 0.00001 ? 'open' : 'closed',
         ]);
     }
 
@@ -201,11 +201,11 @@ class DebtController extends Controller
      */
     private function normalizedDebtPayload(Project $project, array $data, ?Debt $existing = null): array
     {
-        $total = round((float) $data['total_amount'], 2);
-        $paid = round((float) ($data['paid_amount'] ?? 0), 2);
+        $total = round((float) $data['total_amount'], 5);
+        $paid = round((float) ($data['paid_amount'] ?? 0), 5);
         $paid = min($paid, $total);
-        $remaining = round(max(0.0, $total - $paid), 2);
-        $status = $remaining > 0.01 ? 'open' : 'closed';
+        $remaining = round(max(0.0, $total - $paid), 5);
+        $status = $remaining > 0.00001 ? 'open' : 'closed';
 
         $clientId = $existing?->client_id;
         if ($clientId === null && Schema::getConnection()->getDriverName() !== 'mysql') {

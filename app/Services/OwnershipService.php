@@ -23,12 +23,12 @@ class OwnershipService
 
     public function percentageFor(float $investment, float $capital): float
     {
-        $capital = round($capital, 2);
+        $capital = round($capital, 5);
         if ($capital <= 0) {
             return 0.0;
         }
 
-        return round(($investment / $capital) * 100, 2);
+        return round(($investment / $capital) * 100, 5);
     }
 
     public function attributedPurchaseTotal(int $shareholderId, int $landParcelId): float
@@ -57,7 +57,7 @@ class OwnershipService
             }
         }
 
-        return round((float) $query->sum('amount'), 2);
+        return round((float) $query->sum('amount'), 5);
     }
 
     public function syncProjectActual(int $projectId): void
@@ -85,7 +85,7 @@ class OwnershipService
             $membership->actual_investment = $actual;
         }
 
-        $actualCapital = round($actualCapital, 2);
+        $actualCapital = round($actualCapital, 5);
         foreach ($members as $membership) {
             $membership->actual_percentage = $this->percentageFor(
                 (float) $membership->actual_investment,
@@ -120,12 +120,12 @@ class OwnershipService
                 ? $shareholder->capitalDepositsTotal(null, $landParcelId)
                 : 0.0;
             $purchases = $this->attributedPurchaseTotal((int) $membership->shareholder_id, $landParcelId);
-            $actual = round($capital + $purchases, 2);
+            $actual = round($capital + $purchases, 5);
             $actualCapital += $actual;
             $membership->actual_investment = $actual;
         }
 
-        $actualCapital = round($actualCapital, 2);
+        $actualCapital = round($actualCapital, 5);
         foreach ($members as $membership) {
             $membership->actual_percentage = $this->percentageFor(
                 (float) $membership->actual_investment,
@@ -144,7 +144,7 @@ class OwnershipService
             return;
         }
 
-        $plannedCapital = round((float) ($project->planned_capital ?? $project->capital ?? 0), 2);
+        $plannedCapital = round((float) ($project->planned_capital ?? $project->capital ?? 0), 5);
         if (Schema::hasColumn('projects', 'planned_capital') && abs($plannedCapital - (float) $project->capital) > 0.001) {
             // keep capital alias in sync with planned
         }
@@ -158,7 +158,7 @@ class OwnershipService
             ->where('project_id', (int) $project->id)
             ->get()
             ->each(function (ProjectShareholder $m) use ($plannedCapital): void {
-                $inv = round((float) ($m->planned_investment ?? $m->total_investment ?? 0), 2);
+                $inv = round((float) ($m->planned_investment ?? $m->total_investment ?? 0), 5);
                 $pct = $this->percentageFor($inv, $plannedCapital);
                 $m->planned_investment = $inv;
                 $m->planned_percentage = $pct;
@@ -174,7 +174,7 @@ class OwnershipService
             return;
         }
 
-        $plannedCapital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 2);
+        $plannedCapital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 5);
         $parcel->planned_capital = $plannedCapital;
         if (Schema::hasColumn('land_parcels', 'purchase_price')) {
             $parcel->purchase_price = $plannedCapital;
@@ -185,7 +185,7 @@ class OwnershipService
             ->where('land_parcel_id', (int) $parcel->id)
             ->get()
             ->each(function (LandParcelShareholder $m) use ($plannedCapital): void {
-                $inv = round((float) ($m->planned_investment ?? $m->total_investment ?? 0), 2);
+                $inv = round((float) ($m->planned_investment ?? $m->total_investment ?? 0), 5);
                 $pct = $this->percentageFor($inv, $plannedCapital);
                 $m->planned_investment = $inv;
                 $m->planned_percentage = $pct;
@@ -197,8 +197,8 @@ class OwnershipService
 
     public function setPlannedInvestmentForProject(Shareholder $shareholder, Project $project, float $investment): ProjectShareholder
     {
-        $investment = round($investment, 2);
-        $plannedCapital = round((float) ($project->planned_capital ?? $project->capital ?? 0), 2);
+        $investment = round($investment, 5);
+        $plannedCapital = round((float) ($project->planned_capital ?? $project->capital ?? 0), 5);
         $pct = $this->percentageFor($investment, $plannedCapital);
 
         return $this->persistProjectPlan($shareholder, $project, $investment, $pct);
@@ -206,17 +206,17 @@ class OwnershipService
 
     public function setPlannedPercentageForProject(Shareholder $shareholder, Project $project, float $percentage): ProjectShareholder
     {
-        $pct = round(max(0, $percentage), 2);
-        $plannedCapital = round((float) ($project->planned_capital ?? $project->capital ?? 0), 2);
-        $investment = round($plannedCapital * ($pct / 100), 2);
+        $pct = round(max(0, $percentage), 5);
+        $plannedCapital = round((float) ($project->planned_capital ?? $project->capital ?? 0), 5);
+        $investment = round($plannedCapital * ($pct / 100), 5);
 
         return $this->persistProjectPlan($shareholder, $project, $investment, $pct);
     }
 
     public function setPlannedInvestmentForLand(Shareholder $shareholder, LandParcel $parcel, float $investment): LandParcelShareholder
     {
-        $investment = round($investment, 2);
-        $plannedCapital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 2);
+        $investment = round($investment, 5);
+        $plannedCapital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 5);
         $pct = $this->percentageFor($investment, $plannedCapital);
 
         return $this->persistLandPlan($shareholder, $parcel, $investment, $pct);
@@ -224,9 +224,9 @@ class OwnershipService
 
     public function setPlannedPercentageForLand(Shareholder $shareholder, LandParcel $parcel, float $percentage): LandParcelShareholder
     {
-        $pct = round(max(0, $percentage), 2);
-        $plannedCapital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 2);
-        $investment = round($plannedCapital * ($pct / 100), 2);
+        $pct = round(max(0, $percentage), 5);
+        $plannedCapital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 5);
+        $investment = round($plannedCapital * ($pct / 100), 5);
 
         return $this->persistLandPlan($shareholder, $parcel, $investment, $pct);
     }
@@ -313,8 +313,8 @@ class OwnershipService
                 continue;
             }
 
-            $plannedInv = round((float) ($membership->planned_investment ?? $membership->total_investment ?? 0), 2);
-            if ($plannedInv >= 0.01) {
+            $plannedInv = round((float) ($membership->planned_investment ?? $membership->total_investment ?? 0), 5);
+            if ($plannedInv >= 0.00001) {
                 $this->ledgerService->setFundingAmount(
                     $shareholder,
                     $projectId,
@@ -326,14 +326,14 @@ class OwnershipService
                 );
             }
 
-            $pct = round((float) ($membership->planned_percentage ?? $membership->share_percentage ?? 0), 2);
+            $pct = round((float) ($membership->planned_percentage ?? $membership->share_percentage ?? 0), 5);
             $membership->refresh();
             $membership->actual_investment = $plannedInv;
             $membership->actual_percentage = $pct;
             $membership->save();
         }
 
-        $project->actual_capital = round((float) ($project->planned_capital ?? $project->capital ?? 0), 2);
+        $project->actual_capital = round((float) ($project->planned_capital ?? $project->capital ?? 0), 5);
         $project->saveQuietly();
 
         $members = ProjectShareholder::query()
@@ -367,13 +367,13 @@ class OwnershipService
                 continue;
             }
 
-            $plannedInv = round((float) ($membership->planned_investment ?? $membership->total_investment ?? 0), 2);
+            $plannedInv = round((float) ($membership->planned_investment ?? $membership->total_investment ?? 0), 5);
             $capitalOnly = $shareholder->capitalDepositsTotal(null, $landParcelId);
             $purchaseAttributed = $this->attributedPurchaseTotal((int) $shareholder->id, $landParcelId);
             // Align capital deposits so capital + purchases ≈ planned (purchases stay attributed separately)
-            $targetCapital = max(0.01, round($plannedInv - $purchaseAttributed, 2));
-            if ($plannedInv >= 0.01) {
-                if ($targetCapital >= 0.01) {
+            $targetCapital = max(0.01, round($plannedInv - $purchaseAttributed, 5));
+            if ($plannedInv >= 0.00001) {
+                if ($targetCapital >= 0.00001) {
                     $this->ledgerService->setFundingAmount(
                         $shareholder,
                         null,
@@ -383,18 +383,18 @@ class OwnershipService
                         true,
                         'اعتماد المخطط كفعلي — مطابقة رأس المال'
                     );
-                } elseif ($capitalOnly >= 0.01 && $purchaseAttributed >= $plannedInv) {
+                } elseif ($capitalOnly >= 0.00001 && $purchaseAttributed >= $plannedInv) {
                     // actual from purchases already covers plan; leave capital as-is
                 }
             }
 
-            $pct = round((float) ($membership->planned_percentage ?? $membership->share_percentage ?? 0), 2);
+            $pct = round((float) ($membership->planned_percentage ?? $membership->share_percentage ?? 0), 5);
             $membership->actual_investment = $plannedInv;
             $membership->actual_percentage = $pct;
             $membership->save();
         }
 
-        $parcel->actual_capital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 2);
+        $parcel->actual_capital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 5);
         $parcel->saveQuietly();
 
         $members = LandParcelShareholder::query()

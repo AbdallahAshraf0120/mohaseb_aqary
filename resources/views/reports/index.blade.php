@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $fmt = fn (float $n): string => number_format($n, 2, '.', ',');
+        $fmt = fn (float $n): string => number_format($n, 5, '.', ',');
     @endphp
 
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">

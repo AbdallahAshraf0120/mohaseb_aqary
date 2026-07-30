@@ -15,8 +15,8 @@
     @endif
 
     <x-partials.module-kpis :items="[
-        ['label' => 'رصيد الجاري الموحّد', 'value' => number_format((float) $ledgerBalance, 2) . ' ج.م'],
-        ['label' => 'رأس المال (دفتر)', 'value' => number_format((float) $capitalDepositsTotal, 2) . ' ج.م'],
+        ['label' => 'رصيد الجاري الموحّد', 'value' => number_format((float) $ledgerBalance, 5) . ' ج.م'],
+        ['label' => 'رأس المال (دفتر)', 'value' => number_format((float) $capitalDepositsTotal, 5) . ' ج.م'],
         ['label' => 'مشاريع', 'value' => $memberships->count()],
         ['label' => 'أراضي بيع/شراء', 'value' => $landMemberships->count()],
     ]" />
@@ -63,12 +63,12 @@
                                             {{ $row->project->name }}
                                         </a>
                                     </td>
-                                    <td class="text-end font-monospace">{{ number_format($pInv, 2) }}</td>
-                                    <td class="text-end">{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 2) }}%</td>
-                                    <td class="text-end font-monospace">{{ number_format($aInv, 2) }}</td>
-                                    <td class="text-end">{{ number_format((float) ($row->membership->actual_percentage ?? 0), 2) }}%</td>
+                                    <td class="text-end font-monospace">{{ number_format($pInv, 5) }}</td>
+                                    <td class="text-end">{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 5) }}%</td>
+                                    <td class="text-end font-monospace">{{ number_format($aInv, 5) }}</td>
+                                    <td class="text-end">{{ number_format((float) ($row->membership->actual_percentage ?? 0), 5) }}%</td>
                                     <td class="text-end font-monospace fw-bold fs-6 {{ $row->ledger_balance >= 0 ? 'text-success' : 'text-danger' }}">
-                                        {{ number_format((float) $row->ledger_balance, 2) }}
+                                        {{ number_format((float) $row->ledger_balance, 5) }}
                                     </td>
                                     @can('shareholders.manage')
                                         <td class="text-end">
@@ -80,7 +80,7 @@
                                                 data-funding-type="project"
                                                 data-funding-id="{{ $row->project->id }}"
                                                 data-funding-label="مشروع: {{ $row->project->name }}"
-                                                data-funding-pct="{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 2, '.', '') }}"
+                                                data-funding-pct="{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 5, '.', '') }}"
                                                 data-funding-amount=""
                                                 data-funding-hint="عدّل النسبة المخططة. التمويل النقدي اختياري ويحدّث رأس المال الفعلي في الجاري."
                                             >
@@ -126,12 +126,12 @@
                                             —
                                         @endif
                                     </td>
-                                    <td class="text-end font-monospace">{{ number_format($lpInv, 2) }}</td>
-                                    <td class="text-end">{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 2) }}%</td>
-                                    <td class="text-end font-monospace">{{ number_format($laInv, 2) }}</td>
-                                    <td class="text-end">{{ number_format((float) ($row->membership->actual_percentage ?? 0), 2) }}%</td>
+                                    <td class="text-end font-monospace">{{ number_format($lpInv, 5) }}</td>
+                                    <td class="text-end">{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 5) }}%</td>
+                                    <td class="text-end font-monospace">{{ number_format($laInv, 5) }}</td>
+                                    <td class="text-end">{{ number_format((float) ($row->membership->actual_percentage ?? 0), 5) }}%</td>
                                     <td class="text-end font-monospace {{ $row->ledger_balance >= 0 ? 'text-success' : 'text-danger' }}">
-                                        {{ number_format((float) $row->ledger_balance, 2) }}
+                                        {{ number_format((float) $row->ledger_balance, 5) }}
                                     </td>
                                     @can('shareholders.manage')
                                         <td class="text-end">
@@ -144,7 +144,7 @@
                                                     data-funding-type="land"
                                                     data-funding-id="{{ $row->parcel->id }}"
                                                     data-funding-label="أرض: {{ $row->parcel->name }}"
-                                                    data-funding-pct="{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 2, '.', '') }}"
+                                                    data-funding-pct="{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 5, '.', '') }}"
                                                     data-funding-amount=""
                                                     data-funding-hint="عدّل النسبة المخططة. التمويل النقدي اختياري. السدادات على الأرض تبني الفعلي."
                                                 >
@@ -185,12 +185,12 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">النسبة %</label>
-                                    <input type="number" step="0.01" min="0.01" max="100" name="share_percentage" class="form-control font-monospace @error('share_percentage') is-invalid @enderror" value="{{ old('share_percentage') }}" required>
+                                    <input type="number" step="0.00001" min="0.00001" max="100" name="share_percentage" class="form-control font-monospace @error('share_percentage') is-invalid @enderror" value="{{ old('share_percentage') }}" required>
                                     @error('share_percentage') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">تمويل نقدي (اختياري)</label>
-                                    <input type="number" step="0.01" min="0" name="total_investment" class="form-control font-monospace @error('total_investment') is-invalid @enderror" value="{{ old('total_investment') }}">
+                                    <input type="number" step="0.00001" min="0" name="total_investment" class="form-control font-monospace @error('total_investment') is-invalid @enderror" value="{{ old('total_investment') }}">
                                     @error('total_investment') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 <div class="col-md-2">
@@ -214,7 +214,7 @@
                                         <option value="">اختر…</option>
                                         @foreach ($availableLands as $land)
                                             <option value="{{ $land->id }}">
-                                                {{ $land->name }} — شراء {{ number_format((float) $land->purchase_price, 2) }}
+                                                {{ $land->name }} — شراء {{ number_format((float) $land->purchase_price, 5) }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -222,12 +222,12 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">النسبة %</label>
-                                    <input type="number" step="0.01" min="0.01" max="100" name="share_percentage" class="form-control font-monospace @error('share_percentage') is-invalid @enderror" value="{{ old('share_percentage') }}" required>
+                                    <input type="number" step="0.00001" min="0.00001" max="100" name="share_percentage" class="form-control font-monospace @error('share_percentage') is-invalid @enderror" value="{{ old('share_percentage') }}" required>
                                     @error('share_percentage') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">تمويل نقدي (اختياري)</label>
-                                    <input type="number" step="0.01" min="0" name="total_investment" class="form-control font-monospace @error('total_investment') is-invalid @enderror" value="{{ old('total_investment') }}">
+                                    <input type="number" step="0.00001" min="0" name="total_investment" class="form-control font-monospace @error('total_investment') is-invalid @enderror" value="{{ old('total_investment') }}">
                                     @error('total_investment') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 <div class="col-md-2">
@@ -287,7 +287,7 @@
                                 </span>
                                 <div class="small text-body-secondary">{{ $payment->kindLabel() }}</div>
                             </td>
-                            <td class="text-end font-monospace">{{ number_format((float) $payment->amount, 2) }}</td>
+                            <td class="text-end font-monospace">{{ number_format((float) $payment->amount, 5) }}</td>
                             <td class="small">
                                 @if ($payment->side === 'purchase')
                                     @if ($payment->paidByShareholder)
@@ -340,7 +340,7 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="mb-0"><i class="fa-solid fa-book-open text-primary ms-1"></i> دفتر جاري المساهم (موحّد)</h5>
             <span class="badge {{ $ledgerBalance >= 0 ? 'text-bg-success' : 'text-bg-danger' }}">
-                الرصيد: {{ number_format((float) $ledgerBalance, 2) }} ج.م
+                الرصيد: {{ number_format((float) $ledgerBalance, 5) }} ج.م
             </span>
         </div>
         <div class="card-body">
@@ -395,7 +395,7 @@
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">المبلغ</label>
-                                <input type="number" step="0.01" min="0.01" name="amount" value="{{ old('amount') }}"
+                                <input type="number" step="0.00001" min="0.00001" name="amount" value="{{ old('amount') }}"
                                        class="form-control font-monospace @error('amount') is-invalid @enderror" required>
                                 @error('amount') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
@@ -460,11 +460,11 @@
                                 @endif
                             </td>
                             <td class="text-end font-monospace fw-semibold {{ $entry->direction === 'credit' ? 'text-success' : 'text-danger' }}">
-                                {{ $entry->direction === 'credit' ? '+' : '−' }}{{ number_format((float) $entry->amount, 2) }}
+                                {{ $entry->direction === 'credit' ? '+' : '−' }}{{ number_format((float) $entry->amount, 5) }}
                             </td>
                             <td class="text-end font-monospace fw-semibold {{ (float) ($entry->project_running_balance ?? $entry->running_balance ?? 0) >= 0 ? 'text-success' : 'text-danger' }}"
                                 title="جاري المساهم في مشروع الوجهة بعد هذه الحركة">
-                                {{ number_format((float) ($entry->project_running_balance ?? $entry->running_balance ?? 0), 2) }}
+                                {{ number_format((float) ($entry->project_running_balance ?? $entry->running_balance ?? 0), 5) }}
                             </td>
                             <td class="small">
                                 @if ($entry->treasuryTransaction && $entry->project)
@@ -520,7 +520,7 @@
                                         $canAllocate = $entry->direction === 'credit'
                                             && $entry->project_id
                                             && ($allocateTargetProjects ?? collect())->where('id', '!=', (int) $entry->project_id)->isNotEmpty()
-                                            && $entry->remainingAllocatableAmount() >= 0.01;
+                                            && $entry->remainingAllocatableAmount() >= 0.00001;
                                     @endphp
                                     <div class="d-inline-flex gap-1 justify-content-end flex-wrap">
                                         @if ($canAllocate)
@@ -531,8 +531,8 @@
                                                 data-bs-target="#allocateLedgerModal"
                                                 data-allocate-id="{{ $entry->id }}"
                                                 data-allocate-action="{{ route('shareholders.ledger.allocate', [$shareholder, $entry]) }}"
-                                                data-allocate-amount="{{ number_format((float) $entry->amount, 2, '.', '') }}"
-                                                data-allocate-remaining="{{ number_format($entry->remainingAllocatableAmount(), 2, '.', '') }}"
+                                                data-allocate-amount="{{ number_format((float) $entry->amount, 5, '.', '') }}"
+                                                data-allocate-remaining="{{ number_format($entry->remainingAllocatableAmount(), 5, '.', '') }}"
                                                 data-allocate-project-id="{{ (int) $entry->project_id }}"
                                                 data-allocate-project="{{ e($entry->project?->name ?? '—') }}"
                                                 data-allocate-date="{{ $entry->entry_date?->format('Y-m-d') }}"
@@ -588,10 +588,10 @@
                                     {{ $row->project->name }}
                                 </a>
                             </td>
-                            <td class="text-end font-monospace">{{ number_format((float) $row->attributed_operating, 2) }}</td>
-                            <td class="text-end font-monospace">{{ number_format((float) $row->attributed_cost, 2) }}</td>
+                            <td class="text-end font-monospace">{{ number_format((float) $row->attributed_operating, 5) }}</td>
+                            <td class="text-end font-monospace">{{ number_format((float) $row->attributed_cost, 5) }}</td>
                             <td class="text-end font-monospace {{ $row->approx_current >= 0 ? 'text-success' : 'text-danger' }}">
-                                {{ number_format((float) $row->approx_current, 2) }}
+                                {{ number_format((float) $row->approx_current, 5) }}
                             </td>
                         </tr>
                     @empty
@@ -640,7 +640,7 @@
                                 @endif
                             </td>
                             <td>{{ $p->area?->name ?? '—' }}</td>
-                            <td><span class="badge text-bg-primary">{{ number_format((float) $item->percentage, 2) }}%</span></td>
+                            <td><span class="badge text-bg-primary">{{ number_format((float) $item->percentage, 5) }}%</span></td>
                             <td class="text-end">
                                 <a href="{{ route('properties.show', [$p->project_id, $p]) }}" class="btn btn-outline-info btn-sm">عرض</a>
                             </td>
@@ -676,8 +676,8 @@
                             <label class="form-label fw-semibold" for="funding-share-percentage">نسبة المساهمة (%)</label>
                             <input
                                 type="number"
-                                step="0.01"
-                                min="0.01"
+                                step="0.00001"
+                                min="0.00001"
                                 max="100"
                                 name="share_percentage"
                                 id="funding-share-percentage"
@@ -691,7 +691,7 @@
                             <label class="form-label fw-semibold mt-3" for="funding-total-investment">تمويل نقدي فعلي (اختياري)</label>
                             <input
                                 type="number"
-                                step="0.01"
+                                step="0.00001"
                                 min="0"
                                 name="total_investment"
                                 id="funding-total-investment"
@@ -781,7 +781,7 @@
                                 <div class="col-md-6" id="allocate-percentage-wrap">
                                     <label class="form-label fw-semibold" for="allocate-percentage">النسبة من أصل الحركة (%)</label>
                                     <div class="input-group">
-                                        <input type="number" step="0.01" min="0.01" max="100" name="percentage" id="allocate-percentage"
+                                        <input type="number" step="0.00001" min="0.00001" max="100" name="percentage" id="allocate-percentage"
                                                value="{{ old('percentage') }}"
                                                class="form-control font-monospace @error('percentage') is-invalid @enderror"
                                                placeholder="مثال: 30">
@@ -800,7 +800,7 @@
                                 <div class="col-md-6" id="allocate-amount-wrap" style="display:none">
                                     <label class="form-label fw-semibold" for="allocate-amount">المبلغ المراد توزيعه</label>
                                     <div class="input-group">
-                                        <input type="number" step="0.01" min="0.01" name="amount" id="allocate-amount"
+                                        <input type="number" step="0.00001" min="0.00001" name="amount" id="allocate-amount"
                                                value="{{ old('amount') }}"
                                                class="form-control font-monospace @error('amount') is-invalid @enderror"
                                                placeholder="0.00">
@@ -902,9 +902,9 @@
                 let sourceProjectId = '';
 
                 function money(n) {
-                    return (Math.round((n + Number.EPSILON) * 100) / 100).toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
+                    return (Math.round((n + Number.EPSILON) * 100000) / 100000).toLocaleString('en-US', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 5
                     }) + ' ج.م';
                 }
 
@@ -921,7 +921,7 @@
                     let value = 0;
                     if (modePct && modePct.checked) {
                         const pct = parseFloat(pctInput && pctInput.value ? pctInput.value : '0') || 0;
-                        value = Math.round(sourceAmount * (pct / 100) * 100) / 100;
+                        value = Math.round(sourceAmount * (pct / 100) * 100000) / 100000;
                     } else {
                         value = parseFloat(amountInput && amountInput.value ? amountInput.value : '0') || 0;
                     }
@@ -990,7 +990,7 @@
                         syncMode();
                         const pct = parseFloat(btn.getAttribute('data-pct') || '0') || 0;
                         const maxPct = sourceAmount > 0 ? Math.min(100, (remaining / sourceAmount) * 100) : 100;
-                        pctInput.value = String(Math.min(pct, Math.round(maxPct * 100) / 100));
+                        pctInput.value = String(Math.min(pct, Math.round(maxPct * 100000) / 100000));
                         updatePreview();
                     });
                 });

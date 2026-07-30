@@ -312,17 +312,17 @@ class ApprovalsController extends Controller
             return;
         }
 
-        $total = round((float) $debt->total_amount, 2);
+        $total = round((float) $debt->total_amount, 5);
         $paid = round((float) DebtPayment::query()
             ->where('debt_id', $debtId)
             ->where('approval_status', 'approved')
-            ->sum('amount'), 2);
+            ->sum('amount'), 5);
         $paid = min($paid, $total);
-        $remaining = round(max(0.0, $total - $paid), 2);
+        $remaining = round(max(0.0, $total - $paid), 5);
         $debt->update([
             'paid_amount' => $paid,
             'remaining_amount' => $remaining,
-            'status' => $remaining > 0.01 ? 'open' : 'closed',
+            'status' => $remaining > 0.00001 ? 'open' : 'closed',
         ]);
     }
 

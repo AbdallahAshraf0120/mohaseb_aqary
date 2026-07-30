@@ -37,8 +37,8 @@ class DashboardController extends Controller
         });
         $treasuryIn = (float) (clone $operating)->where('type', 'revenue')->sum('amount');
         $treasuryOut = (float) (clone $operating)->where('type', 'expense')->sum('amount');
-        $transfersIn = round($treasuryInAll - $treasuryIn, 2);
-        $transfersOut = round($treasuryOutAll - $treasuryOut, 2);
+        $transfersIn = round($treasuryInAll - $treasuryIn, 5);
+        $transfersOut = round($treasuryOutAll - $treasuryOut, 5);
 
         $stats = [
             'properties' => Property::query()->count(),

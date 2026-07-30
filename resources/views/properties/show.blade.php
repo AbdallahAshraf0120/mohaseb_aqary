@@ -163,12 +163,12 @@
                         @foreach($costRows as $label => $value)
                             <tr>
                                 <td>{{ $label }}</td>
-                                <td class="text-end font-monospace">{{ number_format($value, 2) }}</td>
+                                <td class="text-end font-monospace">{{ number_format($value, 5) }}</td>
                             </tr>
                         @endforeach
                         <tr class="fw-semibold">
                             <td>الإجمالي</td>
-                            <td class="text-end font-monospace">{{ number_format($totalCosts, 2) }}</td>
+                            <td class="text-end font-monospace">{{ number_format($totalCosts, 5) }}</td>
                         </tr>
                         </tbody>
                     </table>
@@ -184,7 +184,7 @@
                                 @foreach ($allocations as $allocation)
                                     <li class="mb-1">
                                         {{ $allocation['shareholder_name'] ?? ('مساهم #' . ($allocation['shareholder_id'] ?? '-')) }}:
-                                        <span class="font-monospace fw-medium">{{ number_format((float) ($allocation['percentage'] ?? 0), 2) }}%</span>
+                                        <span class="font-monospace fw-medium">{{ number_format((float) ($allocation['percentage'] ?? 0), 5) }}%</span>
                                     </li>
                                 @endforeach
                             </ul>
@@ -212,7 +212,7 @@
                                     @foreach ($models as $model)
                                         <tr>
                                             <td>{{ $model['model_name'] ?? '—' }}</td>
-                                            <td class="text-end font-monospace">{{ number_format((float) ($model['area'] ?? 0), 2) }}</td>
+                                            <td class="text-end font-monospace">{{ number_format((float) ($model['area'] ?? 0), 5) }}</td>
                                             <td>{{ (int) ($model['rooms_count'] ?? 0) }}</td>
                                             <td>{{ (int) ($model['bathrooms_count'] ?? 0) }}</td>
                                             <td>

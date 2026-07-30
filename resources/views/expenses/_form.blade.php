@@ -17,7 +17,7 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">القيمة</label>
-        <input type="number" step="0.01" min="1" name="amount" class="form-control" required value="{{ old('amount', $expense->amount ?? '') }}">
+        <input type="number" step="0.00001" min="1" name="amount" class="form-control" required value="{{ old('amount', $expense->amount ?? '') }}">
     </div>
     <div class="col-md-3">
         <label class="form-label">تاريخ الصرف</label>

@@ -94,9 +94,9 @@ final class ShareholderAttributedFlowService
 
         foreach ($out as $pid => $row) {
             $out[$pid] = [
-                'revenues' => round((float) $row['revenues'], 2),
-                'down_payments' => round((float) $row['down_payments'], 2),
-                'sale_volume' => round((float) $row['sale_volume'], 2),
+                'revenues' => round((float) $row['revenues'], 5),
+                'down_payments' => round((float) $row['down_payments'], 5),
+                'sale_volume' => round((float) $row['sale_volume'], 5),
             ];
         }
 
@@ -154,7 +154,7 @@ final class ShareholderAttributedFlowService
             $total += $pool * ($pct / 100.0);
         }
 
-        return round($total, 2);
+        return round($total, 5);
     }
 
     /**
@@ -199,7 +199,7 @@ final class ShareholderAttributedFlowService
             $total += $cost * ($pct / 100.0);
         }
 
-        return round($total, 2);
+        return round($total, 5);
     }
 
     /**
@@ -208,7 +208,7 @@ final class ShareholderAttributedFlowService
      */
     public function shareholderCurrentAccountApprox(float $attributedOperatingFlow, float $attributedDevelopmentCostShare): float
     {
-        return round($attributedOperatingFlow - $attributedDevelopmentCostShare, 2);
+        return round($attributedOperatingFlow - $attributedDevelopmentCostShare, 5);
     }
 
     /**
@@ -236,7 +236,7 @@ final class ShareholderAttributedFlowService
             $total += $vol * ($pct / 100.0);
         }
 
-        return round($total, 2);
+        return round($total, 5);
     }
 
     /**
@@ -265,16 +265,16 @@ final class ShareholderAttributedFlowService
             $attributedOp = $pool * ($pct / 100.0);
             $rows[] = [
                 'property_id' => $pid,
-                'revenues' => round((float) $f['revenues'], 2),
-                'down_payments' => round((float) $f['down_payments'], 2),
-                'sale_volume' => round((float) $f['sale_volume'], 2),
-                'percentage' => round($pct, 2),
-                'operating_pool' => round($pool, 2),
-                'attributed_operating' => round($attributedOp, 2),
-                'attributed_sale_volume' => round((float) $f['sale_volume'] * ($pct / 100.0), 2),
-                'development_cost_total' => round($devTotal, 2),
-                'attributed_development_cost' => round($attributedDev, 2),
-                'current_account_slice' => round($attributedOp - $attributedDev, 2),
+                'revenues' => round((float) $f['revenues'], 5),
+                'down_payments' => round((float) $f['down_payments'], 5),
+                'sale_volume' => round((float) $f['sale_volume'], 5),
+                'percentage' => round($pct, 5),
+                'operating_pool' => round($pool, 5),
+                'attributed_operating' => round($attributedOp, 5),
+                'attributed_sale_volume' => round((float) $f['sale_volume'] * ($pct / 100.0), 5),
+                'development_cost_total' => round($devTotal, 5),
+                'attributed_development_cost' => round($attributedDev, 5),
+                'current_account_slice' => round($attributedOp - $attributedDev, 5),
             ];
         }
 

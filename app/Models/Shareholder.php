@@ -83,7 +83,7 @@ class Shareholder extends Model
         $credit = (float) $creditQuery->where('direction', ShareholderLedgerEntry::DIRECTION_CREDIT)->sum('amount');
         $debit = (float) $debitQuery->where('direction', ShareholderLedgerEntry::DIRECTION_DEBIT)->sum('amount');
 
-        return round($credit - $debit, 2);
+        return round($credit - $debit, 5);
     }
 
     public function capitalDepositsTotal(?int $projectId = null, ?int $landParcelId = null): float
@@ -96,6 +96,6 @@ class Shareholder extends Model
             $query->where('land_parcel_id', $landParcelId);
         }
 
-        return round((float) $query->sum('amount'), 2);
+        return round((float) $query->sum('amount'), 5);
     }
 }

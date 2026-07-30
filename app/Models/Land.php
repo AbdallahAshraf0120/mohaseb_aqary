@@ -32,19 +32,19 @@ class Land extends Model
     ];
 
     protected $casts = [
-        'land_cost' => 'decimal:2',
-        'building_license_cost' => 'decimal:2',
-        'piles_cost' => 'decimal:2',
-        'excavation_cost' => 'decimal:2',
-        'gravel_cost' => 'decimal:2',
-        'sand_cost' => 'decimal:2',
-        'cement_cost' => 'decimal:2',
-        'steel_cost' => 'decimal:2',
-        'carpentry_labor_cost' => 'decimal:2',
-        'blacksmith_labor_cost' => 'decimal:2',
-        'mason_labor_cost' => 'decimal:2',
-        'electrician_labor_cost' => 'decimal:2',
-        'tips_cost' => 'decimal:2',
+        'land_cost' => 'decimal:5',
+        'building_license_cost' => 'decimal:5',
+        'piles_cost' => 'decimal:5',
+        'excavation_cost' => 'decimal:5',
+        'gravel_cost' => 'decimal:5',
+        'sand_cost' => 'decimal:5',
+        'cement_cost' => 'decimal:5',
+        'steel_cost' => 'decimal:5',
+        'carpentry_labor_cost' => 'decimal:5',
+        'blacksmith_labor_cost' => 'decimal:5',
+        'mason_labor_cost' => 'decimal:5',
+        'electrician_labor_cost' => 'decimal:5',
+        'tips_cost' => 'decimal:5',
     ];
 
     public function project(): BelongsTo

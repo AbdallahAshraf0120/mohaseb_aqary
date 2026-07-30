@@ -88,7 +88,7 @@ class CashboxController extends Controller
     {
         $data = $request->validate([
             'type' => ['required', 'in:revenue,expense,shareholder_payout'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.00001'],
             'description' => ['nullable', 'string', 'max:500'],
             'shareholder_id' => ['nullable', 'integer', 'exists:shareholders,id', 'required_if:type,shareholder_payout'],
         ], [
@@ -97,7 +97,7 @@ class CashboxController extends Controller
 
         $user = $request->user();
         $isAdmin = $user instanceof \App\Models\User && $user->isAdmin();
-        $amount = round((float) $data['amount'], 2);
+        $amount = round((float) $data['amount'], 5);
 
         if (in_array($data['type'], ['expense', 'shareholder_payout'], true)) {
             try {

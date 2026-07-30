@@ -52,7 +52,7 @@ class ShareholderLedgerEntry extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal:2',
+            'amount' => 'decimal:5',
             'entry_date' => 'date',
         ];
     }
@@ -101,7 +101,7 @@ class ShareholderLedgerEntry extends Model
             return 0.0;
         }
 
-        $sourceAmount = round((float) $this->amount, 2);
+        $sourceAmount = round((float) $this->amount, 5);
         if (! \Illuminate\Support\Facades\Schema::hasColumn($this->getTable(), 'source_ledger_entry_id')) {
             return $sourceAmount;
         }
@@ -110,9 +110,9 @@ class ShareholderLedgerEntry extends Model
             ->where('source_ledger_entry_id', (int) $this->id)
             ->where('direction', self::DIRECTION_DEBIT)
             ->where('project_id', (int) $this->project_id)
-            ->sum('amount'), 2);
+            ->sum('amount'), 5);
 
-        return round(max(0, $sourceAmount - $allocated), 2);
+        return round(max(0, $sourceAmount - $allocated), 5);
     }
 
     public function resolveRouteBinding($value, $field = null)

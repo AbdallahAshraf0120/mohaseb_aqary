@@ -38,16 +38,16 @@ class SaleController extends Controller
 
         // مؤشرات الملخص تعتمد المعتمد فقط — مثل التقارير والصندوق
         $approvedTotalsQuery = (clone $totalsQuery)->where('approval_status', 'approved');
-        $totalSales = round((float) (clone $approvedTotalsQuery)->sum('sale_price'), 2);
+        $totalSales = round((float) (clone $approvedTotalsQuery)->sum('sale_price'), 5);
 
         // مقدمات معتمدة + أقساط/تحصيلات معتمدة على عقود نفس المبيعات المعتمدة المفلترة
         $saleIds = (clone $approvedTotalsQuery)->select('id');
-        $downPayments = round((float) (clone $approvedTotalsQuery)->sum('down_payment'), 2);
+        $downPayments = round((float) (clone $approvedTotalsQuery)->sum('down_payment'), 5);
         $installmentsCollected = round((float) Revenue::query()
             ->where('approval_status', 'approved')
             ->whereIn('contract_id', Contract::query()->whereIn('sale_id', $saleIds)->select('id'))
-            ->sum('amount'), 2);
-        $totalCollected = round($downPayments + $installmentsCollected, 2);
+            ->sum('amount'), 5);
+        $totalCollected = round($downPayments + $installmentsCollected, 5);
 
         $saleTotals = [
             'total_sales' => $totalSales,
@@ -136,9 +136,9 @@ class SaleController extends Controller
         }
         if (Schema::hasColumn('sales', 'shareholder_down_payment_amount')) {
             $sharePart = isset($validated['shareholder_down_payment_amount'])
-                ? round((float) $validated['shareholder_down_payment_amount'], 2)
+                ? round((float) $validated['shareholder_down_payment_amount'], 5)
                 : 0.0;
-            if (($salePayload['received_by_shareholder_id'] ?? null) === null || $sharePart < 0.01) {
+            if (($salePayload['received_by_shareholder_id'] ?? null) === null || $sharePart < 0.00001) {
                 $salePayload['received_by_shareholder_id'] = null;
                 $salePayload['shareholder_down_payment_amount'] = null;
             } else {
@@ -173,20 +173,20 @@ class SaleController extends Controller
         $revenues = $sale->contract?->revenues ?? collect();
         $scheduledTotal = (float) collect($installmentRows)->sum(static fn (array $r) => $r['amount']);
         $downPayment = ($sale->approval_status ?? 'approved') === 'approved'
-            ? round((float) ($sale->down_payment ?? 0), 2)
+            ? round((float) ($sale->down_payment ?? 0), 5)
             : 0.0;
-        $revenuesSum = round((float) $revenues->sum(static fn ($r) => (float) $r->amount), 2);
-        $contractTotal = round((float) ($sale->contract?->total_price ?? $sale->sale_price ?? 0), 2);
-        $contractPaid = round($downPayment + $revenuesSum, 2);
+        $revenuesSum = round((float) $revenues->sum(static fn ($r) => (float) $r->amount), 5);
+        $contractTotal = round((float) ($sale->contract?->total_price ?? $sale->sale_price ?? 0), 5);
+        $contractPaid = round($downPayment + $revenuesSum, 5);
         $stats = [
             'installment_rows' => count($installmentRows),
-            'scheduled_total' => round($scheduledTotal, 2),
+            'scheduled_total' => round($scheduledTotal, 5),
             'down_payment' => $downPayment,
             'revenues_count' => $revenues->count(),
             'revenues_sum' => $revenuesSum,
             'contract_total' => $contractTotal,
             'contract_paid' => $contractPaid,
-            'contract_remaining' => round(max(0, $contractTotal - $contractPaid), 2),
+            'contract_remaining' => round(max(0, $contractTotal - $contractPaid), 5),
         ];
 
         return view('sales.show', [
@@ -249,9 +249,9 @@ class SaleController extends Controller
         }
         if (Schema::hasColumn('sales', 'shareholder_down_payment_amount')) {
             $sharePart = isset($validated['shareholder_down_payment_amount'])
-                ? round((float) $validated['shareholder_down_payment_amount'], 2)
+                ? round((float) $validated['shareholder_down_payment_amount'], 5)
                 : 0.0;
-            if (($update['received_by_shareholder_id'] ?? null) === null || $sharePart < 0.01) {
+            if (($update['received_by_shareholder_id'] ?? null) === null || $sharePart < 0.00001) {
                 $update['received_by_shareholder_id'] = null;
                 $update['shareholder_down_payment_amount'] = null;
             } else {

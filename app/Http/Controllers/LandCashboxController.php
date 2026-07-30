@@ -68,7 +68,7 @@ class LandCashboxController extends Controller
             'expensesTotal' => $treasuryOut,
             'pendingIn' => $pendingIn,
             'pendingOut' => $pendingOut,
-            'currentBalance' => round($treasuryIn - $treasuryOut, 2),
+            'currentBalance' => round($treasuryIn - $treasuryOut, 5),
             'transactions' => $txQuery->paginate(15)->withQueryString(),
         ]);
     }
@@ -77,7 +77,7 @@ class LandCashboxController extends Controller
     {
         $data = $request->validate([
             'type' => ['required', 'in:revenue,expense'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.00001'],
             'description' => ['nullable', 'string'],
         ]);
 

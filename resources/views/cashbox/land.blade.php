@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $fmt = fn (float $n): string => number_format($n, 2, '.', ',');
+        $fmt = fn (float $n): string => number_format($n, 5, '.', ',');
         $currencyLabel = strtoupper((string) $currency) === 'EGP' ? 'ج.م' : $currency;
     @endphp
 
@@ -138,7 +138,7 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">المبلغ</label>
-                                <input type="number" step="0.01" min="0.01" name="amount" class="form-control font-monospace" value="{{ old('amount') }}" required>
+                                <input type="number" step="0.00001" min="0.00001" name="amount" class="form-control font-monospace" value="{{ old('amount') }}" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">الوصف</label>

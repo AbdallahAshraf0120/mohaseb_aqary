@@ -47,7 +47,7 @@
                             @selected((string) old('project_id', request('project_id')) === (string) $p->id)>
                         {{ $p->name }}
                         @if ($cap > 0)
-                            — رأس المال: {{ number_format($cap, 2) }} ج.م
+                            — رأس المال: {{ number_format($cap, 5) }} ج.م
                         @endif
                     </option>
                 @endforeach
@@ -67,7 +67,7 @@
                             @selected((string) old('land_parcel_id') === (string) $land->id)>
                         {{ $land->name }}
                         @if ($lcap > 0)
-                            — شراء: {{ number_format($lcap, 2) }} ج.م
+                            — شراء: {{ number_format($lcap, 5) }} ج.م
                         @endif
                     </option>
                 @endforeach
@@ -78,7 +78,7 @@
 
         <div class="col-md-4">
             <label class="form-label" for="shareholder-share-percentage">نسبة المساهمة (%)</label>
-            <input id="shareholder-share-percentage" type="number" step="0.01" min="0.01" max="100" name="share_percentage"
+            <input id="shareholder-share-percentage" type="number" step="0.00001" min="0.00001" max="100" name="share_percentage"
                    class="form-control font-monospace @error('share_percentage') is-invalid @enderror"
                    value="{{ old('share_percentage') }}" required>
             @error('share_percentage') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -86,7 +86,7 @@
         </div>
         <div class="col-md-4">
             <label class="form-label" for="shareholder-total-investment" id="shareholder-investment-label">التمويل النقدي (اختياري)</label>
-            <input id="shareholder-total-investment" type="number" step="0.01" min="0" name="total_investment"
+            <input id="shareholder-total-investment" type="number" step="0.00001" min="0" name="total_investment"
                    class="form-control font-monospace @error('total_investment') is-invalid @enderror"
                    value="{{ old('total_investment') }}">
             @error('total_investment') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -143,7 +143,7 @@
         return parseFloat(opt?.dataset?.capital || '0') || 0;
     }
     function formatMoney(n) {
-        return (Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return (Math.round(n * 100000) / 100000).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 5 });
     }
     function syncVisibility() {
         const isLand = linkType() === 'land';
@@ -157,11 +157,11 @@
         const isLand = linkType() === 'land';
         const cap = capital();
         const pct = parseFloat(pctInput?.value || '0') || 0;
-        const planned = cap > 0 ? Math.round(cap * (pct / 100) * 100) / 100 : 0;
+        const planned = cap > 0 ? Math.round(cap * (pct / 100) * 100000) / 100000 : 0;
         if (formulaEl) {
             formulaEl.textContent = cap <= 0
-                ? (pct > 0 ? pct.toFixed(2) + '% (رأس المال غير معيّن بعد — التمويل المخطط = 0)' : 'أدخل النسبة')
-                : 'تمويل مخطط ≈ ' + formatMoney(planned) + ' ج.م (' + pct.toFixed(2) + '% من ' + formatMoney(cap) + ')';
+                ? (pct > 0 ? pct.toFixed(5) + '% (رأس المال غير معيّن بعد — التمويل المخطط = 0)' : 'أدخل النسبة')
+                : 'تمويل مخطط ≈ ' + formatMoney(planned) + ' ج.م (' + pct.toFixed(5) + '% من ' + formatMoney(cap) + ')';
         }
         if (!isLand && projectHint) {
             projectHint.textContent = cap > 0

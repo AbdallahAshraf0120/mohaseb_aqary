@@ -20,6 +20,10 @@ class DebtPayment extends Model
         'rejection_reason',
     ];
 
+    protected $casts = [
+        'amount' => 'decimal:5',
+    ];
+
     protected static function booted(): void
     {
         static::deleting(function (DebtPayment $payment): void {

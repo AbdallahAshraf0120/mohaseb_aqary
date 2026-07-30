@@ -2,9 +2,9 @@
 
 @section('content')
     <x-partials.module-kpis :items="[
-        ['label' => 'إجمالي التحصيل', 'value' => number_format((float) ($revenueStats['sum_amount'] ?? 0), 2) . ' ج.م'],
+        ['label' => 'إجمالي التحصيل', 'value' => number_format((float) ($revenueStats['sum_amount'] ?? 0), 5) . ' ج.م'],
         ['label' => 'عدد الإيصالات', 'value' => (int) ($revenueStats['count'] ?? 0)],
-        ['label' => 'متوسط التحصيل', 'value' => ($revenueStats['count'] ?? 0) > 0 ? number_format((float) ($revenueStats['avg_amount'] ?? 0), 2) . ' ج.م' : '—'],
+        ['label' => 'متوسط التحصيل', 'value' => ($revenueStats['count'] ?? 0) > 0 ? number_format((float) ($revenueStats['avg_amount'] ?? 0), 5) . ' ج.م' : '—'],
     ]" />
 
     <x-listing.filters
@@ -44,7 +44,7 @@
                             <td>{{ $revenue->client?->name ?? '-' }}</td>
                             <td>{{ $revenue->contract_id ? 'CT-' . now()->format('Y') . '-' . str_pad((string) $revenue->contract_id, 3, '0', STR_PAD_LEFT) : '-' }}</td>
                             <td>{{ $revenue->receivedByShareholder?->name ?? '—' }}</td>
-                            <td>{{ number_format((float) $revenue->amount, 2) }}</td>
+                            <td>{{ number_format((float) $revenue->amount, 5) }}</td>
                             <td>{{ $revenue->paid_at?->format('Y-m-d') ?? '-' }}</td>
                             <td>
                                 @if (($revenue->approval_status ?? 'approved') === 'approved')

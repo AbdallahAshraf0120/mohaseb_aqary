@@ -30,7 +30,7 @@ class CashboxBalanceService
         $in = (float) (clone $base)->where('type', 'revenue')->sum('amount');
         $out = (float) (clone $base)->where('type', 'expense')->sum('amount');
 
-        return round($in - $out, 2);
+        return round($in - $out, 5);
     }
 
     /**
@@ -38,15 +38,15 @@ class CashboxBalanceService
      */
     public function assertCanSpend(int $projectId, float|int|string $amount, ?array $exclude = null): void
     {
-        $amount = round((float) $amount, 2);
-        if ($amount < 0.01) {
+        $amount = round((float) $amount, 5);
+        if ($amount < 0.00001) {
             return;
         }
 
         $balance = $this->approvedBalance($projectId, $exclude);
         if ($amount > $balance + 0.01) {
             throw new InvalidArgumentException(
-                'رصيد الصندوق غير كافٍ للصرف (المتاح: '.number_format($balance, 2).' ج.م).'
+                'رصيد الصندوق غير كافٍ للصرف (المتاح: '.number_format($balance, 5).' ج.م).'
             );
         }
     }

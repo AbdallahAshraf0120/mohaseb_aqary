@@ -24,6 +24,9 @@ class Contract extends Model
     ];
 
     protected $casts = [
+        'total_price' => 'decimal:5',
+        'paid_amount' => 'decimal:5',
+        'remaining_amount' => 'decimal:5',
         'start_date' => 'date',
         'end_date' => 'date',
     ];
@@ -61,8 +64,8 @@ class Contract extends Model
      */
     public function suggestedNextCollectionAmount(?int $excludeRevenueId = null): ?float
     {
-        $remaining = round((float) $this->remaining_amount, 2);
-        if ($remaining < 0.01) {
+        $remaining = round((float) $this->remaining_amount, 5);
+        if ($remaining < 0.00001) {
             return null;
         }
 
@@ -85,8 +88,8 @@ class Contract extends Model
 
             foreach ($rows as $row) {
                 $balance = (float) ($row['balance'] ?? 0);
-                if ($balance > 0.01) {
-                    return round(min($balance, $remaining), 2);
+                if ($balance > 0.00001) {
+                    return round(min($balance, $remaining), 5);
                 }
             }
         }

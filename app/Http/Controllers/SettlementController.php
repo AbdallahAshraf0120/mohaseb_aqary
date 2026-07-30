@@ -58,8 +58,8 @@ class SettlementController extends Controller
                     ->where('type', ShareholderLedgerEntry::TYPE_CAPITAL)
                     ->sum('amount');
 
-                $sh->setAttribute('ledger_balance', round($credit - $debit, 2));
-                $sh->setAttribute('capital_deposits_total', round($capital, 2));
+                $sh->setAttribute('ledger_balance', round($credit - $debit, 5));
+                $sh->setAttribute('capital_deposits_total', round($capital, 5));
                 $sh->setAttribute('share_percentage', (float) $m->share_percentage);
 
                 return $sh;

@@ -9,10 +9,10 @@
     @endphp
 
     <x-partials.module-kpis :items="[
-        ['label' => 'قيمة المبيعات', 'value' => number_format($totalSales, 2) . ' ج.م'],
-        ['label' => 'المحصّل', 'value' => number_format($totalCollected, 2) . ' ج.م'],
-        ['label' => 'المتبقي', 'value' => number_format($totalRemaining, 2) . ' ج.م'],
-        ['label' => 'ربح السعر (بيع − شراء)', 'value' => number_format($profit, 2) . ' ج.م'],
+        ['label' => 'قيمة المبيعات', 'value' => number_format($totalSales, 5) . ' ج.م'],
+        ['label' => 'المحصّل', 'value' => number_format($totalCollected, 5) . ' ج.م'],
+        ['label' => 'المتبقي', 'value' => number_format($totalRemaining, 5) . ' ج.م'],
+        ['label' => 'ربح السعر (بيع − شراء)', 'value' => number_format($profit, 5) . ' ج.م'],
         ['label' => 'عدد البيعات', 'value' => (int) ($saleTotals['count'] ?? 0)],
         ['label' => 'مباعة بالكامل', 'value' => (int) ($saleTotals['sold_count'] ?? 0)],
     ]" />
@@ -112,7 +112,7 @@
                         @php
                             $salePrice = (float) ($parcel->sale_price ?? 0);
                             $collected = (float) ($parcel->sale_collected ?? 0);
-                            $remaining = round(max(0, $salePrice - $collected), 2);
+                            $remaining = round(max(0, $salePrice - $collected), 5);
                             $payType = $parcel->sale_payment_type ?? null;
                             $payLabel = match ($payType) {
                                 'installment' => 'أقساط',
@@ -145,11 +145,11 @@
                             <td class="font-monospace small">{{ optional($parcel->sale_date)->format('Y-m-d') ?: '—' }}</td>
                             <td>{{ $payLabel }}</td>
                             <td class="text-end font-monospace">
-                                {{ $salePrice > 0 ? number_format($salePrice, 2) : '—' }}
+                                {{ $salePrice > 0 ? number_format($salePrice, 5) : '—' }}
                             </td>
-                            <td class="text-end font-monospace text-success-emphasis">{{ number_format($collected, 2) }}</td>
-                            <td class="text-end font-monospace {{ $remaining > 0.01 ? 'text-danger-emphasis' : 'text-body-secondary' }}">
-                                {{ number_format($remaining, 2) }}
+                            <td class="text-end font-monospace text-success-emphasis">{{ number_format($collected, 5) }}</td>
+                            <td class="text-end font-monospace {{ $remaining > 0.00001 ? 'text-danger-emphasis' : 'text-body-secondary' }}">
+                                {{ number_format($remaining, 5) }}
                             </td>
                             <td><span class="badge {{ $badge }}">{{ $parcel->statusLabel() }}</span></td>
                             <td class="text-end">

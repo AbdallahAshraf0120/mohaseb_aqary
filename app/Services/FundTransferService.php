@@ -46,7 +46,7 @@ class FundTransferService
         $toType = (string) $data['to_type'];
         $fromId = (int) $data['from_id'];
         $toId = (int) $data['to_id'];
-        $amount = round((float) $data['amount'], 2);
+        $amount = round((float) $data['amount'], 5);
 
         $this->assertEndpoint($fromType, $fromId);
         $this->assertEndpoint($toType, $toId);
@@ -55,7 +55,7 @@ class FundTransferService
             throw new InvalidArgumentException('لا يمكن التحويل لنفس الصندوق.');
         }
 
-        if ($amount < 0.01) {
+        if ($amount < 0.00001) {
             throw new InvalidArgumentException('المبلغ يجب أن يكون أكبر من صفر.');
         }
 

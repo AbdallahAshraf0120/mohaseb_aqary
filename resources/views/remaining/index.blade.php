@@ -2,7 +2,7 @@
 
 @section('content')
     <x-partials.module-kpis :items="[
-        ['label' => 'إجمالي المتبقي', 'value' => number_format((float) ($remainingKpis['remaining'] ?? 0), 2) . ' ج.م'],
+        ['label' => 'إجمالي المتبقي', 'value' => number_format((float) ($remainingKpis['remaining'] ?? 0), 5) . ' ج.م'],
         ['label' => 'عدد العقود', 'value' => (int) ($remainingKpis['count'] ?? 0)],
     ]" />
 
@@ -24,7 +24,7 @@
                             <td>CT-{{ now()->format('Y') }}-{{ str_pad((string) $contract->id, 3, '0', STR_PAD_LEFT) }}</td>
                             <td>{{ $contract->client?->name ?? '-' }}</td>
                             <td>{{ $contract->property?->name ?? '-' }}</td>
-                            <td class="font-monospace">{{ number_format((float) $contract->remaining_amount, 2) }}</td>
+                            <td class="font-monospace">{{ number_format((float) $contract->remaining_amount, 5) }}</td>
                             <td class="text-end">
                                 <a href="{{ route('contracts.show', [$project, $contract]) }}" class="btn btn-outline-info btn-sm">العقد</a>
                             </td>

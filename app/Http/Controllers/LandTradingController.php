@@ -172,8 +172,8 @@ class LandTradingController extends Controller
                 'sold_count' => $soldCount,
                 'total_sales' => $totalSales,
                 'total_collected' => $totalCollected,
-                'total_remaining' => round(max(0, $totalSales - $totalCollected), 2),
-                'profit' => round($totalSales - $purchaseOfSales, 2),
+                'total_remaining' => round(max(0, $totalSales - $totalCollected), 5),
+                'profit' => round($totalSales - $purchaseOfSales, 5),
             ],
             'paymentsReady' => Schema::hasTable('land_parcel_payments'),
         ]);
@@ -198,7 +198,7 @@ class LandTradingController extends Controller
         $data = $this->validated($request);
         $data['created_by'] = $request->user()?->id;
         if (Schema::hasColumn('land_parcels', 'planned_capital')) {
-            $data['planned_capital'] = round((float) $data['purchase_price'], 2);
+            $data['planned_capital'] = round((float) $data['purchase_price'], 5);
             $data['actual_capital'] = 0;
         }
 
@@ -291,7 +291,7 @@ class LandTradingController extends Controller
             'purchasePaid' => $paymentsReady ? $parcel->approvedPaidTotal(LandParcelPayment::SIDE_PURCHASE) : 0.0,
             'purchaseRemaining' => $paymentsReady ? $parcel->remainingTotal(LandParcelPayment::SIDE_PURCHASE) : (float) $parcel->purchase_price,
             'salePaid' => $salePaid,
-            'saleRemaining' => round(max(0, $saleTarget - $salePaid), 2),
+            'saleRemaining' => round(max(0, $saleTarget - $salePaid), 5),
             'remainingArea' => $partsReady ? $parcel->remainingArea() : null,
             'ownershipReady' => Schema::hasColumn('land_parcel_shareholder', 'planned_investment'),
         ]);
@@ -310,7 +310,7 @@ class LandTradingController extends Controller
     {
         $data = $this->validated($request);
         if (Schema::hasColumn('land_parcels', 'planned_capital')) {
-            $data['planned_capital'] = round((float) $data['purchase_price'], 2);
+            $data['planned_capital'] = round((float) $data['purchase_price'], 5);
         }
         $parcel->update($data);
         if (Schema::hasColumn('land_parcel_shareholder', 'planned_investment')) {
@@ -363,7 +363,7 @@ class LandTradingController extends Controller
             'side' => ['required', 'in:purchase,sale'],
             'land_parcel_part_id' => $partIdRules,
             'kind' => ['required', 'in:down_payment,installment,secondary,other'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.00001'],
             'paid_at' => ['required', 'date'],
             'payment_method' => ['required', 'in:cash,bank_transfer,check'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -536,8 +536,8 @@ class LandTradingController extends Controller
     {
         $remaining = $parcel->remainingArea($exceptPart?->id);
         $areaRules = $parcel->area_size !== null
-            ? ['required', 'numeric', 'min:0.01']
-            : ['nullable', 'numeric', 'min:0.01'];
+            ? ['required', 'numeric', 'min:0.00001']
+            : ['nullable', 'numeric', 'min:0.00001'];
         if ($remaining !== null) {
             $areaRules[] = 'max:'.$remaining;
         }
@@ -546,7 +546,7 @@ class LandTradingController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'area_size' => $areaRules,
             'status' => ['required', 'string', Rule::in(array_keys(LandParcelPart::STATUSES))],
-            'sale_price' => ['required', 'numeric', 'min:0.01'],
+            'sale_price' => ['required', 'numeric', 'min:0.00001'],
             'sale_date' => ['nullable', 'date'],
             'sold_to' => ['nullable', 'string', 'max:255'],
             'sale_phone' => ['nullable', 'string', 'max:50'],
@@ -559,7 +559,7 @@ class LandTradingController extends Controller
         ], [
             'area_size.required' => 'المساحة مطلوبة لتحديد نسبة الجزء من الأرض.',
             'area_size.max' => $remaining !== null
-                ? 'المساحة أكبر من المتاح. المتبقي: '.number_format($remaining, 2).' م².'
+                ? 'المساحة أكبر من المتاح. المتبقي: '.number_format($remaining, 5).' م².'
                 : 'المساحة غير صحيحة.',
             'area_size.min' => 'أدخل مساحة أكبر من صفر.',
         ]);
@@ -569,7 +569,7 @@ class LandTradingController extends Controller
             : 0.0;
         $salePerM2 = (float) ($parcel->sale_price_per_m2 ?? 0);
         if ($partArea > 0 && $salePerM2 > 0) {
-            $data['sale_price'] = round($partArea * $salePerM2, 2);
+            $data['sale_price'] = round($partArea * $salePerM2, 5);
         }
 
         $built = LandInstallmentPlanBuilder::build(
@@ -636,10 +636,10 @@ class LandTradingController extends Controller
             : 0.0;
 
         if ($area > 0 && $buyPerM2 > 0) {
-            $data['purchase_price'] = round($area * $buyPerM2, 2);
+            $data['purchase_price'] = round($area * $buyPerM2, 5);
         }
         if ($area > 0 && $salePerM2 > 0) {
-            $data['sale_price'] = round($area * $salePerM2, 2);
+            $data['sale_price'] = round($area * $salePerM2, 5);
         }
 
         if (($data['status'] ?? '') === 'sold' && empty($data['sale_price'])) {

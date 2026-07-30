@@ -23,12 +23,12 @@ class LandParcelShareholder extends Model
     protected function casts(): array
     {
         return [
-            'share_percentage' => 'decimal:2',
-            'total_investment' => 'decimal:2',
-            'planned_investment' => 'decimal:2',
-            'planned_percentage' => 'decimal:2',
-            'actual_investment' => 'decimal:2',
-            'actual_percentage' => 'decimal:2',
+            'share_percentage' => 'decimal:5',
+            'total_investment' => 'decimal:5',
+            'planned_investment' => 'decimal:5',
+            'planned_percentage' => 'decimal:5',
+            'actual_investment' => 'decimal:5',
+            'actual_percentage' => 'decimal:5',
         ];
     }
 

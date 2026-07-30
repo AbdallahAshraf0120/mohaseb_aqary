@@ -58,7 +58,7 @@
                             <i class="fa-solid fa-coins ms-1 opacity-75"></i> قيمة التحصيل
                         </div>
                         <div class="fs-1 fw-bold text-primary font-monospace lh-sm mb-1">
-                            {{ number_format((float) $revenue->amount, 2) }}
+                            {{ number_format((float) $revenue->amount, 5) }}
                         </div>
                         <div class="text-body-secondary small">جنيه مصري</div>
                         <div class="mt-4 pt-3 border-top border-primary-subtle d-flex flex-wrap gap-2 justify-content-center justify-content-lg-start">

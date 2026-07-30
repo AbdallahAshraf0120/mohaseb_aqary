@@ -24,10 +24,10 @@ class UpdateDebtRequest extends StoreDebtRequest
                 return;
             }
             $paid = (float) ($this->input('paid_amount', 0) ?? 0);
-            if ($paid + 0.009 < $sumPayments) {
+            if ($paid + 0.000009 < $sumPayments) {
                 $v->errors()->add(
                     'paid_amount',
-                    'المسدَّد الإجمالي لا يمكن أن يقل عن مجموع سدادات الصندوق ('.number_format($sumPayments, 2).' ج.م).'
+                    'المسدَّد الإجمالي لا يمكن أن يقل عن مجموع سدادات الصندوق ('.number_format($sumPayments, 5).' ج.م).'
                 );
             }
         });

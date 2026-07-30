@@ -61,7 +61,7 @@ class ShareholderController extends Controller
             'count' => (clone $query)->count(),
             'total_investment' => (float) $shareholdersForKpis->sum(fn ($sh) => (float) ($sh->capital_deposits_sum ?? 0)),
             'ledger_balance_total' => (float) $shareholdersForKpis->sum(
-                fn ($sh) => round((float) ($sh->ledger_credit_sum ?? 0) - (float) ($sh->ledger_debit_sum ?? 0), 2)
+                fn ($sh) => round((float) ($sh->ledger_credit_sum ?? 0) - (float) ($sh->ledger_debit_sum ?? 0), 5)
             ),
             'memberships_count' => (float) ProjectShareholder::query()
                 ->when($projectId, fn ($q) => $q->where('project_id', $projectId))
@@ -82,9 +82,9 @@ class ShareholderController extends Controller
         $shareholders->getCollection()->transform(function (Shareholder $sh): Shareholder {
             $sh->setAttribute(
                 'ledger_balance',
-                round((float) ($sh->ledger_credit_sum ?? 0) - (float) ($sh->ledger_debit_sum ?? 0), 2)
+                round((float) ($sh->ledger_credit_sum ?? 0) - (float) ($sh->ledger_debit_sum ?? 0), 5)
             );
-            $sh->setAttribute('capital_deposits_total', round((float) ($sh->capital_deposits_sum ?? 0), 2));
+            $sh->setAttribute('capital_deposits_total', round((float) ($sh->capital_deposits_sum ?? 0), 5));
 
             return $sh;
         });
@@ -136,9 +136,9 @@ class ShareholderController extends Controller
     {
         $data = $request->validated();
         $linkType = (string) $data['link_type'];
-        $percentage = round((float) $data['share_percentage'], 2);
+        $percentage = round((float) $data['share_percentage'], 5);
         $funding = isset($data['total_investment']) && $data['total_investment'] !== null && $data['total_investment'] !== ''
-            ? round((float) $data['total_investment'], 2)
+            ? round((float) $data['total_investment'], 5)
             : 0.0;
 
         $shareholder = $this->shareholderService->create($data);
@@ -148,7 +148,7 @@ class ShareholderController extends Controller
             $this->shareholderService->attachToLandParcel($shareholder, $parcel, $percentage);
 
             app(CurrentProject::class)->force(null);
-            if ($funding >= 0.01) {
+            if ($funding >= 0.00001) {
                 $this->ledgerService->create($shareholder, [
                     'project_id' => null,
                     'land_parcel_id' => (int) $parcel->id,
@@ -168,7 +168,7 @@ class ShareholderController extends Controller
         $this->shareholderService->attachToProject($shareholder, $project, $percentage);
 
         app(CurrentProject::class)->force((int) $project->id);
-        if ($funding >= 0.01) {
+        if ($funding >= 0.00001) {
             $this->ledgerService->create($shareholder, [
                 'project_id' => (int) $project->id,
                 'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
@@ -232,7 +232,7 @@ class ShareholderController extends Controller
             $signed = $entry->direction === ShareholderLedgerEntry::DIRECTION_CREDIT
                 ? (float) $entry->amount
                 : -(float) $entry->amount;
-            $runningByDestination[$destKey] = round($runningByDestination[$destKey] + $signed, 2);
+            $runningByDestination[$destKey] = round($runningByDestination[$destKey] + $signed, 5);
             $balanceAfterById[(int) $entry->id] = $runningByDestination[$destKey];
         }
         $ledgerEntries->each(function ($entry) use ($balanceAfterById): void {
@@ -271,13 +271,13 @@ class ShareholderController extends Controller
                 : -(float) $entry->amount;
             if ($entry->project_id !== null) {
                 $pid = (int) $entry->project_id;
-                $balanceByProjectId[$pid] = round(($balanceByProjectId[$pid] ?? 0) + $signed, 2);
+                $balanceByProjectId[$pid] = round(($balanceByProjectId[$pid] ?? 0) + $signed, 5);
             } elseif ($entry->land_parcel_id !== null) {
                 $lid = (int) $entry->land_parcel_id;
-                $balanceByLandId[$lid] = round(($balanceByLandId[$lid] ?? 0) + $signed, 2);
+                $balanceByLandId[$lid] = round(($balanceByLandId[$lid] ?? 0) + $signed, 5);
             }
         }
-        $ledgerBalanceUnified = round(array_sum($balanceByProjectId) + array_sum($balanceByLandId), 2);
+        $ledgerBalanceUnified = round(array_sum($balanceByProjectId) + array_sum($balanceByLandId), 5);
 
         $projectBreakdown = [];
         foreach ($memberships as $membership) {
@@ -380,14 +380,14 @@ class ShareholderController extends Controller
     {
         $data = $request->validated();
         $project = Project::query()->findOrFail((int) $data['project_id']);
-        $percentage = round((float) $data['share_percentage'], 2);
+        $percentage = round((float) $data['share_percentage'], 5);
         $funding = isset($data['total_investment']) && $data['total_investment'] !== null && $data['total_investment'] !== ''
-            ? round((float) $data['total_investment'], 2)
+            ? round((float) $data['total_investment'], 5)
             : 0.0;
 
         $this->shareholderService->attachToProject($shareholder, $project, $percentage);
         app(CurrentProject::class)->force((int) $project->id);
-        if ($funding >= 0.01) {
+        if ($funding >= 0.00001) {
             $this->ledgerService->create($shareholder, [
                 'project_id' => (int) $project->id,
                 'type' => ShareholderLedgerEntry::TYPE_CAPITAL,
@@ -399,7 +399,7 @@ class ShareholderController extends Controller
 
         return redirect()
             ->route('shareholders.show', $shareholder)
-            ->with('success', $funding >= 0.01
+            ->with('success', $funding >= 0.00001
                 ? 'تم ربط المساهم بالمشروع وتسجيل رأس المال في الجاري.'
                 : 'تم ربط المساهم بالمشروع بالنسبة المخططة.');
     }
@@ -408,14 +408,14 @@ class ShareholderController extends Controller
     {
         $data = $request->validated();
         $parcel = LandParcel::query()->findOrFail((int) $data['land_parcel_id']);
-        $percentage = round((float) $data['share_percentage'], 2);
+        $percentage = round((float) $data['share_percentage'], 5);
         $funding = isset($data['total_investment']) && $data['total_investment'] !== null && $data['total_investment'] !== ''
-            ? round((float) $data['total_investment'], 2)
+            ? round((float) $data['total_investment'], 5)
             : 0.0;
 
         $this->shareholderService->attachToLandParcel($shareholder, $parcel, $percentage);
         app(CurrentProject::class)->force(null);
-        if ($funding >= 0.01) {
+        if ($funding >= 0.00001) {
             $this->ledgerService->create($shareholder, [
                 'project_id' => null,
                 'land_parcel_id' => (int) $parcel->id,
@@ -428,7 +428,7 @@ class ShareholderController extends Controller
 
         return redirect()
             ->route('shareholders.show', $shareholder)
-            ->with('success', $funding >= 0.01
+            ->with('success', $funding >= 0.00001
                 ? 'تم ربط المساهم بالأرض وتسجيل رأس المال في الجاري.'
                 : 'تم ربط المساهم بالأرض بالنسبة المخططة.');
     }
@@ -437,11 +437,11 @@ class ShareholderController extends Controller
     {
         $data = $request->validated();
         $isProject = $data['target_type'] === 'project';
-        $percentage = round((float) $data['share_percentage'], 2);
+        $percentage = round((float) $data['share_percentage'], 5);
         $hasFunding = array_key_exists('total_investment', $data)
             && $data['total_investment'] !== null
             && $data['total_investment'] !== '';
-        $funding = $hasFunding ? round((float) $data['total_investment'], 2) : null;
+        $funding = $hasFunding ? round((float) $data['total_investment'], 5) : null;
 
         try {
             if ($isProject) {

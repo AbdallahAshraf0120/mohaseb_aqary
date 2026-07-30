@@ -63,7 +63,7 @@ class RevenueShareholderAttributionService
             return;
         }
 
-        $amount = round((float) $revenue->amount, 2);
+        $amount = round((float) $revenue->amount, 5);
         if ($amount <= 0) {
             return;
         }

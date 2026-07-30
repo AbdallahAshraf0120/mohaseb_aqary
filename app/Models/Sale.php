@@ -42,8 +42,8 @@ class Sale extends Model
         'installment_start_date' => 'date',
         'installment_plan' => 'array',
         'is_mezzanine' => 'boolean',
-        'down_payment' => 'decimal:2',
-        'shareholder_down_payment_amount' => 'decimal:2',
+        'down_payment' => 'decimal:5',
+        'shareholder_down_payment_amount' => 'decimal:5',
     ];
 
     public function project(): BelongsTo
@@ -71,15 +71,15 @@ class Sale extends Model
      */
     public function shareholderDownPaymentAmount(): float
     {
-        $down = round((float) ($this->down_payment ?? 0), 2);
-        if ($down < 0.01 || $this->received_by_shareholder_id === null) {
+        $down = round((float) ($this->down_payment ?? 0), 5);
+        if ($down < 0.00001 || $this->received_by_shareholder_id === null) {
             return 0.0;
         }
 
         if (\Illuminate\Support\Facades\Schema::hasColumn($this->getTable(), 'shareholder_down_payment_amount')
             && $this->shareholder_down_payment_amount !== null
             && $this->shareholder_down_payment_amount !== '') {
-            return round(min($down, max(0, (float) $this->shareholder_down_payment_amount)), 2);
+            return round(min($down, max(0, (float) $this->shareholder_down_payment_amount)), 5);
         }
 
         // سلوك قديم: كل المقدم لحساب المساهم عند اختيار مساهم
@@ -91,9 +91,9 @@ class Sale extends Model
      */
     public function cashboxDownPaymentAmount(): float
     {
-        $down = round((float) ($this->down_payment ?? 0), 2);
+        $down = round((float) ($this->down_payment ?? 0), 5);
 
-        return round(max(0, $down - $this->shareholderDownPaymentAmount()), 2);
+        return round(max(0, $down - $this->shareholderDownPaymentAmount()), 5);
     }
 
     public function contract()
@@ -141,15 +141,15 @@ class Sale extends Model
 
         $mainRows = [];
         if ($count >= 1 && $baseForSchedule > 0) {
-            $per = (float) ($plan['installment_amount'] ?? ($count > 0 ? round($baseForSchedule / $count, 2) : 0));
+            $per = (float) ($plan['installment_amount'] ?? ($count > 0 ? round($baseForSchedule / $count, 5) : 0));
             $cursor = Carbon::parse($this->installment_start_date)->startOfDay();
             $acc = 0.0;
             for ($i = 1; $i <= $count; $i++) {
                 $due = $cursor->copy();
                 if ($i === $count) {
-                    $amount = round($baseForSchedule - $acc, 2);
+                    $amount = round($baseForSchedule - $acc, 5);
                 } else {
-                    $amount = round($per, 2);
+                    $amount = round($per, 5);
                     $acc += $amount;
                 }
                 $mainRows[] = [
@@ -179,7 +179,7 @@ class Sale extends Model
                 $secRows[] = [
                     'number' => 0,
                     'due_date' => Carbon::parse((string) $sp['due_date'])->startOfDay(),
-                    'amount' => round($amt, 2),
+                    'amount' => round($amt, 5),
                     'kind' => 'secondary',
                     'label' => trim((string) ($sp['label'] ?? '')) ?: 'دفعة ثانوية',
                 ];
@@ -226,10 +226,10 @@ class Sale extends Model
         $out = [];
         foreach ($schedule as $row) {
             $due = (float) $row['amount'];
-            $paid = round(min(max(0.0, $paidPool), $due), 2);
+            $paid = round(min(max(0.0, $paidPool), $due), 5);
             $paidPool -= $paid;
-            $balance = round($due - $paid, 2);
-            $status = $balance <= 0.01 ? 'مسدد' : ($paid > 0 ? 'جزئي' : 'مستحق');
+            $balance = round($due - $paid, 5);
+            $status = $balance <= 0.00001 ? 'مسدد' : ($paid > 0 ? 'جزئي' : 'مستحق');
             $out[] = [
                 'number' => $row['number'],
                 'due_date' => $row['due_date'],

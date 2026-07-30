@@ -39,7 +39,7 @@ class GlobalCashboxController extends Controller
         $treasuryOut = (float) (clone $baseQuery)->where('type', 'expense')->where('approval_status', 'approved')->sum('amount');
         $pendingIn = (float) (clone $baseQuery)->where('type', 'revenue')->where('approval_status', 'pending')->sum('amount');
         $pendingOut = (float) (clone $baseQuery)->where('type', 'expense')->where('approval_status', 'pending')->sum('amount');
-        $currentBalance = round($treasuryIn - $treasuryOut, 2);
+        $currentBalance = round($treasuryIn - $treasuryOut, 5);
 
         $projectTotalsQuery = TreasuryTransaction::withoutProjectScope()
             ->select([
@@ -78,7 +78,7 @@ class GlobalCashboxController extends Controller
                     'pending_in' => (float) $row->pending_in,
                     'pending_out' => (float) $row->pending_out,
                     'movements_count' => (int) $row->movements_count,
-                    'balance' => round($in - $out, 2),
+                    'balance' => round($in - $out, 5),
                 ];
             })
             ->sortByDesc('balance')

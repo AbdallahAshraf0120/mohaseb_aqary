@@ -40,7 +40,7 @@ class LandParcelPaymentService
         return DB::transaction(function () use ($parcel, $data, $user): LandParcelPayment {
             $isAdmin = $user instanceof User && $user->isAdmin();
             $side = (string) $data['side'];
-            $amount = round((float) $data['amount'], 2);
+            $amount = round((float) $data['amount'], 5);
             $partId = isset($data['land_parcel_part_id']) && $data['land_parcel_part_id'] !== null && $data['land_parcel_part_id'] !== ''
                 ? (int) $data['land_parcel_part_id']
                 : null;
@@ -193,7 +193,7 @@ class LandParcelPaymentService
         $payload = [
             'land_parcel_id' => (int) $parcel->id,
             'type' => ShareholderLedgerEntry::TYPE_WITHDRAWAL,
-            'amount' => round((float) $payment->amount, 2),
+            'amount' => round((float) $payment->amount, 5),
             'entry_date' => $payment->paid_at?->toDateString() ?? now()->toDateString(),
             'notes' => $note,
             'skip_cashbox' => true,
@@ -238,7 +238,7 @@ class LandParcelPaymentService
         DB::transaction(function () use ($parcel, $payment, $basis, $user, $manualRows): void {
             $this->removeShareholderDistributions((int) $payment->id);
 
-            $amount = round((float) $payment->amount, 2);
+            $amount = round((float) $payment->amount, 5);
             $allocations = $basis === LandParcelPaymentDistribution::BASIS_MANUAL
                 ? $this->manualAllocations($manualRows, $amount)
                 : $this->percentageAllocations($parcel, $amount, $basis);
@@ -253,7 +253,7 @@ class LandParcelPaymentService
                 if (! $shareholder instanceof Shareholder) {
                     continue;
                 }
-                $shareAmount = round((float) $row['amount'], 2);
+                $shareAmount = round((float) $row['amount'], 5);
                 if ($shareAmount <= 0) {
                     continue;
                 }
@@ -339,9 +339,9 @@ class LandParcelPaymentService
         foreach ($members as $index => $membership) {
             $pct = (float) $membership->{$pctColumn};
             if ($index === $lastIndex) {
-                $shareAmount = round($amount - $allocated, 2);
+                $shareAmount = round($amount - $allocated, 5);
             } else {
-                $shareAmount = round($amount * ($pct / $totalPct), 2);
+                $shareAmount = round($amount * ($pct / $totalPct), 5);
                 $allocated += $shareAmount;
             }
             $rows[] = [
@@ -367,7 +367,7 @@ class LandParcelPaymentService
         $rows = [];
         $sum = 0.0;
         foreach ($manualRows as $row) {
-            $shareAmount = round((float) ($row['amount'] ?? 0), 2);
+            $shareAmount = round((float) ($row['amount'] ?? 0), 5);
             if ($shareAmount <= 0) {
                 continue;
             }
@@ -378,7 +378,7 @@ class LandParcelPaymentService
             $sum += $shareAmount;
         }
 
-        if (abs(round($sum, 2) - $amount) > 0.01) {
+        if (abs(round($sum, 5) - $amount) > 0.00001) {
             throw new InvalidArgumentException('مجموع التوزيع اليدوي يجب أن يساوي مبلغ التحصيل ('.$amount.').');
         }
 
@@ -401,7 +401,7 @@ class LandParcelPaymentService
 
             if ($partId && Schema::hasTable('land_parcel_parts')) {
                 $part = LandParcelPart::query()->find($partId);
-                if ($part instanceof LandParcelPart && $part->remainingTotal() > 0.01 && $part->status === 'sold') {
+                if ($part instanceof LandParcelPart && $part->remainingTotal() > 0.00001 && $part->status === 'sold') {
                     $part->update(['status' => 'reserved']);
                 }
             }
@@ -456,7 +456,7 @@ class LandParcelPaymentService
             return;
         }
 
-        if ($part->remainingTotal() <= 0.01 && $part->status !== 'sold') {
+        if ($part->remainingTotal() <= 0.00001 && $part->status !== 'sold') {
             $part->update([
                 'status' => 'sold',
                 'sale_date' => $part->sale_date ?? now()->toDateString(),
@@ -473,7 +473,7 @@ class LandParcelPaymentService
             if ($salePrice <= 0) {
                 return;
             }
-            if ($parcel->remainingTotal(LandParcelPayment::SIDE_SALE) <= 0.01 && $parcel->status !== 'sold') {
+            if ($parcel->remainingTotal(LandParcelPayment::SIDE_SALE) <= 0.00001 && $parcel->status !== 'sold') {
                 $parcel->update(['status' => 'sold']);
             }
 
@@ -484,7 +484,7 @@ class LandParcelPaymentService
         if ($partsCount === 0) {
             $salePrice = (float) ($parcel->sale_price ?? 0);
             if ($salePrice > 0
-                && $parcel->remainingTotal(LandParcelPayment::SIDE_SALE) <= 0.01
+                && $parcel->remainingTotal(LandParcelPayment::SIDE_SALE) <= 0.00001
                 && $parcel->status !== 'sold') {
                 $parcel->update(['status' => 'sold']);
             }

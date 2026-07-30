@@ -27,7 +27,7 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">المساحة (م²)</label>
-        <input type="number" step="0.01" min="0" name="area_size" id="area_size"
+        <input type="number" step="0.00001" min="0" name="area_size" id="area_size"
                value="{{ old('area_size', $parcel->area_size) }}"
                class="form-control @error('area_size') is-invalid @enderror">
         @error('area_size') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -59,14 +59,14 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">سعر متر الشراء</label>
-        <input type="number" step="0.01" min="0" name="purchase_price_per_m2" id="purchase_price_per_m2"
+        <input type="number" step="0.00001" min="0" name="purchase_price_per_m2" id="purchase_price_per_m2"
                value="{{ old('purchase_price_per_m2', $parcel->purchase_price_per_m2) }}"
                class="form-control font-monospace @error('purchase_price_per_m2') is-invalid @enderror">
         @error('purchase_price_per_m2') <div class="invalid-feedback">{{ $message }}</div> @enderror
     </div>
     <div class="col-md-3">
         <label class="form-label">سعر متر البيع</label>
-        <input type="number" step="0.01" min="0" name="sale_price_per_m2" id="sale_price_per_m2"
+        <input type="number" step="0.00001" min="0" name="sale_price_per_m2" id="sale_price_per_m2"
                value="{{ old('sale_price_per_m2', $parcel->sale_price_per_m2) }}"
                class="form-control font-monospace @error('sale_price_per_m2') is-invalid @enderror">
         @error('sale_price_per_m2') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -91,7 +91,7 @@
 
     <div class="col-md-3">
         <label class="form-label">سعر الشراء الإجمالي</label>
-        <input type="number" step="0.01" min="0" name="purchase_price" id="purchase_price"
+        <input type="number" step="0.00001" min="0" name="purchase_price" id="purchase_price"
                value="{{ old('purchase_price', $parcel->purchase_price ?? 0) }}"
                class="form-control font-monospace @error('purchase_price') is-invalid @enderror" required>
         @error('purchase_price') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -127,7 +127,7 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">المقدم / الدفعة الأولى</label>
-        <input type="number" step="0.01" min="0" name="purchase_down_payment"
+        <input type="number" step="0.00001" min="0" name="purchase_down_payment"
                value="{{ old('purchase_down_payment', $parcel->purchase_down_payment ?? 0) }}"
                class="form-control @error('purchase_down_payment') is-invalid @enderror">
         @error('purchase_down_payment') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -166,7 +166,7 @@
 
     <div class="col-md-3">
         <label class="form-label">سعر البيع الإجمالي</label>
-        <input type="number" step="0.01" min="0" name="sale_price" id="sale_price"
+        <input type="number" step="0.00001" min="0" name="sale_price" id="sale_price"
                value="{{ old('sale_price', $parcel->sale_price) }}"
                class="form-control font-monospace @error('sale_price') is-invalid @enderror">
         @error('sale_price') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -202,7 +202,7 @@
     </div>
     <div class="col-md-3 sale-payment-fields">
         <label class="form-label">المقدم / الدفعة الأولى</label>
-        <input type="number" step="0.01" min="0" name="sale_down_payment"
+        <input type="number" step="0.00001" min="0" name="sale_down_payment"
                value="{{ old('sale_down_payment', $parcel->sale_down_payment) }}"
                class="form-control @error('sale_down_payment') is-invalid @enderror">
         @error('sale_down_payment') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -264,7 +264,7 @@
         return isFinite(v) ? v : 0;
     }
     function fmt(n) {
-        return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 5 });
     }
     function recalcTotals() {
         var area = num(document.getElementById('area_size'));
@@ -278,8 +278,8 @@
         var saleInput = document.getElementById('sale_price');
         if (buyPreview) buyPreview.value = buyTotal > 0 ? fmt(buyTotal) + ' ج.م' : '—';
         if (salePreview) salePreview.value = saleTotal > 0 ? fmt(saleTotal) + ' ج.م' : '—';
-        if (buyTotal > 0 && buyInput) buyInput.value = buyTotal.toFixed(2);
-        if (saleTotal > 0 && saleInput) saleInput.value = saleTotal.toFixed(2);
+        if (buyTotal > 0 && buyInput) buyInput.value = buyTotal.toFixed(5);
+        if (saleTotal > 0 && saleInput) saleInput.value = saleTotal.toFixed(5);
     }
     ['area_size', 'purchase_price_per_m2', 'sale_price_per_m2'].forEach(function (id) {
         document.getElementById(id)?.addEventListener('input', recalcTotals);

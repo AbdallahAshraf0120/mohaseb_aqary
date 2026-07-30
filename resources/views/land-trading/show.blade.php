@@ -72,7 +72,7 @@
                     <div class="small text-body-secondary">المساحة</div>
                     <div class="fw-semibold">
                         @if ($parcel->area_size !== null)
-                            <span class="font-monospace">{{ number_format((float) $parcel->area_size, 2) }}</span> م²
+                            <span class="font-monospace">{{ number_format((float) $parcel->area_size, 5) }}</span> م²
                         @else
                             —
                         @endif
@@ -81,13 +81,13 @@
                 <div class="col-md-4">
                     <div class="small text-body-secondary">سعر متر الشراء</div>
                     <div class="fw-semibold font-monospace">
-                        {{ $parcel->purchase_price_per_m2 !== null ? number_format((float) $parcel->purchase_price_per_m2, 2).' ج.م' : '—' }}
+                        {{ $parcel->purchase_price_per_m2 !== null ? number_format((float) $parcel->purchase_price_per_m2, 5).' ج.م' : '—' }}
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="small text-body-secondary">سعر متر البيع</div>
                     <div class="fw-semibold font-monospace">
-                        {{ $parcel->sale_price_per_m2 !== null ? number_format((float) $parcel->sale_price_per_m2, 2).' ج.م' : '—' }}
+                        {{ $parcel->sale_price_per_m2 !== null ? number_format((float) $parcel->sale_price_per_m2, 5).' ج.م' : '—' }}
                     </div>
                 </div>
             </div>
@@ -95,12 +95,12 @@
     </div>
 
     <x-partials.module-kpis :items="array_values(array_filter([
-        ['label' => 'مدفوع شراء', 'value' => number_format((float) $purchasePaid, 2) . ' ج.م'],
-        ['label' => 'متبقي شراء', 'value' => number_format((float) $purchaseRemaining, 2) . ' ج.م'],
-        ['label' => 'محصّل بيع', 'value' => number_format((float) $salePaid, 2) . ' ج.م'],
-        ['label' => 'متبقي بيع', 'value' => number_format((float) $saleRemaining, 2) . ' ج.م'],
+        ['label' => 'مدفوع شراء', 'value' => number_format((float) $purchasePaid, 5) . ' ج.م'],
+        ['label' => 'متبقي شراء', 'value' => number_format((float) $purchaseRemaining, 5) . ' ج.م'],
+        ['label' => 'محصّل بيع', 'value' => number_format((float) $salePaid, 5) . ' ج.م'],
+        ['label' => 'متبقي بيع', 'value' => number_format((float) $saleRemaining, 5) . ' ج.م'],
         !empty($partsReady) && $parcel->area_size !== null
-            ? ['label' => 'مساحة متبقية', 'value' => number_format((float) ($remainingArea ?? 0), 2) . ' م²']
+            ? ['label' => 'مساحة متبقية', 'value' => number_format((float) ($remainingArea ?? 0), 5) . ' م²']
             : null,
         !empty($partsReady)
             ? ['label' => 'أجزاء البيع', 'value' => (int) ($parts?->count() ?? 0)]
@@ -115,11 +115,11 @@
                     <div class="row g-3">
                         <div class="col-6">
                             <div class="small text-body-secondary">سعر الشراء</div>
-                            <div class="fw-semibold font-monospace">{{ number_format((float) $parcel->purchase_price, 2) }}</div>
+                            <div class="fw-semibold font-monospace">{{ number_format((float) $parcel->purchase_price, 5) }}</div>
                         </div>
                         <div class="col-6">
                             <div class="small text-body-secondary">المقدم</div>
-                            <div class="fw-semibold font-monospace">{{ number_format((float) ($parcel->purchase_down_payment ?? 0), 2) }}</div>
+                            <div class="fw-semibold font-monospace">{{ number_format((float) ($parcel->purchase_down_payment ?? 0), 5) }}</div>
                         </div>
                         <div class="col-6">
                             <div class="small text-body-secondary">البائع</div>
@@ -141,13 +141,13 @@
                         <div class="col-6">
                             <div class="small text-body-secondary">سعر البيع</div>
                             <div class="fw-semibold font-monospace">
-                                {{ $parcel->sale_price !== null ? number_format((float) $parcel->sale_price, 2) : '—' }}
+                                {{ $parcel->sale_price !== null ? number_format((float) $parcel->sale_price, 5) : '—' }}
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="small text-body-secondary">المقدم</div>
                             <div class="fw-semibold font-monospace">
-                                {{ $parcel->sale_down_payment !== null ? number_format((float) $parcel->sale_down_payment, 2) : '—' }}
+                                {{ $parcel->sale_down_payment !== null ? number_format((float) $parcel->sale_down_payment, 5) : '—' }}
                             </div>
                         </div>
                         <div class="col-6">
@@ -162,7 +162,7 @@
                             <div class="col-12">
                                 <div class="small text-body-secondary">الربح / الخسارة (سعر)</div>
                                 <div class="fw-bold font-monospace {{ $profit >= 0 ? 'text-success' : 'text-danger' }}">
-                                    {{ number_format($profit, 2) }}
+                                    {{ number_format($profit, 5) }}
                                 </div>
                             </div>
                         @endif
@@ -186,10 +186,10 @@
                 @if ($parcel->area_size !== null)
                     <div class="d-flex flex-wrap gap-2">
                         <span class="badge text-bg-light border">
-                            إجمالي: <span class="font-monospace">{{ number_format((float) $parcel->area_size, 2) }}</span> م²
+                            إجمالي: <span class="font-monospace">{{ number_format((float) $parcel->area_size, 5) }}</span> م²
                         </span>
                         <span class="badge text-bg-success-subtle text-success border border-success-subtle">
-                            متبقي: <span class="font-monospace">{{ number_format((float) ($remainingArea ?? 0), 2) }}</span> م²
+                            متبقي: <span class="font-monospace">{{ number_format((float) ($remainingArea ?? 0), 5) }}</span> م²
                         </span>
                     </div>
                 @endif
@@ -231,10 +231,10 @@
                                 </td>
                                 <td class="font-monospace small">
                                     @if ($part->area_size !== null)
-                                        {{ number_format((float) $part->area_size, 2) }} م²
+                                        {{ number_format((float) $part->area_size, 5) }} م²
                                         @php $partPct = $parcel->areaPercentageOfTotal($part->area_size); @endphp
                                         @if ($partPct !== null)
-                                            <div class="text-primary fw-semibold">{{ number_format($partPct, 2) }}%</div>
+                                            <div class="text-primary fw-semibold">{{ number_format($partPct, 5) }}%</div>
                                         @endif
                                     @else
                                         —
@@ -247,19 +247,19 @@
                                     @endif
                                 </td>
                                 <td class="font-monospace small">{{ optional($part->sale_date)->format('Y-m-d') ?: '—' }}</td>
-                                <td class="text-end font-monospace">{{ number_format((float) $part->sale_price, 2) }}</td>
-                                <td class="text-end font-monospace text-success-emphasis">{{ number_format($pCollected, 2) }}</td>
-                                <td class="text-end font-monospace {{ $pRemaining > 0.01 ? 'text-danger-emphasis' : '' }}">{{ number_format($pRemaining, 2) }}</td>
+                                <td class="text-end font-monospace">{{ number_format((float) $part->sale_price, 5) }}</td>
+                                <td class="text-end font-monospace text-success-emphasis">{{ number_format($pCollected, 5) }}</td>
+                                <td class="text-end font-monospace {{ $pRemaining > 0.00001 ? 'text-danger-emphasis' : '' }}">{{ number_format($pRemaining, 5) }}</td>
                                 <td><span class="badge {{ $pBadge }}">{{ $part->statusLabel() }}</span></td>
                                 <td class="text-end">
                                     @can('land-trading.manage')
-                                        @if ($pRemaining > 0.01 && !empty($paymentsReady))
+                                        @if ($pRemaining > 0.00001 && !empty($paymentsReady))
                                             @if (($part->sale_payment_type ?? 'cash') === 'cash')
                                                 <button type="button" class="btn btn-success btn-sm" data-bs-toggle="collapse" data-bs-target="#collect-part-{{ $part->id }}">تسجيل الكاش</button>
                                             @else
                                                 <button type="button" class="btn btn-success btn-sm" data-bs-toggle="collapse" data-bs-target="#collect-part-{{ $part->id }}">تحصيل قسط</button>
                                             @endif
-                                        @elseif ($pRemaining <= 0.01)
+                                        @elseif ($pRemaining <= 0.00001)
                                             <span class="badge text-bg-success">محصّل</span>
                                         @endif
                                         <form method="post" action="{{ route('land-trading.parts.destroy', [$parcel, $part]) }}" class="d-inline" onsubmit="return confirm('حذف الجزء؟');">
@@ -271,7 +271,7 @@
                                 </td>
                             </tr>
                             @can('land-trading.manage')
-                                @if ($pRemaining > 0.01 && !empty($paymentsReady) && in_array($part->sale_payment_type ?? 'cash', ['cash', 'installment'], true))
+                                @if ($pRemaining > 0.00001 && !empty($paymentsReady) && in_array($part->sale_payment_type ?? 'cash', ['cash', 'installment'], true))
                                     @php $isPartCash = ($part->sale_payment_type ?? 'cash') === 'cash'; @endphp
                                     <tr class="collapse" id="collect-part-{{ $part->id }}">
                                         <td colspan="9" class="bg-body-tertiary">
@@ -286,7 +286,7 @@
                                                     <input type="hidden" name="notes" value="تحصيل كاش كامل">
                                                     <div class="col-md-3">
                                                         <div class="small text-body-secondary">تحصيل كاش كامل</div>
-                                                        <div class="fw-semibold font-monospace">{{ number_format($pRemaining, 2) }} ج.م</div>
+                                                        <div class="fw-semibold font-monospace">{{ number_format($pRemaining, 5) }} ج.م</div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <label class="form-label small">التاريخ</label>
@@ -303,7 +303,7 @@
                                                     </div>
                                                     <div class="col-md-2">
                                                         <label class="form-label small">المبلغ</label>
-                                                        <input type="number" step="0.01" min="0.01" max="{{ $pRemaining }}" name="amount" class="form-control form-control-sm font-monospace" required>
+                                                        <input type="number" step="0.00001" min="0.00001" max="{{ $pRemaining }}" name="amount" class="form-control form-control-sm font-monospace" required>
                                                     </div>
                                                     <div class="col-md-2">
                                                         <label class="form-label small">التاريخ</label>
@@ -343,7 +343,7 @@
                                                     @foreach ($part->installmentScheduleWithPaymentSummary() as $row)
                                                         <span class="badge text-bg-light me-1">
                                                             {{ $row['label'] }} {{ $row['due_date']->format('Y-m-d') }} —
-                                                            متبقي {{ number_format($row['balance'], 2) }}
+                                                            متبقي {{ number_format($row['balance'], 5) }}
                                                         </span>
                                                     @endforeach
                                                 </div>
@@ -371,7 +371,7 @@
                             <div class="small text-body-secondary">املأ البيانات بالترتيب — السعر يُحسب من مساحة الجزء × سعر متر البيع.</div>
                         </div>
                         @if (($parcel->sale_price_per_m2 ?? 0) > 0)
-                            <span class="badge text-bg-primary">سعر متر البيع: {{ number_format((float) $parcel->sale_price_per_m2, 2) }} ج.م</span>
+                            <span class="badge text-bg-primary">سعر متر البيع: {{ number_format((float) $parcel->sale_price_per_m2, 5) }} ج.م</span>
                         @else
                             <a href="{{ route('land-trading.edit', $parcel) }}" class="btn btn-outline-warning btn-sm">حدّد سعر متر البيع من تعديل الأرض</a>
                         @endif
@@ -410,7 +410,7 @@
                                 <div class="col-md-4">
                                     <label class="form-label">المساحة (م²)</label>
                                     <div class="input-group">
-                                        <input type="number" step="0.01" min="0.01"
+                                        <input type="number" step="0.00001" min="0.00001"
                                                @if ($parcel->area_size !== null) max="{{ $remainingAreaJs }}" @endif
                                                name="area_size" id="part_area_size"
                                                class="form-control font-monospace @error('area_size') is-invalid @enderror"
@@ -422,8 +422,8 @@
                                     @error('area_size') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                                     @if ($parcel->area_size !== null)
                                         <div class="form-text mb-0">
-                                            متاح للبيع: <span class="font-monospace">{{ number_format($remainingAreaJs, 2) }}</span> م²
-                                            من أصل <span class="font-monospace">{{ number_format($totalAreaJs, 2) }}</span>
+                                            متاح للبيع: <span class="font-monospace">{{ number_format($remainingAreaJs, 5) }}</span> م²
+                                            من أصل <span class="font-monospace">{{ number_format($totalAreaJs, 5) }}</span>
                                         </div>
                                         <div class="invalid-feedback d-none" id="part_area_client_error">المساحة أكبر من المتاح.</div>
                                     @endif
@@ -431,13 +431,13 @@
                                 <div class="col-md-4">
                                     <label class="form-label">سعر البيع الإجمالي</label>
                                     <div class="input-group">
-                                        <input type="number" step="0.01" min="0.01" name="sale_price" id="part_sale_price"
+                                        <input type="number" step="0.00001" min="0.00001" name="sale_price" id="part_sale_price"
                                                class="form-control font-monospace" value="{{ old('sale_price') }}" required>
                                         <span class="input-group-text">ج.م</span>
                                     </div>
                                     <div class="form-text mb-0" id="part_sale_price_hint">
                                         @if (($parcel->sale_price_per_m2 ?? 0) > 0)
-                                            يُحسب تلقائيًا: المساحة × {{ number_format((float) $parcel->sale_price_per_m2, 2) }}
+                                            يُحسب تلقائيًا: المساحة × {{ number_format((float) $parcel->sale_price_per_m2, 5) }}
                                         @else
                                             أدخل السعر يدويًا أو حدّد سعر المتر من تعديل الأرض
                                         @endif
@@ -467,7 +467,7 @@
                                 </div>
                                 <div class="col-md-3 part-installment-fields">
                                     <label class="form-label">المقدم</label>
-                                    <input type="number" step="0.01" min="0" name="sale_down_payment" class="form-control font-monospace" value="{{ old('sale_down_payment') }}">
+                                    <input type="number" step="0.00001" min="0" name="sale_down_payment" class="form-control font-monospace" value="{{ old('sale_down_payment') }}">
                                 </div>
                                 <div class="col-md-2 part-installment-fields">
                                     <label class="form-label">مدة (شهر)</label>
@@ -533,26 +533,26 @@
                     return;
                 }
                 var pct = (val / totalArea) * 100;
-                var pctText = pct.toFixed(2) + '%';
+                var pctText = pct.toFixed(5) + '%';
                 percentEl.textContent = pctText;
                 if (percentLarge) percentLarge.textContent = pctText;
                 var total = 0;
                 if (salePerM2 > 0 && partSalePrice) {
                     total = val * salePerM2;
-                    partSalePrice.value = total.toFixed(2);
+                    partSalePrice.value = total.toFixed(5);
                 } else {
                     total = parseFloat(partSalePrice?.value) || 0;
                 }
                 if (totalPreview) {
                     totalPreview.textContent = total > 0
-                        ? total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.م'
+                        ? total.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 5 }) + ' ج.م'
                         : '—';
                 }
                 var over = remainingArea > 0 && val > remainingArea + 0.0001;
                 if (over) {
                     areaInput.classList.add('is-invalid');
                     if (errEl) {
-                        errEl.textContent = 'المساحة أكبر من المتاح (' + remainingArea.toLocaleString('en-US', {maximumFractionDigits: 2}) + ' م²).';
+                        errEl.textContent = 'المساحة أكبر من المتاح (' + remainingArea.toLocaleString('en-US', {maximumFractionDigits: 5}) + ' م²).';
                         errEl.classList.remove('d-none');
                     }
                 } else {
@@ -565,7 +565,7 @@
                 var total = parseFloat(partSalePrice.value) || 0;
                 if (totalPreview) {
                     totalPreview.textContent = total > 0
-                        ? total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.م'
+                        ? total.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 5 }) + ' ج.م'
                         : '—';
                 }
             });
@@ -605,7 +605,7 @@
                             <div class="small text-body-secondary">عمود «مدفوع» يتحدث تلقائيًا من السدادات في السجل بالأسفل</div>
                         </div>
                         <span class="badge text-bg-danger">
-                            مدفوع إجمالي: {{ number_format((float) ($purchasePaid ?? 0), 2) }} ج.م
+                            مدفوع إجمالي: {{ number_format((float) ($purchasePaid ?? 0), 5) }} ج.م
                         </span>
                     </div>
                     <div class="card-body p-0">
@@ -628,9 +628,9 @@
                                         <td>{{ $row['number'] }}</td>
                                         <td>{{ $row['label'] ?? $row['kind'] }}</td>
                                         <td class="font-monospace small">{{ $row['due_date']->format('Y-m-d') }}</td>
-                                        <td class="text-end font-monospace">{{ number_format($row['amount'], 2) }}</td>
-                                        <td class="text-end font-monospace">{{ number_format($row['paid'], 2) }}</td>
-                                        <td class="text-end font-monospace">{{ number_format($row['balance'], 2) }}</td>
+                                        <td class="text-end font-monospace">{{ number_format($row['amount'], 5) }}</td>
+                                        <td class="text-end font-monospace">{{ number_format($row['paid'], 5) }}</td>
+                                        <td class="text-end font-monospace">{{ number_format($row['balance'], 5) }}</td>
                                         <td><span class="badge text-bg-light">{{ $row['status'] }}</span></td>
                                     </tr>
                                 @empty
@@ -641,7 +641,7 @@
                         </div>
                     </div>
                     @can('land-trading.manage')
-                        @if ($purchaseRemaining > 0.01)
+                        @if ($purchaseRemaining > 0.00001)
                             <div class="card-footer">
                                 <form method="post" action="{{ route('land-trading.payments.store', $parcel) }}" class="row g-2 align-items-end">
                                     @csrf
@@ -656,7 +656,7 @@
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label small">المبلغ</label>
-                                        <input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm font-monospace" value="{{ old('side') === 'purchase' ? old('amount') : '' }}" required>
+                                        <input type="number" step="0.00001" min="0.00001" name="amount" class="form-control form-control-sm font-monospace" value="{{ old('side') === 'purchase' ? old('amount') : '' }}" required>
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label small">التاريخ</label>
@@ -721,9 +721,9 @@
                                         <td>{{ $row['number'] }}</td>
                                         <td>{{ $row['label'] ?? $row['kind'] }}</td>
                                         <td class="font-monospace small">{{ $row['due_date']->format('Y-m-d') }}</td>
-                                        <td class="text-end font-monospace">{{ number_format($row['amount'], 2) }}</td>
-                                        <td class="text-end font-monospace">{{ number_format($row['paid'], 2) }}</td>
-                                        <td class="text-end font-monospace">{{ number_format($row['balance'], 2) }}</td>
+                                        <td class="text-end font-monospace">{{ number_format($row['amount'], 5) }}</td>
+                                        <td class="text-end font-monospace">{{ number_format($row['paid'], 5) }}</td>
+                                        <td class="text-end font-monospace">{{ number_format($row['balance'], 5) }}</td>
                                         <td><span class="badge text-bg-light">{{ $row['status'] }}</span></td>
                                     </tr>
                                 @empty
@@ -734,7 +734,7 @@
                         </div>
                     </div>
                     @can('land-trading.manage')
-                        @if (($parcel->sale_price ?? 0) > 0 && $saleRemaining > 0.01)
+                        @if (($parcel->sale_price ?? 0) > 0 && $saleRemaining > 0.00001)
                             <div class="card-footer">
                                 <form method="post" action="{{ route('land-trading.payments.store', $parcel) }}" class="row g-2 align-items-end">
                                     @csrf
@@ -749,7 +749,7 @@
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label small">المبلغ</label>
-                                        <input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm font-monospace" value="{{ old('side') === 'sale' ? old('amount') : '' }}" required>
+                                        <input type="number" step="0.00001" min="0.00001" name="amount" class="form-control form-control-sm font-monospace" value="{{ old('side') === 'sale' ? old('amount') : '' }}" required>
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label small">التاريخ</label>
@@ -820,7 +820,7 @@
                                 </td>
                                 <td class="small">{{ $payment->part?->name ?? '—' }}</td>
                                 <td>{{ $payment->kindLabel() }}</td>
-                                <td class="text-end font-monospace">{{ number_format((float) $payment->amount, 2) }}</td>
+                                <td class="text-end font-monospace">{{ number_format((float) $payment->amount, 5) }}</td>
                                 <td class="small">
                                     @if ($payment->side === 'purchase')
                                         {{ $payment->paidByShareholder?->name ?? '—' }}
@@ -867,9 +867,9 @@
                 <h6 class="mb-0">مساهمو الأرض — مخطط / فعلي</h6>
                 <div class="small text-body-secondary">
                     المخطط = الاتفاق · الفعلي = التمويل المدفوع · رأس مال مخطط:
-                    <span class="font-monospace">{{ number_format((float) ($parcel->planned_capital ?? $parcel->purchase_price), 2) }}</span>
+                    <span class="font-monospace">{{ number_format((float) ($parcel->planned_capital ?? $parcel->purchase_price), 5) }}</span>
                     · فعلي:
-                    <span class="font-monospace">{{ number_format((float) ($parcel->actual_capital ?? 0), 2) }}</span>
+                    <span class="font-monospace">{{ number_format((float) ($parcel->actual_capital ?? 0), 5) }}</span>
                 </div>
             </div>
             <div class="d-flex gap-2 flex-wrap">
@@ -905,16 +905,16 @@
                         @php
                             $plannedInv = (float) ($row->planned_investment ?? $row->total_investment ?? 0);
                             $actualInv = (float) ($row->actual_investment ?? 0);
-                            $gap = round($plannedInv - $actualInv, 2);
+                            $gap = round($plannedInv - $actualInv, 5);
                         @endphp
                         <tr>
                             <td class="fw-semibold">{{ $row->shareholder->name }}</td>
-                            <td class="text-end font-monospace">{{ number_format($plannedInv, 2) }}</td>
-                            <td class="text-end">{{ number_format((float) ($row->planned_percentage ?? $row->share_percentage ?? 0), 2) }}%</td>
-                            <td class="text-end font-monospace">{{ number_format($actualInv, 2) }}</td>
-                            <td class="text-end">{{ number_format((float) ($row->actual_percentage ?? 0), 2) }}%</td>
-                            <td class="text-end font-monospace {{ $gap > 0.01 ? 'text-danger' : ($gap < -0.01 ? 'text-success' : '') }}">
-                                {{ number_format($gap, 2) }}
+                            <td class="text-end font-monospace">{{ number_format($plannedInv, 5) }}</td>
+                            <td class="text-end">{{ number_format((float) ($row->planned_percentage ?? $row->share_percentage ?? 0), 5) }}%</td>
+                            <td class="text-end font-monospace">{{ number_format($actualInv, 5) }}</td>
+                            <td class="text-end">{{ number_format((float) ($row->actual_percentage ?? 0), 5) }}%</td>
+                            <td class="text-end font-monospace {{ $gap > 0.00001 ? 'text-danger' : ($gap < -0.01 ? 'text-success' : '') }}">
+                                {{ number_format($gap, 5) }}
                             </td>
                             <td class="text-end">
                                 <a href="{{ route('shareholders.show', $row->shareholder) }}" class="btn btn-outline-info btn-sm">فتح</a>
@@ -945,7 +945,7 @@
                         @csrf
                         <div class="col-md-3">
                             <div class="small text-body-secondary">دفعة #{{ $pending->id }} — {{ $pending->paid_at?->format('Y-m-d') }}</div>
-                            <div class="fw-semibold font-monospace">{{ number_format((float) $pending->amount, 2) }} ج.م</div>
+                            <div class="fw-semibold font-monospace">{{ number_format((float) $pending->amount, 5) }} ج.م</div>
                             <div class="small">{{ $pending->part?->name ?? 'بيع كامل' }}</div>
                         </div>
                         <div class="col-md-3">
@@ -973,7 +973,7 @@
                 <div class="small text-body-secondary">بعد التوزيع تُسجَّل في جاري المساهم (تسوية دائن) دون تكرار حركة الصندوق.</div>
             </div>
             <span class="badge text-bg-light">
-                إجمالي موزّع: {{ number_format((float) ($saleDistributions ?? collect())->sum('amount'), 2) }} ج.م
+                إجمالي موزّع: {{ number_format((float) ($saleDistributions ?? collect())->sum('amount'), 5) }} ج.م
             </span>
         </div>
         <div class="card-body p-0">
@@ -995,12 +995,12 @@
                                 {{ $dist->payment?->paid_at?->format('Y-m-d') ?? $dist->entry_date?->format('Y-m-d') ?? $dist->created_at?->format('Y-m-d') }}
                             </td>
                             <td class="fw-semibold">{{ $dist->shareholder?->name ?? '—' }}</td>
-                            <td class="text-end font-monospace text-success-emphasis">+{{ number_format((float) $dist->amount, 2) }}</td>
+                            <td class="text-end font-monospace text-success-emphasis">+{{ number_format((float) $dist->amount, 5) }}</td>
                             <td class="small">
                                 @if (method_exists($dist, 'basisLabel'))
                                     {{ $dist->basisLabel() }}
                                     @if ($dist->percentage_used !== null)
-                                        ({{ number_format((float) $dist->percentage_used, 2) }}%)
+                                        ({{ number_format((float) $dist->percentage_used, 5) }}%)
                                     @endif
                                 @else
                                     {{ $dist->notes ?: '—' }}

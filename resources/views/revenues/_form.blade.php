@@ -21,10 +21,10 @@
                         data-client-name="{{ $contract->client?->name }}"
                         data-sale-id="{{ $contract->sale_id }}"
                         data-remaining="{{ $contract->remaining_amount }}"
-                        data-suggested-amount="{{ $suggested !== null ? number_format((float) $suggested, 2, '.', '') : '' }}"
+                        data-suggested-amount="{{ $suggested !== null ? number_format((float) $suggested, 5, '.', '') : '' }}"
                         @selected($selectedContractId === (string) $contract->id)>
                     CT-{{ now()->format('Y') }}-{{ str_pad((string) $contract->id, 3, '0', STR_PAD_LEFT) }} |
-                    {{ $contract->client?->name }} | متبقي: {{ number_format((float) $contract->remaining_amount, 2) }}
+                    {{ $contract->client?->name }} | متبقي: {{ number_format((float) $contract->remaining_amount, 5) }}
                 </option>
             @endforeach
         </select>
@@ -42,7 +42,7 @@
 
     <div class="col-md-3">
         <label class="form-label">قيمة التحصيل</label>
-        <input type="number" step="0.01" min="0.01" name="amount" id="revenue_amount" class="form-control"
+        <input type="number" step="0.00001" min="0.00001" name="amount" id="revenue_amount" class="form-control"
                value="{{ old('amount', $revenue->amount ?? '') }}" required>
         <small class="text-muted">يُقترح تلقائياً من <strong>القسط القادم</strong> (جدول البيعة) عند اختيار العقد؛ ويمكنك إدخال إجمالي أكثر من قسط (مثل قسطين) عند رغبة العميل.</small>
         <div class="mt-1">

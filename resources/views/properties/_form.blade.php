@@ -134,67 +134,67 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label">تكلفة الأرض</label>
-                        <input type="number" step="0.01" min="0" name="land_cost" id="land_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="land_cost" id="land_cost" class="form-control"
                                value="{{ old('land_cost', $property->land_cost ?? 0) }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">رخصة البناء</label>
-                        <input type="number" step="0.01" min="0" name="building_license_cost" id="building_license_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="building_license_cost" id="building_license_cost" class="form-control"
                                value="{{ old('building_license_cost', $property->building_license_cost ?? 0) }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">خوازيق</label>
-                        <input type="number" step="0.01" min="0" name="piles_cost" id="piles_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="piles_cost" id="piles_cost" class="form-control"
                                value="{{ old('piles_cost', $property->piles_cost ?? 0) }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">حفر</label>
-                        <input type="number" step="0.01" min="0" name="excavation_cost" id="excavation_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="excavation_cost" id="excavation_cost" class="form-control"
                                value="{{ old('excavation_cost', $property->excavation_cost ?? 0) }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">ظلط</label>
-                        <input type="number" step="0.01" min="0" name="gravel_cost" id="gravel_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="gravel_cost" id="gravel_cost" class="form-control"
                                value="{{ old('gravel_cost', $property->gravel_cost ?? 0) }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">رملة</label>
-                        <input type="number" step="0.01" min="0" name="sand_cost" id="sand_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="sand_cost" id="sand_cost" class="form-control"
                                value="{{ old('sand_cost', $property->sand_cost ?? 0) }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">أسمنت</label>
-                        <input type="number" step="0.01" min="0" name="cement_cost" id="cement_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="cement_cost" id="cement_cost" class="form-control"
                                value="{{ old('cement_cost', $property->cement_cost ?? 0) }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">حديد</label>
-                        <input type="number" step="0.01" min="0" name="steel_cost" id="steel_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="steel_cost" id="steel_cost" class="form-control"
                                value="{{ old('steel_cost', $property->steel_cost ?? 0) }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">عمالة نجارة</label>
-                        <input type="number" step="0.01" min="0" name="carpentry_labor_cost" id="carpentry_labor_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="carpentry_labor_cost" id="carpentry_labor_cost" class="form-control"
                                value="{{ old('carpentry_labor_cost', $property->carpentry_labor_cost ?? 0) }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">عمالة حدادة</label>
-                        <input type="number" step="0.01" min="0" name="blacksmith_labor_cost" id="blacksmith_labor_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="blacksmith_labor_cost" id="blacksmith_labor_cost" class="form-control"
                                value="{{ old('blacksmith_labor_cost', $property->blacksmith_labor_cost ?? 0) }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">عمالة بناَّء</label>
-                        <input type="number" step="0.01" min="0" name="mason_labor_cost" id="mason_labor_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="mason_labor_cost" id="mason_labor_cost" class="form-control"
                                value="{{ old('mason_labor_cost', $property->mason_labor_cost ?? 0) }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">عمالة كهربائي</label>
-                        <input type="number" step="0.01" min="0" name="electrician_labor_cost" id="electrician_labor_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="electrician_labor_cost" id="electrician_labor_cost" class="form-control"
                                value="{{ old('electrician_labor_cost', $property->electrician_labor_cost ?? 0) }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">إكراميات</label>
-                        <input type="number" step="0.01" min="0" name="tips_cost" id="tips_cost" class="form-control"
+                        <input type="number" step="0.00001" min="0" name="tips_cost" id="tips_cost" class="form-control"
                                value="{{ old('tips_cost', $property->tips_cost ?? 0) }}">
                     </div>
                 </div>
@@ -320,7 +320,7 @@
                     @foreach ($shareholders as $shareholder)
                         <div class="col-md-4">
                             <label class="form-label">{{ $shareholder->name }} (%)</label>
-                            <input type="number" step="0.01" min="0" max="100"
+                            <input type="number" step="0.00001" min="0" max="100"
                                    name="shareholder_percentages[{{ $shareholder->id }}]"
                                    class="form-control"
                                    value="{{ $shareholderAllocations->get((string) $shareholder->id, '') }}">
@@ -361,7 +361,7 @@
                                            value="{{ $model['model_name'] ?? '' }}" placeholder="مثال: نموذج A">
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" min="1" class="form-control"
+                                    <input type="number" step="0.00001" min="1" class="form-control"
                                            name="apartment_models[{{ $i }}][area]" value="{{ $model['area'] ?? '' }}"
                                            placeholder="مثال: 120">
                                 </td>
@@ -665,7 +665,7 @@
             const tdName = document.createElement('td');
             tdName.innerHTML = `<input type="text" class="form-control" name="apartment_models[${index}][model_name]" placeholder="مثال: نموذج A">`;
             const tdArea = document.createElement('td');
-            tdArea.innerHTML = `<input type="number" step="0.01" min="1" class="form-control" name="apartment_models[${index}][area]" placeholder="مثال: 120">`;
+            tdArea.innerHTML = `<input type="number" step="0.00001" min="1" class="form-control" name="apartment_models[${index}][area]" placeholder="مثال: 120">`;
             const tdRooms = document.createElement('td');
             tdRooms.innerHTML = `<input type="number" min="0" class="form-control" name="apartment_models[${index}][rooms_count]" placeholder="مثال: 3">`;
             const tdBaths = document.createElement('td');

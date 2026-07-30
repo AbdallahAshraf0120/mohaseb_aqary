@@ -3,8 +3,8 @@
 @section('content')
     <x-partials.module-kpis :items="[
         ['label' => 'العقود (بعد الفلتر)', 'value' => (int) ($contractKpis['count'] ?? 0)],
-        ['label' => 'قيمة العقود بعد المقدم', 'value' => number_format((float) ($contractKpis['net_value'] ?? 0), 2) . ' ج.م'],
-        ['label' => 'المتبقي', 'value' => number_format((float) ($contractKpis['remaining'] ?? 0), 2) . ' ج.م'],
+        ['label' => 'قيمة العقود بعد المقدم', 'value' => number_format((float) ($contractKpis['net_value'] ?? 0), 5) . ' ج.م'],
+        ['label' => 'المتبقي', 'value' => number_format((float) ($contractKpis['remaining'] ?? 0), 5) . ' ج.م'],
     ]" />
 
     <x-listing.filters
@@ -38,8 +38,8 @@
                             <td>{{ $contract->client?->name ?? '-' }}</td>
                             <td>{{ $contract->property?->name ?? '-' }}</td>
                             @php($netContractValue = max(0, (float) $contract->total_price - (float) ($contract->sale?->down_payment ?? 0)))
-                            <td>{{ number_format($netContractValue, 2) }}</td>
-                            <td>{{ number_format((float) $contract->remaining_amount, 2) }}</td>
+                            <td>{{ number_format($netContractValue, 5) }}</td>
+                            <td>{{ number_format((float) $contract->remaining_amount, 5) }}</td>
                             <td class="text-end">
                                 <a href="{{ route('contracts.show', [$project, $contract]) }}" class="btn btn-outline-info btn-sm">عرض</a>
                             </td>

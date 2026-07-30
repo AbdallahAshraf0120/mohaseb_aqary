@@ -64,7 +64,7 @@
         <tr>
             <td class="num">{{ $r->id }}</td>
             <td class="num">{{ $r->paid_at?->format('Y-m-d') }}</td>
-            <td class="num">{{ number_format((float) $r->amount, 2, '.', ',') }}</td>
+            <td class="num">{{ number_format((float) $r->amount, 5, '.', ',') }}</td>
             <td>{{ $r->client?->name }}</td>
             <td>{{ $r->category }}</td>
             <td>{{ $r->payment_method }}</td>
@@ -94,7 +94,7 @@
             <td class="num">{{ $e->id }}</td>
             <td class="num">{{ $e->spent_at?->format('Y-m-d') ?? '—' }}</td>
             <td class="num">{{ $e->created_at?->format('Y-m-d H:i') ?? '—' }}</td>
-            <td class="num">{{ number_format((float) $e->amount, 2, '.', ',') }}</td>
+            <td class="num">{{ number_format((float) $e->amount, 5, '.', ',') }}</td>
             <td>{{ $e->category }}</td>
             <td>{{ \Illuminate\Support\Str::limit((string) ($e->description ?? ''), 160) }}</td>
         </tr>
@@ -124,8 +124,8 @@
             <td class="num">{{ $s->sale_date?->format('Y-m-d') }}</td>
             <td>{{ $s->property?->name }}</td>
             <td>{{ $s->client?->name }}</td>
-            <td class="num">{{ number_format((float) $s->sale_price, 2, '.', ',') }}</td>
-            <td class="num">{{ number_format((float) $s->down_payment, 2, '.', ',') }}</td>
+            <td class="num">{{ number_format((float) $s->sale_price, 5, '.', ',') }}</td>
+            <td class="num">{{ number_format((float) $s->down_payment, 5, '.', ',') }}</td>
             <td>{{ $s->payment_type }}</td>
         </tr>
     @endforeach
@@ -143,7 +143,7 @@
         <tr>
             <td class="num">{{ $t->id }}</td>
             <td class="num">{{ $t->created_at?->format('Y-m-d H:i') }}</td>
-            <td class="num">{{ number_format((float) $t->amount, 2, '.', ',') }}</td>
+            <td class="num">{{ number_format((float) $t->amount, 5, '.', ',') }}</td>
             <td>{{ \Illuminate\Support\Str::limit((string) ($t->description ?? ''), 140) }}</td>
         </tr>
     @endforeach
@@ -158,7 +158,7 @@
         <tr>
             <td class="num">{{ $t->id }}</td>
             <td class="num">{{ $t->created_at?->format('Y-m-d H:i') }}</td>
-            <td class="num">{{ number_format((float) $t->amount, 2, '.', ',') }}</td>
+            <td class="num">{{ number_format((float) $t->amount, 5, '.', ',') }}</td>
             <td>{{ \Illuminate\Support\Str::limit((string) ($t->description ?? ''), 140) }}</td>
         </tr>
     @endforeach
@@ -187,9 +187,9 @@
             <td class="num">{{ $c->id }}</td>
             <td>{{ $c->client?->name }}</td>
             <td>{{ $c->property?->name }}</td>
-            <td class="num">{{ number_format((float) $c->total_price, 2, '.', ',') }}</td>
-            <td class="num">{{ number_format((float) $c->paid_amount, 2, '.', ',') }}</td>
-            <td class="num">{{ number_format((float) $c->remaining_amount, 2, '.', ',') }}</td>
+            <td class="num">{{ number_format((float) $c->total_price, 5, '.', ',') }}</td>
+            <td class="num">{{ number_format((float) $c->paid_amount, 5, '.', ',') }}</td>
+            <td class="num">{{ number_format((float) $c->remaining_amount, 5, '.', ',') }}</td>
             <td class="num">{{ $c->start_date?->format('Y-m-d') }}</td>
             <td class="num">{{ $c->end_date?->format('Y-m-d') }}</td>
         </tr>

@@ -66,10 +66,10 @@ class ClientController extends Controller
         $sales = $client->sales;
         $stats = [
             'sales_count' => $sales->count(),
-            'total_sale_price' => round((float) $sales->sum(static fn (Sale $s) => (float) $s->sale_price), 2),
-            'total_down_payment' => round((float) $sales->sum(static fn (Sale $s) => (float) $s->down_payment), 2),
-            'total_remaining_contracts' => round((float) $sales->sum(static fn (Sale $s) => (float) ($s->contract?->remaining_amount ?? 0)), 2),
-            'total_collected_revenues' => round((float) Revenue::query()->where('client_id', $client->id)->sum('amount'), 2),
+            'total_sale_price' => round((float) $sales->sum(static fn (Sale $s) => (float) $s->sale_price), 5),
+            'total_down_payment' => round((float) $sales->sum(static fn (Sale $s) => (float) $s->down_payment), 5),
+            'total_remaining_contracts' => round((float) $sales->sum(static fn (Sale $s) => (float) ($s->contract?->remaining_amount ?? 0)), 5),
+            'total_collected_revenues' => round((float) Revenue::query()->where('client_id', $client->id)->sum('amount'), 5),
         ];
 
         return view('clients.show', [

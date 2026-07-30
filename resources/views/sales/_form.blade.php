@@ -24,7 +24,7 @@
     $downPaymentValue = (float) old('down_payment', $sale->down_payment ?? 0);
     $downPaymentPercentageValue = (float) old(
         'down_payment_percentage',
-        $salePriceValue > 0 ? round(($downPaymentValue / $salePriceValue) * 100, 2) : ($paymentType === 'cash' ? 100 : 0)
+        $salePriceValue > 0 ? round(($downPaymentValue / $salePriceValue) * 100, 5) : ($paymentType === 'cash' ? 100 : 0)
     );
     $projectShareholders = $projectShareholders ?? collect();
     $propertiesMeta = $properties->mapWithKeys(function ($p) {
@@ -97,7 +97,7 @@
 
     <div class="col-md-3">
         <label class="form-label">سعر البيع</label>
-        <input type="number" step="0.01" min="1" name="sale_price" id="sale_price" class="form-control"
+        <input type="number" step="0.00001" min="1" name="sale_price" id="sale_price" class="form-control"
                value="{{ old('sale_price', $sale->sale_price ?? '') }}" required>
     </div>
     <div class="col-md-3">
@@ -109,24 +109,24 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">نسبة المقدم (%)</label>
-        <input type="number" step="0.01" min="0" max="100" id="down_payment_percentage" class="form-control"
+        <input type="number" step="0.00001" min="0" max="100" id="down_payment_percentage" class="form-control"
                value="{{ $downPaymentPercentageValue }}">
     </div>
     <div class="col-md-3">
         <label class="form-label">المقدم</label>
-        <input type="number" step="0.01" min="0" name="down_payment" id="down_payment" class="form-control"
+        <input type="number" step="0.00001" min="0" name="down_payment" id="down_payment" class="form-control"
                value="{{ old('down_payment', $sale->down_payment ?? '') }}">
         <small class="text-muted">يمكنك التحكم يدويًا في النسبة أو المقدم؛ وتُحدَّث القيمة المقابلة تلقائيًا.</small>
     </div>
     <div class="col-md-3">
         <label class="form-label">منه للصندوق</label>
-        <input type="number" step="0.01" min="0" id="cashbox_down_payment_amount" class="form-control font-monospace" readonly
+        <input type="number" step="0.00001" min="0" id="cashbox_down_payment_amount" class="form-control font-monospace" readonly
                value="{{ old('cashbox_down_payment_preview', '') }}">
         <small class="text-muted">يُحسب تلقائيًا = المقدم − حساب المساهم</small>
     </div>
     <div class="col-md-3">
         <label class="form-label">منه لحساب مساهم</label>
-        <input type="number" step="0.01" min="0" name="shareholder_down_payment_amount" id="shareholder_down_payment_amount"
+        <input type="number" step="0.00001" min="0" name="shareholder_down_payment_amount" id="shareholder_down_payment_amount"
                class="form-control font-monospace @error('shareholder_down_payment_amount') is-invalid @enderror"
                value="{{ old('shareholder_down_payment_amount', $sale->shareholder_down_payment_amount ?? '') }}">
         @error('shareholder_down_payment_amount') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -182,7 +182,7 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small mb-0">المبلغ (ج.م)</label>
-                        <input type="number" step="0.01" min="0.01" class="form-control form-control-sm" data-field="amount"
+                        <input type="number" step="0.00001" min="0.00001" class="form-control form-control-sm" data-field="amount"
                                name="secondary_payments[{{ $idx }}][amount]"
                                value="{{ old("secondary_payments.$idx.amount", $sp['amount'] ?? '') }}"
                                placeholder="0">
@@ -274,14 +274,14 @@
             if (share > down) {
                 share = down;
                 if (shareholderDownInput) {
-                    shareholderDownInput.value = String(Math.round(share * 100) / 100);
+                    shareholderDownInput.value = String(Math.round(share * 100000) / 100000);
                 }
             }
-            const cash = Math.round((down - share) * 100) / 100;
+            const cash = Math.round((down - share) * 100000) / 100000;
             cashboxDownInput.value = String(cash);
 
             if (shareholderSelect) {
-                shareholderSelect.required = share >= 0.01;
+                shareholderSelect.required = share >= 0.00001;
             }
         }
 
@@ -325,7 +325,7 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small mb-0">المبلغ (ج.م)</label>
-                        <input type="number" step="0.01" min="0.01" class="form-control form-control-sm" data-field="amount" placeholder="0">
+                        <input type="number" step="0.00001" min="0.00001" class="form-control form-control-sm" data-field="amount" placeholder="0">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small mb-0">تاريخ الاستحقاق</label>
@@ -462,7 +462,7 @@
                 // في الكاش: اقترح افتراضيًا كامل السعر فقط عند الفراغ/الصفر، مع إبقاء الحقول قابلة للتعديل.
                 const currentDown = Math.max(0, parseFloat(downPaymentInput.value || '0') || 0);
                 if (price > 0 && currentDown <= 0) {
-                    downPaymentInput.value = String(Math.round(price * 100) / 100);
+                    downPaymentInput.value = String(Math.round(price * 100000) / 100000);
                     downPaymentPercentageInput.value = '100';
                 }
                 syncDownPaymentSplitPreview();
@@ -484,7 +484,7 @@
             const price = Math.max(0, parseFloat(salePriceInput.value || '0'));
             const percent = clampPercent(parseFloat(downPaymentPercentageInput.value || '0'));
             downPaymentPercentageInput.value = String(percent);
-            downPaymentInput.value = String(Math.round((price * (percent / 100)) * 100) / 100);
+            downPaymentInput.value = String(Math.round((price * (percent / 100)) * 100000) / 100000);
             syncDownPaymentSplitPreview();
         }
 
@@ -534,7 +534,7 @@
             if (shareholderSelect.value && shareholderDownInput && !(parseFloat(shareholderDownInput.value || '0') > 0)) {
                 // لو اختار مساهم والمبلغ فاضي، اقترح كل المقدم لحسابه (يمكن تعديله)
                 const down = Math.max(0, parseFloat(downPaymentInput?.value || '0') || 0);
-                shareholderDownInput.value = String(Math.round(down * 100) / 100);
+                shareholderDownInput.value = String(Math.round(down * 100000) / 100000);
             }
             if (!shareholderSelect.value && shareholderDownInput) {
                 shareholderDownInput.value = '';

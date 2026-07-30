@@ -23,7 +23,7 @@ class StoreRevenueRequest extends FormRequest
             'contract_id' => ['required', 'exists:contracts,id'],
             'sale_id' => ['nullable', 'exists:sales,id'],
             'client_id' => ['required', 'exists:clients,id'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.00001'],
             'category' => ['required', 'string', 'max:255'],
             'source' => ['nullable', 'string', 'max:255'],
             'paid_at' => ['required', 'date'],
@@ -84,8 +84,8 @@ class StoreRevenueRequest extends FormRequest
                 return;
             }
 
-            $down = $sale->approval_status === 'approved' ? round((float) ($sale->down_payment ?? 0), 2) : 0.0;
-            if ($down < 0.01) {
+            $down = $sale->approval_status === 'approved' ? round((float) ($sale->down_payment ?? 0), 5) : 0.0;
+            if ($down < 0.00001) {
                 return;
             }
 
@@ -143,7 +143,7 @@ class StoreRevenueRequest extends FormRequest
         }
 
         $suggested = $contract->suggestedNextCollectionAmount($excludeRevenueId);
-        if ($suggested !== null && $suggested >= 0.01) {
+        if ($suggested !== null && $suggested >= 0.00001) {
             $this->merge(['amount' => $suggested]);
         }
     }

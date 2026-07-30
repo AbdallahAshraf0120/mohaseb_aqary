@@ -25,6 +25,10 @@ class TreasuryTransaction extends Model
         'rejection_reason',
     ];
 
+    protected $casts = [
+        'amount' => 'decimal:5',
+    ];
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);

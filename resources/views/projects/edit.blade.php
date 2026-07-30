@@ -44,13 +44,13 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="project-capital">رأس المال المخطط (ج.م)</label>
-                            <input type="number" step="0.01" min="0" class="form-control font-monospace @error('capital') is-invalid @enderror" id="project-capital" name="capital" value="{{ old('capital', $project->planned_capital ?? $project->capital ?? 0) }}" placeholder="0.00">
+                            <input type="number" step="0.00001" min="0" class="form-control font-monospace @error('capital') is-invalid @enderror" id="project-capital" name="capital" value="{{ old('capital', $project->planned_capital ?? $project->capital ?? 0) }}" placeholder="0.00">
                             @error('capital')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                             <div class="form-text">
                                 الاتفاق الأصلي لنسب المساهمين. رأس المال الفعلي الحالي:
-                                <span class="font-monospace fw-semibold">{{ number_format((float) ($project->actual_capital ?? 0), 2) }}</span>
+                                <span class="font-monospace fw-semibold">{{ number_format((float) ($project->actual_capital ?? 0), 5) }}</span>
                                 ج.م
                             </div>
                         </div>

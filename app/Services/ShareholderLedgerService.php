@@ -69,7 +69,7 @@ class ShareholderLedgerService
             }
         }
 
-        $amount = round((float) $data['amount'], 2);
+        $amount = round((float) $data['amount'], 5);
         if ($amount <= 0) {
             throw new InvalidArgumentException('المبلغ يجب أن يكون أكبر من صفر.');
         }
@@ -205,15 +205,15 @@ class ShareholderLedgerService
             throw new InvalidArgumentException('المساهم غير مرتبط بالمشروع الهدف. اربطه أولًا.');
         }
 
-        $shareAmount = round((float) $amount, 2);
-        if ($shareAmount < 0.01) {
+        $shareAmount = round((float) $amount, 5);
+        if ($shareAmount < 0.00001) {
             throw new InvalidArgumentException('المبلغ يجب أن يكون أكبر من صفر.');
         }
 
         $remaining = $source->remainingAllocatableAmount();
         if ($shareAmount > $remaining + 0.01) {
             throw new InvalidArgumentException(
-                'المبلغ أكبر من المتبقي القابل للتوزيع (المتاح: '.number_format($remaining, 2).' ج.م).'
+                'المبلغ أكبر من المتبقي القابل للتوزيع (المتاح: '.number_format($remaining, 5).' ج.م).'
             );
         }
 
@@ -224,7 +224,7 @@ class ShareholderLedgerService
         $targetProject = Project::query()->find($targetProjectId);
         $sourceName = $sourceProject?->name ?? ('مشروع #'.$sourceProjectId);
         $targetName = $targetProject?->name ?? ('مشروع #'.$targetProjectId);
-        $pct = round(($shareAmount / max(0.01, (float) $source->amount)) * 100, 2);
+        $pct = round(($shareAmount / max(0.01, (float) $source->amount)) * 100, 5);
         $baseNote = trim((string) ($notes ?? ''));
         $debitAuto = sprintf(
             'تحويل إلى «%s» — توزيع %.2f%% (%.2f ج.م) من حركة #%d — من «%s»',
@@ -431,15 +431,15 @@ class ShareholderLedgerService
             throw new InvalidArgumentException('يجب تحديد مشروع أو أرض واحدة فقط.');
         }
 
-        $target = round($newAmount, 2);
-        if ($target < 0.01) {
+        $target = round($newAmount, 5);
+        if ($target < 0.00001) {
             throw new InvalidArgumentException('التمويل يجب أن يكون أكبر من صفر.');
         }
 
         $current = $shareholder->capitalDepositsTotal($projectId, $landParcelId);
-        $diff = round($target - $current, 2);
+        $diff = round($target - $current, 5);
 
-        if (abs($diff) < 0.01) {
+        if (abs($diff) < 0.00001) {
             if ($projectId !== null) {
                 $this->syncProjectInvestment($shareholder, $projectId);
             } else {
@@ -474,7 +474,7 @@ class ShareholderLedgerService
         ?int $landParcelId,
         float $reduceBy
     ): void {
-        $remaining = round($reduceBy, 2);
+        $remaining = round($reduceBy, 5);
         $query = ShareholderLedgerEntry::withoutProjectScope()
             ->where('shareholder_id', (int) $shareholder->id)
             ->where('type', ShareholderLedgerEntry::TYPE_CAPITAL)
@@ -487,19 +487,19 @@ class ShareholderLedgerService
         }
 
         foreach ($query->get() as $entry) {
-            if ($remaining < 0.01) {
+            if ($remaining < 0.00001) {
                 break;
             }
 
-            $amount = round((float) $entry->amount, 2);
+            $amount = round((float) $entry->amount, 5);
             if ($amount <= $remaining + 0.001) {
-                $remaining = round($remaining - $amount, 2);
+                $remaining = round($remaining - $amount, 5);
                 $this->delete($entry);
 
                 continue;
             }
 
-            $newAmount = round($amount - $remaining, 2);
+            $newAmount = round($amount - $remaining, 5);
             $entry->update(['amount' => $newAmount]);
             if ($entry->treasury_transaction_id) {
                 TreasuryTransaction::withoutProjectScope()
@@ -510,7 +510,7 @@ class ShareholderLedgerService
             $remaining = 0;
         }
 
-        if ($remaining >= 0.01) {
+        if ($remaining >= 0.00001) {
             throw new InvalidArgumentException('لا يمكن تخفيض التمويل أكثر من إجمالي إيداعات رأس المال المسجّلة.');
         }
 

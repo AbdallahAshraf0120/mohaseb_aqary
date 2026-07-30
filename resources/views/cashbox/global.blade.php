@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $fmt = fn (float $n): string => number_format($n, 2, '.', ',');
+        $fmt = fn (float $n): string => number_format($n, 5, '.', ',');
         $currencyLabel = strtoupper((string) $currency) === 'EGP' ? 'ج.م' : $currency;
     @endphp
 

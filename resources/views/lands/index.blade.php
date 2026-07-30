@@ -54,8 +54,8 @@
                             <td>{{ $lands->firstItem() + $loop->index }}</td>
                             <td>{{ $land->name }}</td>
                             <td>{{ $land->area?->name ?? '-' }}</td>
-                            <td>{{ number_format((float) $land->land_cost, 2) }}</td>
-                            <td>{{ number_format($buildTotal, 2) }}</td>
+                            <td>{{ number_format((float) $land->land_cost, 5) }}</td>
+                            <td>{{ number_format($buildTotal, 5) }}</td>
                             <td>{{ $land->properties_count }}</td>
                             <td class="text-end">
                                 <a href="{{ route('lands.edit', [$project, $land]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>

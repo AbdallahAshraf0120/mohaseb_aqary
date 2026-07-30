@@ -37,7 +37,7 @@ class StoreShareholderRequest extends FormRequest
                 'integer',
                 $landsReady ? Rule::exists('land_parcels', 'id') : 'integer',
             ]),
-            'share_percentage' => ['required', 'numeric', 'min:0.01', 'max:100'],
+            'share_percentage' => ['required', 'numeric', 'min:0.00001', 'max:100'],
             'total_investment' => ['nullable', 'numeric', 'min:0'],
         ];
     }
@@ -50,7 +50,7 @@ class StoreShareholderRequest extends FormRequest
             }
 
             $linkType = (string) $this->input('link_type');
-            $percentage = round((float) $this->input('share_percentage'), 2);
+            $percentage = round((float) $this->input('share_percentage'), 5);
 
             if ($linkType === 'project') {
                 $this->validateProjectPercentage($validator, $percentage);
@@ -77,10 +77,10 @@ class StoreShareholderRequest extends FormRequest
 
         $existingPct = round((float) ProjectShareholder::query()
             ->where('project_id', (int) $project->id)
-            ->sum($pctColumn), 2);
+            ->sum($pctColumn), 5);
 
-        if (round($existingPct + $percentage, 2) > 100.01) {
-            $remaining = max(0, round(100 - $existingPct, 2));
+        if (round($existingPct + $percentage, 5) > 100.01) {
+            $remaining = max(0, round(100 - $existingPct, 5));
             $validator->errors()->add(
                 'share_percentage',
                 "مجموع نسب المساهمين يتجاوز 100٪. المتبقي المتاح: {$remaining}٪."
@@ -101,7 +101,7 @@ class StoreShareholderRequest extends FormRequest
             return;
         }
 
-        $capital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 2);
+        $capital = round((float) ($parcel->planned_capital ?? $parcel->purchase_price ?? 0), 5);
         if ($capital <= 0) {
             $validator->errors()->add(
                 'land_parcel_id',
@@ -117,10 +117,10 @@ class StoreShareholderRequest extends FormRequest
 
         $existingPct = round((float) LandParcelShareholder::query()
             ->where('land_parcel_id', (int) $parcel->id)
-            ->sum($pctColumn), 2);
+            ->sum($pctColumn), 5);
 
-        if (round($existingPct + $percentage, 2) > 100.01) {
-            $remaining = max(0, round(100 - $existingPct, 2));
+        if (round($existingPct + $percentage, 5) > 100.01) {
+            $remaining = max(0, round(100 - $existingPct, 5));
             $validator->errors()->add(
                 'share_percentage',
                 "مجموع نسب المساهمين يتجاوز 100٪. المتبقي المتاح: {$remaining}٪."
