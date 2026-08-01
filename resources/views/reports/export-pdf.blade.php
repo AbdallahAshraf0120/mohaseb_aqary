@@ -31,7 +31,7 @@
     @foreach ($summaryPeriod as $label => $value)
         <tr>
             <td>{{ $label }}</td>
-            <td class="num">{{ is_numeric($value) ? number_format((float) $value, \Illuminate\Support\Str::contains((string) $label, 'عدد') ? 0 : 2, '.', ',') : $value }}</td>
+            <td class="num">{{ is_numeric($value) ? number_format((float) $value, \Illuminate\Support\Str::contains((string) $label, 'عدد') ? 0 : 5, '.', ',') : $value }}</td>
         </tr>
     @endforeach
 </table>
@@ -41,7 +41,7 @@
     @foreach ($summaryAllTime as $label => $value)
         <tr>
             <td>{{ $label }}</td>
-            <td class="num">{{ is_numeric($value) ? number_format((float) $value, \Illuminate\Support\Str::contains((string) $label, 'عدد') ? 0 : 2, '.', ',') : $value }}</td>
+            <td class="num">{{ is_numeric($value) ? number_format((float) $value, \Illuminate\Support\Str::contains((string) $label, 'عدد') ? 0 : 5, '.', ',') : $value }}</td>
         </tr>
     @endforeach
 </table>

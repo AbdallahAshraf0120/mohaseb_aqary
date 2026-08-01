@@ -282,16 +282,23 @@ class ReportController extends Controller
             ->where('approval_status', 'approved');
         $this->applySaleSearch($salesQ, $filters);
 
+        // بدون حركات جاري المساهمين (دي مش تحصيل ولا مصروف تشغيلي — لها سجل مستقل في صفحة المساهمين)
+        $excludeShareholderLedger = static function ($q): void {
+            $q->whereNull('reference_type')->orWhereNotIn('reference_type', ['shareholder_ledger_entry']);
+        };
+
         $treasuryInQ = TreasuryTransaction::query()->where('type', 'revenue')
             ->whereDate('created_at', '>=', $fromStr)
             ->whereDate('created_at', '<=', $toStr)
-            ->where('approval_status', 'approved');
+            ->where('approval_status', 'approved')
+            ->where($excludeShareholderLedger);
         $this->applyTreasurySearch($treasuryInQ, $filters);
 
         $treasuryOutQ = TreasuryTransaction::query()->where('type', 'expense')
             ->whereDate('created_at', '>=', $fromStr)
             ->whereDate('created_at', '<=', $toStr)
-            ->where('approval_status', 'approved');
+            ->where('approval_status', 'approved')
+            ->where($excludeShareholderLedger);
         $this->applyTreasurySearch($treasuryOutQ, $filters);
 
         return [
@@ -340,9 +347,13 @@ class ReportController extends Controller
         $periodStats['net_treasury'] = $periodStats['treasury_in'] - $periodStats['treasury_out'];
         $periodStats['net_revenue_expense'] = $periodStats['revenues_sum'] - $periodStats['expenses_sum'];
 
+        $excludeShareholderLedgerAllTime = static function ($q): void {
+            $q->whereNull('reference_type')->orWhereNotIn('reference_type', ['shareholder_ledger_entry']);
+        };
+
         $allTime = [
-            'treasury_in' => (float) TreasuryTransaction::query()->where('type', 'revenue')->where('approval_status', 'approved')->sum('amount'),
-            'treasury_out' => (float) TreasuryTransaction::query()->where('type', 'expense')->where('approval_status', 'approved')->sum('amount'),
+            'treasury_in' => (float) TreasuryTransaction::query()->where('type', 'revenue')->where('approval_status', 'approved')->where($excludeShareholderLedgerAllTime)->sum('amount'),
+            'treasury_out' => (float) TreasuryTransaction::query()->where('type', 'expense')->where('approval_status', 'approved')->where($excludeShareholderLedgerAllTime)->sum('amount'),
             'revenues_sum' => (float) Revenue::query()->where('approval_status', 'approved')->sum('amount'),
             'expenses_sum' => (float) Expense::query()->where('approval_status', 'approved')->sum('amount'),
             'sales_sum' => (float) Sale::query()->where('approval_status', 'approved')->sum('sale_price'),

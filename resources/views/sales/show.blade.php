@@ -166,7 +166,7 @@
                                     </tr>
                                     <tr>
                                         <th class="text-body-secondary align-top py-2">أساس الأقساط</th>
-                                        <td class="py-2 font-monospace">{{ number_format((float) ($plan['installment_base_for_schedule'] ?? max(0, (float) ($plan['remaining_amount'] ?? 0) - $secondaryTotal)), 2) }} ج.م</td>
+                                        <td class="py-2 font-monospace">{{ number_format((float) ($plan['installment_base_for_schedule'] ?? max(0, (float) ($plan['remaining_amount'] ?? 0) - $secondaryTotal)), 5) }} ج.م</td>
                                     </tr>
                                 @endif
                             @endif

@@ -308,6 +308,18 @@
                                 </a>
                             </li>
                         @endcan
+                        @can('approvals.index')
+                            <li class="nav-item">
+                                <a href="{{ route('approvals.index') }}"
+                                   class="nav-link d-flex align-items-center {{ request()->routeIs('approvals.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-user-check"></i>
+                                    <p class="flex-grow-1">طلبات الاعتماد</p>
+                                    @if (($pendingApprovalsCount ?? 0) > 0)
+                                        <span class="badge text-bg-danger rounded-pill ms-1">{{ $pendingApprovalsCount }}</span>
+                                    @endif
+                                </a>
+                            </li>
+                        @endcan
                         @can('shareholders.view')
                             <li class="nav-item">
                                 <a href="{{ route('shareholders.index') }}"

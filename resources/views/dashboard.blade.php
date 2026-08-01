@@ -58,6 +58,9 @@
                                 @if (($transfersIn ?? 0) > 0.009)
                                     <div class="opacity-75 small mt-1">+ تحويلات واردة {{ $fmt($transfersIn) }}</div>
                                 @endif
+                                @if (($shareholderIn ?? 0) > 0.009)
+                                    <div class="opacity-75 small mt-1">+ إيداعات مساهمين {{ $fmt($shareholderIn) }}</div>
+                                @endif
                             </div>
                             <i class="fa-solid fa-arrow-trend-up fa-2x opacity-50 flex-shrink-0"></i>
                         </div>
@@ -77,6 +80,9 @@
                                 <div class="opacity-75 small mt-1">{{ $currencyLabel }}</div>
                                 @if (($transfersOut ?? 0) > 0.009)
                                     <div class="opacity-75 small mt-1">+ تحويلات صادرة {{ $fmt($transfersOut) }}</div>
+                                @endif
+                                @if (($shareholderOut ?? 0) > 0.009)
+                                    <div class="opacity-75 small mt-1">+ مسحوبات مساهمين {{ $fmt($shareholderOut) }}</div>
                                 @endif
                             </div>
                             <i class="fa-solid fa-arrow-trend-down fa-2x opacity-50 flex-shrink-0"></i>

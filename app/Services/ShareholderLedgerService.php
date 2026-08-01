@@ -492,7 +492,7 @@ class ShareholderLedgerService
             }
 
             $amount = round((float) $entry->amount, 5);
-            if ($amount <= $remaining + 0.001) {
+            if ($amount <= $remaining + 0.00001) {
                 $remaining = round($remaining - $amount, 5);
                 $this->delete($entry);
 

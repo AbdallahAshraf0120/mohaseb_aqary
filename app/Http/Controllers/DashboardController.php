@@ -30,15 +30,20 @@ class DashboardController extends Controller
         $treasuryOutAll = (float) (clone $approved)->where('type', 'expense')->sum('amount');
         $balance = $treasuryInAll - $treasuryOutAll;
 
-        // كروت الوارد/المصروف: بدون تحويلات صناديق (دي مش تحصيل ولا مصروف تشغيلي)
+        // كروت الوارد/المصروف: بدون تحويلات صناديق ولا حركات جاري المساهمين (دي مش تحصيل ولا مصروف تشغيلي)
         $operating = (clone $approved)->where(function ($q): void {
             $q->whereNull('reference_type')
-                ->orWhere('reference_type', '!=', FundTransfer::class);
+                ->orWhereNotIn('reference_type', [FundTransfer::class, 'shareholder_ledger_entry']);
         });
         $treasuryIn = (float) (clone $operating)->where('type', 'revenue')->sum('amount');
         $treasuryOut = (float) (clone $operating)->where('type', 'expense')->sum('amount');
-        $transfersIn = round($treasuryInAll - $treasuryIn, 5);
-        $transfersOut = round($treasuryOutAll - $treasuryOut, 5);
+
+        $shareholderIn = (float) (clone $approved)->where('type', 'revenue')->where('reference_type', 'shareholder_ledger_entry')->sum('amount');
+        $shareholderOut = (float) (clone $approved)->where('type', 'expense')->where('reference_type', 'shareholder_ledger_entry')->sum('amount');
+        $transfersIn = round($treasuryInAll - $treasuryIn - $shareholderIn, 5);
+        $transfersOut = round($treasuryOutAll - $treasuryOut - $shareholderOut, 5);
+        $shareholderIn = round($shareholderIn, 5);
+        $shareholderOut = round($shareholderOut, 5);
 
         $stats = [
             'properties' => Property::query()->count(),
@@ -80,6 +85,8 @@ class DashboardController extends Controller
             'treasuryOut' => $treasuryOut,
             'transfersIn' => $transfersIn,
             'transfersOut' => $transfersOut,
+            'shareholderIn' => $shareholderIn,
+            'shareholderOut' => $shareholderOut,
             'balance' => $balance,
             'stats' => $stats,
             'recentSales' => $recentSales,

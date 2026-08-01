@@ -100,6 +100,11 @@ Route::middleware('auth')->group(function (): void {
         // الصندوق الشامل (برا المشاريع) — مراقبة حركات كل المشاريع
         Route::get('global-cashbox', [GlobalCashboxController::class, 'index'])->name('global-cashbox.index');
 
+        // طلبات الاعتماد (برا المشاريع) — مراجعة/اعتماد طلبات كل المشاريع من مكان واحد
+        Route::get('approvals', [ApprovalsController::class, 'index'])->name('approvals.index');
+        Route::post('approvals/{type}/{id}/approve', [ApprovalsController::class, 'approve'])->whereNumber('id')->name('approvals.approve');
+        Route::post('approvals/{type}/{id}/reject', [ApprovalsController::class, 'reject'])->whereNumber('id')->name('approvals.reject');
+
         // صندوق أراضي البيع والشراء (مشروع نظامي) — يظهر أيضًا في الصندوق الشامل
         Route::get('land-cashbox', [LandCashboxController::class, 'index'])->name('land-cashbox.index');
         Route::post('land-cashbox', [LandCashboxController::class, 'store'])->name('land-cashbox.store');
@@ -225,9 +230,6 @@ Route::middleware(['auth', AuthorizeRoutePermission::class, SyncProjectFromRoute
 
         Route::get('cashbox', [CashboxController::class, 'index'])->name('cashbox.index');
         Route::post('cashbox', [CashboxController::class, 'store'])->name('cashbox.store');
-        Route::get('approvals', [ApprovalsController::class, 'index'])->name('approvals.index');
-        Route::post('approvals/{type}/{id}/approve', [ApprovalsController::class, 'approve'])->whereNumber('id')->name('approvals.approve');
-        Route::post('approvals/{type}/{id}/reject', [ApprovalsController::class, 'reject'])->whereNumber('id')->name('approvals.reject');
         Route::post('debts/{debt}/pay-from-cashbox', [DebtController::class, 'payFromCashbox'])->name('debts.pay-from-cashbox');
         Route::resource('debts', DebtController::class)->except(['show']);
         Route::get('remaining', [RemainingController::class, 'index'])->name('remaining.index');

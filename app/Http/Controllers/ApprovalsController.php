@@ -15,6 +15,7 @@ use App\Services\CashboxBalanceService;
 use App\Services\CashboxLedgerService;
 use App\Services\RevenueShareholderAttributionService;
 use App\Services\SaleShareholderAttributionService;
+use App\Support\CurrentProject;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,63 +31,91 @@ class ApprovalsController extends Controller
         private readonly SaleShareholderAttributionService $saleAttribution,
     ) {}
 
-    public function index(Project $project): View
+    /**
+     * طلبات الاعتماد عبر كل المشاريع في مكان واحد (خارج سياق مشروع بعينه).
+     */
+    public function index(Request $request): View
     {
+        $projectId = $request->integer('project_id') ?: null;
+
+        $revenuesQ = Revenue::query()->withoutProjectScope()
+            ->where('approval_status', 'pending')
+            ->with(['client:id,name', 'receivedByShareholder:id,name', 'project:id,name']);
+        $expensesQ = Expense::query()->withoutProjectScope()
+            ->where('approval_status', 'pending')
+            ->with(['project:id,name']);
+        $salesQ = Sale::query()->withoutProjectScope()
+            ->where('approval_status', 'pending')
+            ->with(['client:id,name', 'property:id,name', 'receivedByShareholder:id,name', 'project:id,name']);
+        $debtPaymentsQ = DebtPayment::query()
+            ->where('approval_status', 'pending')
+            ->with(['debt' => fn ($q) => $q->withoutProjectScope()->with('project:id,name')]);
+        $manualTreasuryQ = TreasuryTransaction::query()->withoutProjectScope()
+            ->whereNull('reference_type')
+            ->where('approval_status', 'pending')
+            ->with(['project:id,name']);
+
+        if ($projectId !== null) {
+            $revenuesQ->where('project_id', $projectId);
+            $expensesQ->where('project_id', $projectId);
+            $salesQ->where('project_id', $projectId);
+            $debtPaymentsQ->whereHas('debt', fn ($q) => $q->withoutProjectScope()->where('project_id', $projectId));
+            $manualTreasuryQ->where('project_id', $projectId);
+        }
+
         $pending = [
-            'revenues' => Revenue::query()->where('approval_status', 'pending')->with(['client:id,name', 'receivedByShareholder:id,name'])->latest('paid_at')->latest('id')->limit(25)->get(),
-            'expenses' => Expense::query()->where('approval_status', 'pending')->latest('id')->limit(25)->get(),
-            'sales' => Sale::query()->where('approval_status', 'pending')->with(['client:id,name', 'property:id,name', 'receivedByShareholder:id,name'])->latest('sale_date')->latest('id')->limit(25)->get(),
-            'debt_payments' => DebtPayment::query()->where('approval_status', 'pending')->with('debt')->latest('id')->limit(25)->get(),
-            'manual_treasury' => TreasuryTransaction::query()
-                ->whereNull('reference_type')
-                ->where('approval_status', 'pending')
-                ->latest('id')
-                ->limit(25)
-                ->get(),
+            'revenues' => (clone $revenuesQ)->latest('paid_at')->latest('id')->limit(25)->get(),
+            'expenses' => (clone $expensesQ)->latest('id')->limit(25)->get(),
+            'sales' => (clone $salesQ)->latest('sale_date')->latest('id')->limit(25)->get(),
+            'debt_payments' => (clone $debtPaymentsQ)->latest('id')->limit(25)->get(),
+            'manual_treasury' => (clone $manualTreasuryQ)->latest('id')->limit(25)->get(),
         ];
 
         $counts = [
-            'revenues' => Revenue::query()->where('approval_status', 'pending')->count(),
-            'expenses' => Expense::query()->where('approval_status', 'pending')->count(),
-            'sales' => Sale::query()->where('approval_status', 'pending')->count(),
-            'debt_payments' => DebtPayment::query()->where('approval_status', 'pending')->count(),
-            'manual_treasury' => TreasuryTransaction::query()->whereNull('reference_type')->where('approval_status', 'pending')->count(),
+            'revenues' => (clone $revenuesQ)->count(),
+            'expenses' => (clone $expensesQ)->count(),
+            'sales' => (clone $salesQ)->count(),
+            'debt_payments' => (clone $debtPaymentsQ)->count(),
+            'manual_treasury' => (clone $manualTreasuryQ)->count(),
         ];
 
         return view('approvals.index', [
             'title' => 'طلبات الاعتماد | Mohaseb Aqary',
             'pageTitle' => 'طلبات الاعتماد',
-            'project' => $project,
             'pending' => $pending,
             'counts' => $counts,
+            'projects' => Project::query()->listed()->orderBy('name')->get(['id', 'name']),
+            'selectedProjectId' => $projectId,
             'modules' => $this->modules(),
         ]);
     }
 
-    public function approve(Request $request, Project $project, string $type, int $id): RedirectResponse
+    public function approve(Request $request, string $type, int $id): RedirectResponse
     {
         $user = $request->user();
         abort_unless($user, 403);
 
         try {
-            DB::transaction(function () use ($type, $id, $user): void {
-                match ($type) {
-                    'revenue' => $this->approveRevenue($id, (int) $user->id),
-                    'expense' => $this->approveExpense($id, (int) $user->id),
-                    'sale' => $this->approveSale($id, (int) $user->id),
-                    'debt_payment' => $this->approveDebtPayment($id, (int) $user->id),
-                    'manual_treasury' => $this->approveManualTreasury($id, (int) $user->id),
-                    default => throw new \InvalidArgumentException('unknown_type'),
-                };
+            $this->withProjectContext($type, $id, function () use ($type, $id, $user): void {
+                DB::transaction(function () use ($type, $id, $user): void {
+                    match ($type) {
+                        'revenue' => $this->approveRevenue($id, (int) $user->id),
+                        'expense' => $this->approveExpense($id, (int) $user->id),
+                        'sale' => $this->approveSale($id, (int) $user->id),
+                        'debt_payment' => $this->approveDebtPayment($id, (int) $user->id),
+                        'manual_treasury' => $this->approveManualTreasury($id, (int) $user->id),
+                        default => throw new \InvalidArgumentException('unknown_type'),
+                    };
+                });
             });
         } catch (InvalidArgumentException $e) {
-            return redirect()->route('approvals.index', [$project])->with('error', $e->getMessage());
+            return redirect()->route('approvals.index')->with('error', $e->getMessage());
         }
 
-        return redirect()->route('approvals.index', [$project])->with('success', 'تم اعتماد العملية بنجاح.');
+        return redirect()->route('approvals.index')->with('success', 'تم اعتماد العملية بنجاح.');
     }
 
-    public function reject(Request $request, Project $project, string $type, int $id): RedirectResponse
+    public function reject(Request $request, string $type, int $id): RedirectResponse
     {
         $user = $request->user();
         abort_unless($user, 403);
@@ -95,19 +124,71 @@ class ApprovalsController extends Controller
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
 
-        DB::transaction(function () use ($type, $id, $user, $data): void {
-            $reason = $data['reason'] ?? null;
-            match ($type) {
-                'revenue' => $this->rejectRevenue($id, (int) $user->id, $reason),
-                'expense' => $this->rejectExpense($id, (int) $user->id, $reason),
-                'sale' => $this->rejectSale($id, (int) $user->id, $reason),
-                'debt_payment' => $this->rejectDebtPayment($id, (int) $user->id, $reason),
-                'manual_treasury' => $this->rejectManualTreasury($id, (int) $user->id, $reason),
-                default => throw new \InvalidArgumentException('unknown_type'),
-            };
-        });
+        try {
+            $this->withProjectContext($type, $id, function () use ($type, $id, $user, $data): void {
+                DB::transaction(function () use ($type, $id, $user, $data): void {
+                    $reason = $data['reason'] ?? null;
+                    match ($type) {
+                        'revenue' => $this->rejectRevenue($id, (int) $user->id, $reason),
+                        'expense' => $this->rejectExpense($id, (int) $user->id, $reason),
+                        'sale' => $this->rejectSale($id, (int) $user->id, $reason),
+                        'debt_payment' => $this->rejectDebtPayment($id, (int) $user->id, $reason),
+                        'manual_treasury' => $this->rejectManualTreasury($id, (int) $user->id, $reason),
+                        default => throw new \InvalidArgumentException('unknown_type'),
+                    };
+                });
+            });
+        } catch (InvalidArgumentException $e) {
+            return redirect()->route('approvals.index')->with('error', $e->getMessage());
+        }
 
-        return redirect()->route('approvals.index', [$project])->with('success', 'تم رفض العملية.');
+        return redirect()->route('approvals.index')->with('success', 'تم رفض العملية.');
+    }
+
+    /**
+     * هذه الصفحة برا سياق أي مشروع، لكن كل عملية اعتماد/رفض بتلمس نماذج مربوطة
+     * بمشروع بعينه (BelongsToProject). بنحدد مشروع العملية الحقيقي ونفرضه مؤقتًا
+     * كـ "المشروع الحالي" علشان أي كتابة/قراءة داخلية (مزامنة الصندوق، نسب المساهمين...)
+     * تتم على المشروع الصحيح، بغض النظر عن آخر مشروع كان مفتوح في الجلسة.
+     */
+    private function withProjectContext(string $type, int $id, \Closure $callback): void
+    {
+        $projectId = $this->resolveProjectId($type, $id);
+        $current = app(CurrentProject::class);
+        $current->force($projectId);
+        try {
+            $callback();
+        } finally {
+            $current->force(null);
+        }
+    }
+
+    private function resolveProjectId(string $type, int $id): int
+    {
+        $projectId = match ($type) {
+            'revenue' => (int) (Revenue::query()->withoutProjectScope()->whereKey($id)->value('project_id') ?? 0),
+            'expense' => (int) (Expense::query()->withoutProjectScope()->whereKey($id)->value('project_id') ?? 0),
+            'sale' => (int) (Sale::query()->withoutProjectScope()->whereKey($id)->value('project_id') ?? 0),
+            'debt_payment' => $this->resolveDebtPaymentProjectId($id),
+            'manual_treasury' => (int) (TreasuryTransaction::query()->withoutProjectScope()->whereKey($id)->value('project_id') ?? 0),
+            default => 0,
+        };
+
+        if ($projectId < 1) {
+            throw new InvalidArgumentException('لم يتم العثور على المشروع المرتبط بهذا الطلب.');
+        }
+
+        return $projectId;
+    }
+
+    private function resolveDebtPaymentProjectId(int $id): int
+    {
+        $debtId = (int) (DebtPayment::query()->whereKey($id)->value('debt_id') ?? 0);
+        if ($debtId < 1) {
+            return 0;
+        }
+
+        return (int) (Debt::query()->withoutProjectScope()->whereKey($debtId)->value('project_id') ?? 0);
     }
 
     private function approveRevenue(int $id, int $userId): void

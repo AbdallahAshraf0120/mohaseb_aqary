@@ -9,16 +9,17 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
             <h4 class="mb-1 fw-semibold">طلبات الاعتماد</h4>
-            <p class="small text-body-secondary mb-0">اعتماد أو رفض العمليات المعلقة قبل احتسابها في الصندوق والتقارير.</p>
+            <p class="small text-body-secondary mb-0">اعتماد أو رفض العمليات المعلقة من كل المشاريع في مكان واحد، قبل احتسابها في الصندوق والتقارير.</p>
         </div>
-        <div class="d-flex flex-wrap gap-2">
-            <a href="{{ route('cashbox.index', [$project]) }}" class="btn btn-outline-secondary btn-sm">
-                <i class="fa-solid fa-vault ms-1"></i> الصندوق
-            </a>
-            <a href="{{ route('reports.index', [$project]) }}" class="btn btn-outline-secondary btn-sm">
-                <i class="fa-solid fa-chart-line ms-1"></i> التقارير
-            </a>
-        </div>
+        <form method="get" action="{{ route('approvals.index') }}" class="d-flex align-items-center gap-2">
+            <label for="project_id" class="small text-body-secondary mb-0">المشروع</label>
+            <select name="project_id" id="project_id" class="form-select form-select-sm" style="width: auto" onchange="this.form.submit()">
+                <option value="">كل المشاريع</option>
+                @foreach ($projects as $p)
+                    <option value="{{ $p->id }}" @selected((int) $selectedProjectId === (int) $p->id)>{{ $p->name }}</option>
+                @endforeach
+            </select>
+        </form>
     </div>
 
     @if (session('success'))
@@ -175,9 +176,17 @@
                                 </thead>
                                 <tbody>
                                 @forelse ($section['rows'] as $row)
+                                    @php
+                                        $rowProject = $section['key'] === 'debt_payments' ? $row->debt?->project : $row->project;
+                                    @endphp
                                     <tr>
                                         <td class="small font-monospace text-body-secondary">#{{ $row->id }}</td>
                                         <td class="small">
+                                            <div class="mb-1">
+                                                <span class="badge text-bg-light text-body-secondary border">
+                                                    <i class="fa-solid fa-diagram-project ms-1"></i>{{ $rowProject?->name ?? '—' }}
+                                                </span>
+                                            </div>
                                             @if ($section['key'] === 'revenues')
                                                 <div class="fw-semibold">{{ $row->category ?? 'تحصيل' }}</div>
                                                 <div class="text-body-secondary">{{ $row->client?->name ?? '—' }}</div>
@@ -212,7 +221,7 @@
                                         </td>
                                         <td class="text-end">
                                             <div class="d-flex justify-content-end gap-2 flex-wrap">
-                                                <form method="post" action="{{ route('approvals.approve', [$project, $section['type'], $row->id]) }}">
+                                                <form method="post" action="{{ route('approvals.approve', [$section['type'], $row->id]) }}">
                                                     @csrf
                                                     <button class="btn btn-sm btn-success">
                                                         <i class="fa-solid fa-check ms-1"></i> اعتماد
@@ -242,7 +251,7 @@
                         </div>
                         <div class="px-4 py-3 border-top small text-body-secondary d-flex flex-wrap justify-content-between align-items-center gap-2">
                             <span>يمكنك رفض العملية مع سبب اختياري.</span>
-                            <a href="{{ route('cashbox.index', [$project]) }}" class="text-decoration-none">عرض الصندوق</a>
+                            <a href="{{ route('global-cashbox.index') }}" class="text-decoration-none">عرض الصندوق الشامل</a>
                         </div>
                     </div>
                 @endforeach
@@ -297,7 +306,7 @@
 
                 descEl.textContent = desc;
                 reasonEl.value = '';
-                form.action = @json(url('/')) + '/' + @json((string) $project->id) + '/approvals/' + encodeURIComponent(type) + '/' + encodeURIComponent(id) + '/reject';
+                form.action = @json(url('/approvals')) + '/' + encodeURIComponent(type) + '/' + encodeURIComponent(id) + '/reject';
             });
         })();
     </script>

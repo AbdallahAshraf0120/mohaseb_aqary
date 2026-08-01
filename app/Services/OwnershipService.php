@@ -368,25 +368,21 @@ class OwnershipService
             }
 
             $plannedInv = round((float) ($membership->planned_investment ?? $membership->total_investment ?? 0), 5);
-            $capitalOnly = $shareholder->capitalDepositsTotal(null, $landParcelId);
             $purchaseAttributed = $this->attributedPurchaseTotal((int) $shareholder->id, $landParcelId);
             // Align capital deposits so capital + purchases ≈ planned (purchases stay attributed separately)
-            $targetCapital = max(0.00001, round($plannedInv - $purchaseAttributed, 5));
-            if ($plannedInv >= 0.00001) {
-                if ($targetCapital >= 0.00001) {
-                    $this->ledgerService->setFundingAmount(
-                        $shareholder,
-                        null,
-                        $landParcelId,
-                        $targetCapital,
-                        $user,
-                        true,
-                        'اعتماد المخطط كفعلي — مطابقة رأس المال'
-                    );
-                } elseif ($capitalOnly >= 0.00001 && $purchaseAttributed >= $plannedInv) {
-                    // actual from purchases already covers plan; leave capital as-is
-                }
+            $targetCapital = round($plannedInv - $purchaseAttributed, 5);
+            if ($plannedInv >= 0.00001 && $targetCapital >= 0.00001) {
+                $this->ledgerService->setFundingAmount(
+                    $shareholder,
+                    null,
+                    $landParcelId,
+                    $targetCapital,
+                    $user,
+                    true,
+                    'اعتماد المخطط كفعلي — مطابقة رأس المال'
+                );
             }
+            // else: purchases already cover (or exceed) the plan — leave capital deposits as-is
 
             $pct = round((float) ($membership->planned_percentage ?? $membership->share_percentage ?? 0), 5);
             $membership->actual_investment = $plannedInv;

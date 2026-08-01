@@ -135,7 +135,6 @@ class AppServiceProvider extends ServiceProvider
                 'create_permission' => 'revenues.manage',
             ],
             ['route' => 'cashbox.index', 'label' => 'الصندوق', 'icon' => 'fa-vault', 'active' => ['cashbox.*'], 'permission' => 'cashbox.view'],
-            ['route' => 'approvals.index', 'label' => 'طلبات الاعتماد', 'icon' => 'fa-user-check', 'active' => ['approvals.*'], 'permission' => 'approvals.index'],
             [
                 'route' => 'expenses.index',
                 'label' => 'المصروفات',
@@ -176,6 +175,17 @@ class AppServiceProvider extends ServiceProvider
 
             /** @var User|null $user */
             $user = Auth::user();
+
+            $pendingApprovalsCount = 0;
+            if ($user instanceof User && $user->can('approvals.index')) {
+                $pendingApprovalsCount = \App\Models\Revenue::query()->withoutProjectScope()->where('approval_status', 'pending')->count()
+                    + \App\Models\Expense::query()->withoutProjectScope()->where('approval_status', 'pending')->count()
+                    + \App\Models\Sale::query()->withoutProjectScope()->where('approval_status', 'pending')->count()
+                    + \App\Models\DebtPayment::query()->where('approval_status', 'pending')->count()
+                    + \App\Models\TreasuryTransaction::query()->withoutProjectScope()->whereNull('reference_type')->where('approval_status', 'pending')->count();
+            }
+            $view->with('pendingApprovalsCount', $pendingApprovalsCount);
+
             $filtered = collect($projectSidebarActionsRaw)
                 ->filter(function (array $action) use ($user): bool {
                     if (! $user instanceof User) {
