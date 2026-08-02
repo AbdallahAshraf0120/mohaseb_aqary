@@ -11,7 +11,6 @@ use App\Models\ProjectShareholder;
 use App\Models\Property;
 use App\Models\Revenue;
 use App\Models\Sale;
-use App\Models\TreasuryTransaction;
 use App\Services\CashboxLedgerService;
 use App\Services\SaleShareholderAttributionService;
 use App\Support\CurrentProject;
@@ -370,12 +369,11 @@ class SaleController extends Controller
                 ->where('approval_status', 'approved')
                 ->sum('amount')
             : 0.0;
-        $downPaymentApproved = (float) TreasuryTransaction::query()
-            ->withoutProjectScope()
-            ->where('reference_type', Sale::class)
-            ->where('reference_id', $sale->id)
-            ->where('approval_status', 'approved')
-            ->sum('amount');
+        // نحسب المقدم من حقل البيعة نفسه مباشرة (مش من حركة الصندوق) لأن syncContractForSale()
+        // بتتنفذ قبل مزامنة مقدم البيعة مع الصندوق، فقيد الصندوق لسه مش موجود في أول إنشاء/تعديل للبيعة.
+        $downPaymentApproved = ($sale->approval_status ?? 'approved') === 'approved'
+            ? round((float) ($sale->down_payment ?? 0), 5)
+            : 0.0;
         $totalPaid = $downPaymentApproved + $revenuesPaid;
         $remaining = max(0, (float) $sale->sale_price - $totalPaid);
 

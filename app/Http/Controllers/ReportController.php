@@ -150,6 +150,7 @@ class ReportController extends Controller
     public function exportPdf(Project $project, Request $request): Response
     {
         @ini_set('memory_limit', '512M');
+        @ini_set('pcre.backtrack_limit', '10000000');
 
         $setting = Setting::query()->first();
         $currencyLabel = strtoupper((string) ($setting?->currency ?? 'EGP')) === 'EGP' ? 'ج.م' : (string) ($setting?->currency ?? '');
@@ -157,12 +158,38 @@ class ReportController extends Controller
         $w = $this->buildFilteredQueries($request);
         $snap = $this->financialSnapshots($w);
 
-        $revenues = (clone $w['revenuesQ'])->with(['client:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->get();
-        $expenses = (clone $w['expensesQ'])->orderByDesc('id')->get();
-        $sales = (clone $w['salesQ'])->with(['client:id,name', 'property:id,name'])->orderByDesc('sale_date')->orderByDesc('id')->get();
-        $treasuryIn = (clone $w['treasuryInQ'])->orderByDesc('created_at')->orderByDesc('id')->get();
-        $treasuryOut = (clone $w['treasuryOutQ'])->orderByDesc('created_at')->orderByDesc('id')->get();
-        $contracts = Contract::query()->with(['client:id,name', 'property:id,name'])->orderBy('id')->get();
+        // جداول بدون حد أقصى بتولّد HTML ضخم يوقف مولّد الـPDF عند تراكم آلاف السجلات (فترة واسعة أو مشروع قديم)؛
+        // بنعرض أحدث سجلات ضمن سقف آمن ونوضّح لو فيه سجلات مش ظاهرة بدل ما نصمت عنها.
+        $pdfRowLimit = 1000;
+
+        $revenuesTotalCount = (clone $w['revenuesQ'])->count();
+        $revenues = (clone $w['revenuesQ'])->with(['client:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->limit($pdfRowLimit)->get();
+        $revenuesTruncated = $revenuesTotalCount > $pdfRowLimit;
+
+        $expensesTotalCount = (clone $w['expensesQ'])->count();
+        $expenses = (clone $w['expensesQ'])->orderByDesc('id')->limit($pdfRowLimit)->get();
+        $expensesTruncated = $expensesTotalCount > $pdfRowLimit;
+
+        $salesTotalCount = (clone $w['salesQ'])->count();
+        $sales = (clone $w['salesQ'])->with(['client:id,name', 'property:id,name'])->orderByDesc('sale_date')->orderByDesc('id')->limit($pdfRowLimit)->get();
+        $salesTruncated = $salesTotalCount > $pdfRowLimit;
+
+        $treasuryInTotalCount = (clone $w['treasuryInQ'])->count();
+        $treasuryIn = (clone $w['treasuryInQ'])->orderByDesc('created_at')->orderByDesc('id')->limit($pdfRowLimit)->get();
+        $treasuryInTruncated = $treasuryInTotalCount > $pdfRowLimit;
+
+        $treasuryOutTotalCount = (clone $w['treasuryOutQ'])->count();
+        $treasuryOut = (clone $w['treasuryOutQ'])->orderByDesc('created_at')->orderByDesc('id')->limit($pdfRowLimit)->get();
+        $treasuryOutTruncated = $treasuryOutTotalCount > $pdfRowLimit;
+
+        // العقود مش محصورة بفترة التقرير أصلًا (بتعرض الوضع الحالي كله)، فبنرتبها بالأعلى متبقي أولًا لو حصل قص.
+        $contractsTotalCount = Contract::query()->count();
+        $contracts = Contract::query()->with(['client:id,name', 'property:id,name'])
+            ->orderByDesc('remaining_amount')
+            ->orderByDesc('id')
+            ->limit($pdfRowLimit)
+            ->get();
+        $contractsTruncated = $contractsTotalCount > $pdfRowLimit;
 
         $ps = $snap['periodStats'];
         $at = $snap['allTime'];
@@ -203,11 +230,23 @@ class ReportController extends Controller
             'summaryPeriod' => $summaryPeriod,
             'summaryAllTime' => $summaryAllTime,
             'revenues' => $revenues,
+            'revenuesTotalCount' => $revenuesTotalCount,
+            'revenuesTruncated' => $revenuesTruncated,
             'expenses' => $expenses,
+            'expensesTotalCount' => $expensesTotalCount,
+            'expensesTruncated' => $expensesTruncated,
             'sales' => $sales,
+            'salesTotalCount' => $salesTotalCount,
+            'salesTruncated' => $salesTruncated,
             'treasuryIn' => $treasuryIn,
+            'treasuryInTotalCount' => $treasuryInTotalCount,
+            'treasuryInTruncated' => $treasuryInTruncated,
             'treasuryOut' => $treasuryOut,
+            'treasuryOutTotalCount' => $treasuryOutTotalCount,
+            'treasuryOutTruncated' => $treasuryOutTruncated,
             'contracts' => $contracts,
+            'contractsTotalCount' => $contractsTotalCount,
+            'contractsTruncated' => $contractsTruncated,
         ])->render();
 
         $tempDir = storage_path('app/mpdf-tmp');

@@ -47,6 +47,9 @@
 </table>
 
 <h2>تحصيلات التفصيل</h2>
+@if ($revenuesTruncated ?? false)
+    <p class="muted">عرض أحدث {{ number_format(count($revenues)) }} من إجمالي {{ number_format($revenuesTotalCount) }} سجل — لعرض الباقي ضيّق نطاق التاريخ.</p>
+@endif
 <table>
     <thead>
     <tr>
@@ -77,6 +80,9 @@
 <pagebreak />
 
 <h2>مصروفات التفصيل</h2>
+@if ($expensesTruncated ?? false)
+    <p class="muted">عرض أحدث {{ number_format(count($expenses)) }} من إجمالي {{ number_format($expensesTotalCount) }} سجل — لعرض الباقي ضيّق نطاق التاريخ.</p>
+@endif
 <table>
     <thead>
     <tr>
@@ -105,6 +111,9 @@
 <pagebreak />
 
 <h2>مبيعات الفترة</h2>
+@if ($salesTruncated ?? false)
+    <p class="muted">عرض أحدث {{ number_format(count($sales)) }} من إجمالي {{ number_format($salesTotalCount) }} بيعة — لعرض الباقي ضيّق نطاق التاريخ.</p>
+@endif
 <table>
     <thead>
     <tr>
@@ -136,6 +145,9 @@
 
 <h2>صندوق — وارد ثم صادر</h2>
 <h3 style="font-size:11pt;margin:10px 0 4px;">وارد</h3>
+@if ($treasuryInTruncated ?? false)
+    <p class="muted">عرض أحدث {{ number_format(count($treasuryIn)) }} من إجمالي {{ number_format($treasuryInTotalCount) }} حركة — لعرض الباقي ضيّق نطاق التاريخ.</p>
+@endif
 <table>
     <thead><tr><th>#</th><th>التاريخ</th><th>المبلغ</th><th>الوصف</th></tr></thead>
     <tbody>
@@ -151,6 +163,9 @@
 </table>
 
 <h3 style="font-size:11pt;margin:14px 0 4px;">صادر</h3>
+@if ($treasuryOutTruncated ?? false)
+    <p class="muted">عرض أحدث {{ number_format(count($treasuryOut)) }} من إجمالي {{ number_format($treasuryOutTotalCount) }} حركة — لعرض الباقي ضيّق نطاق التاريخ.</p>
+@endif
 <table>
     <thead><tr><th>#</th><th>التاريخ</th><th>المبلغ</th><th>الوصف</th></tr></thead>
     <tbody>
@@ -168,6 +183,9 @@
 <pagebreak />
 
 <h2>العقود</h2>
+@if ($contractsTruncated ?? false)
+    <p class="muted">عرض أعلى {{ number_format(count($contracts)) }} عقد (الأكبر متبقيًا أولًا) من إجمالي {{ number_format($contractsTotalCount) }} عقد — لعرض الباقي استخدم تصدير Excel أو صفحة «المتبقي».</p>
+@endif
 <table>
     <thead>
     <tr>
