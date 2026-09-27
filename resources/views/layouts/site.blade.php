@@ -9,7 +9,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-    @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
+    @php
+        $siteManifestPath = public_path('build/manifest.json');
+        $siteManifest = (is_file($siteManifestPath) ? json_decode((string) file_get_contents($siteManifestPath), true) : null) ?: [];
+        $hasSiteVite = isset(
+            $siteManifest['resources/css/site.css'],
+            $siteManifest['resources/css/site-lighthouse-full.css'],
+            $siteManifest['resources/js/site.js']
+        );
+    @endphp
+    @if ($hasSiteVite || file_exists(public_path('hot')))
         @vite(['resources/css/site.css', 'resources/css/site-lighthouse-full.css', 'resources/js/site.js'])
     @endif
 </head>
