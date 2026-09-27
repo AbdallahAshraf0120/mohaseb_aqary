@@ -243,12 +243,19 @@
         align-items: flex-end;
         justify-content: flex-start;
         padding-bottom: clamp(3.75rem, 11vh, 5.5rem);
-        width: min(100% - 2rem, var(--site-max));
+        padding-inline-start: 0.35rem;
+        padding-inline-end: 0.75rem;
+        width: min(100% - 1.25rem, var(--site-max));
+        margin-inline-end: 0;
+        margin-inline-start: auto;
     }
 
     .site-hero__content--fx {
-        max-width: 100% !important;
+        max-width: min(19.5rem, 82%) !important;
+        margin-inline-start: 0 !important;
+        margin-inline-end: auto !important;
         transform: none;
+        text-align: start;
     }
 
     .site-3d-stage--hero {
@@ -269,6 +276,15 @@
 }
 
 @media (max-width: 600px) {
+    .site-hero__panel {
+        padding-inline-start: 0.25rem;
+        width: min(100% - 0.85rem, var(--site-max));
+    }
+
+    .site-hero__content--fx {
+        max-width: min(17.5rem, 78%) !important;
+    }
+
     .site-hero--home .site-hero__brand {
         font-size: clamp(2.6rem, 12vw, 3.4rem);
         white-space: normal;
