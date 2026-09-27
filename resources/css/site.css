@@ -52,10 +52,19 @@ body.site-body {
     line-height: 1.7;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: auto;
+}
+
+html {
+    overflow-x: hidden;
+    height: auto;
 }
 
 body.site-body--splash {
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: hidden;
 }
 
 /* Intro splash — first paint */
@@ -2060,7 +2069,17 @@ body.site-body.has-pointer .site-cursor-glow.is-on {
 
 @media (max-width: 640px) {
     .site-3d-stage--bg {
-        display: none;
+        display: block;
+        inset-inline-end: -16%;
+        opacity: 0.2;
+        width: 200px;
+        height: 220px;
+        min-height: 180px;
+    }
+
+    .site-3d-stage--bg-start {
+        inset-inline-start: -20%;
+        inset-inline-end: auto;
     }
 
     .site-3d-stage--bg-page {

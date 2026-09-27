@@ -48,7 +48,8 @@
         </div>
     @endif
 
-    <section class="site-section">
+    <section class="site-section site-section--has-3d">
+        <div class="site-3d-stage site-3d-stage--bg site-3d-stage--bg-start" data-building-3d data-variant="complex" data-bg-3d aria-hidden="true"></div>
         <div class="site-wrap">
             <div class="site-stats">
                 <div class="site-stat site-reveal site-reveal--scale">
@@ -71,7 +72,8 @@
         </div>
     </section>
 
-    <section class="site-section" style="padding-top:0">
+    <section class="site-section site-section--has-3d" style="padding-top:0">
+        <div class="site-3d-stage site-3d-stage--bg" data-building-3d data-variant="twin" data-bg-3d aria-hidden="true"></div>
         <div class="site-wrap">
             <div class="site-section__head site-reveal">
                 <span class="site-section__eyebrow">Portfolio</span>
@@ -95,7 +97,8 @@
         </div>
     </section>
 
-    <section class="site-section site-section--muted">
+    <section class="site-section site-section--muted site-section--has-3d">
+        <div class="site-3d-stage site-3d-stage--bg site-3d-stage--bg-start" data-building-3d data-variant="villa" data-bg-3d aria-hidden="true"></div>
         <div class="site-wrap site-trust">
             <div class="site-reveal site-reveal--right">
                 <div class="site-section__head" style="margin-bottom:0">
@@ -115,7 +118,8 @@
         </div>
     </section>
 
-    <section class="site-section">
+    <section class="site-section site-section--has-3d">
+        <div class="site-3d-stage site-3d-stage--bg" data-building-3d data-variant="tower" data-bg-3d aria-hidden="true"></div>
         <div class="site-wrap">
             <div class="site-cta-band site-reveal site-reveal--scale">
                 <h2 style="margin:0 0 .75rem;font-size:clamp(1.5rem,3vw,2.1rem)">{{ $site->cta_title }}</h2>

@@ -617,7 +617,10 @@ function mountBuilding(el) {
   renderer.domElement.style.width = '100%';
   renderer.domElement.style.height = '100%';
   renderer.domElement.style.display = 'block';
-  renderer.domElement.style.touchAction = 'none';
+  const touchFriendly = window.matchMedia('(pointer: coarse)').matches
+    || window.matchMedia('(max-width: 960px)').matches;
+  const heroPassThrough = isHero && touchFriendly;
+  renderer.domElement.style.touchAction = heroPassThrough || isBg ? 'pan-y' : 'none';
   renderer.domElement.setAttribute('aria-hidden', 'true');
 
   scene.add(new THREE.AmbientLight(0xb8c8c0, isHero ? 0.32 : 0.45));
@@ -663,7 +666,7 @@ function mountBuilding(el) {
   controls.dampingFactor = 0.08;
   controls.enablePan = false;
   controls.enableZoom = false;
-  controls.enableRotate = !isBg;
+  controls.enableRotate = !isBg && !heroPassThrough;
   controls.minPolarAngle = Math.PI * (variant === 'lighthouse' ? 0.3 : 0.26);
   controls.maxPolarAngle = Math.PI * (variant === 'lighthouse' ? 0.5 : 0.48);
   controls.autoRotate = !reduceMotion;
@@ -675,8 +678,10 @@ function mountBuilding(el) {
   );
   controls.update();
 
-  if (isBg) {
+  if (isBg || heroPassThrough) {
     renderer.domElement.style.pointerEvents = 'none';
+    el.style.pointerEvents = 'none';
+    el.style.touchAction = 'pan-y';
   }
 
   let active = false;

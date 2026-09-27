@@ -253,6 +253,14 @@
 
     .site-3d-stage--hero {
         opacity: 0.88 !important;
+        /* الموبايل: لا تمنع السكرول — التدوير يبقى أوتوماتيك */
+        pointer-events: none !important;
+        touch-action: pan-y !important;
+    }
+
+    .site-3d-stage--hero canvas {
+        pointer-events: none !important;
+        touch-action: pan-y !important;
     }
 
     .site-header.is-over-hero .site-header__inner {

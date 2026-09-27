@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
       splash.classList.add('is-done');
       splash.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('site-body--splash');
+      document.body.style.removeProperty('overflow');
+      document.documentElement.style.removeProperty('overflow');
       window.setTimeout(() => splash.remove(), 700);
     };
     const minMs = reduceMotion ? 200 : 1200;
@@ -19,6 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.readyState === 'complete') finish();
     else window.addEventListener('load', finish, { once: true });
     window.setTimeout(hideSplash, reduceMotion ? 600 : 2800);
+    // لو المستخدم لمس الشاشة قبل انتهاء السبلاش — افتح السكرول فورًا
+    window.addEventListener('touchstart', hideSplash, { once: true, passive: true });
+  } else {
+    document.body.classList.remove('site-body--splash');
   }
 
   const menuBtn = document.querySelector('[data-site-menu]');
