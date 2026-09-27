@@ -55,6 +55,8 @@ class PermissionSeeder extends Seeder
 
             'site-sketch.view' => 'عرض مخطط الموقع (كروكي العقارات)',
             'site-sketch.manage' => 'تعديل خلايا الكروكي وإعادة الضبط',
+
+            'website.manage' => 'إدارة محتوى الموقع الإلكتروني',
         ];
 
         // صلاحيات دقيقة لكل Route/Action (متوافقة مع الصلاحيات القديمة view/manage).
@@ -168,6 +170,7 @@ class PermissionSeeder extends Seeder
             'land-trading' => 'أراضي البيع والشراء',
             'tasks' => 'المهام',
             'site-sketch' => 'مخطط الموقع',
+            'website' => 'الموقع الإلكتروني',
         ];
 
         $actionLabels = [

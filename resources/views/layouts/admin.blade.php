@@ -133,7 +133,7 @@
 
         <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
             <div class="sidebar-brand">
-                <a href="{{ url('/') }}" class="brand-link">
+                <a href="{{ route('home') }}" class="brand-link">
                     <span class="brand-text fw-light">Mohaseb Aqary</span>
                 </a>
             </div>
@@ -232,6 +232,74 @@
                                     <i class="nav-icon fa-solid fa-address-book"></i>
                                     <p>CRM - متابعة العملاء</p>
                                 </a>
+                            </li>
+                        @endcan
+                        @can('website.manage')
+                            <li class="nav-item has-treeview {{ request()->routeIs('website.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('website.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-globe"></i>
+                                    <p>
+                                        الموقع الإلكتروني
+                                        <i class="nav-arrow fa-solid fa-angle-left"></i>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="{{ route('website.index') }}"
+                                           class="nav-link {{ request()->routeIs('website.index') ? 'active' : '' }}">
+                                            <i class="nav-icon fa-solid fa-table-cells-large"></i>
+                                            <p>لوحة الموقع</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('website.projects.index') }}"
+                                           class="nav-link {{ request()->routeIs('website.projects.*') ? 'active' : '' }}">
+                                            <i class="nav-icon fa-solid fa-building"></i>
+                                            <p>مشاريع الموقع</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('website.edit', 'general') }}"
+                                           class="nav-link {{ request()->routeIs('website.edit') && request()->route('section') === 'general' ? 'active' : '' }}">
+                                            <i class="nav-icon fa-solid fa-id-card"></i>
+                                            <p>الهوية والتواصل</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('website.edit', 'home') }}"
+                                           class="nav-link {{ request()->routeIs('website.edit') && request()->route('section') === 'home' ? 'active' : '' }}">
+                                            <i class="nav-icon fa-solid fa-house"></i>
+                                            <p>الصفحة الرئيسية</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('website.edit', 'about') }}"
+                                           class="nav-link {{ request()->routeIs('website.edit') && request()->route('section') === 'about' ? 'active' : '' }}">
+                                            <i class="nav-icon fa-solid fa-building"></i>
+                                            <p>من نحن</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('website.edit', 'trust') }}"
+                                           class="nav-link {{ request()->routeIs('website.edit') && request()->route('section') === 'trust' ? 'active' : '' }}">
+                                            <i class="nav-icon fa-solid fa-shield-halved"></i>
+                                            <p>لماذا نحن والخدمات</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('website.edit', 'contact') }}"
+                                           class="nav-link {{ request()->routeIs('website.edit') && request()->route('section') === 'contact' ? 'active' : '' }}">
+                                            <i class="nav-icon fa-solid fa-envelope-open-text"></i>
+                                            <p>صفحة التواصل</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ url('/') }}" target="_blank" rel="noopener" class="nav-link">
+                                            <i class="nav-icon fa-solid fa-arrow-up-right-from-square"></i>
+                                            <p>فتح الموقع</p>
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
                         @endcan
                         @can('land-trading.view')

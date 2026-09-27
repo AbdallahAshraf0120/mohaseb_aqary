@@ -19,6 +19,7 @@
         "admin-lte": "^4.0.0-rc7",
         "bootstrap": "^5.3.8",
         "sweetalert2": "^11.26.24",
+        "three": "^0.186.1",
         "tom-select": "^2.6.0"
     }
 }

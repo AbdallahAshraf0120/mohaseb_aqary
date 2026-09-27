@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -183,5 +184,10 @@ class Project extends Model
     public function leads(): HasMany
     {
         return $this->hasMany(CrmLead::class, 'project_id');
+    }
+
+    public function websiteProject(): HasOne
+    {
+        return $this->hasOne(WebsiteProject::class);
     }
 }

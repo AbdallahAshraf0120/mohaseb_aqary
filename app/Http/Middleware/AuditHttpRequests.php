@@ -24,7 +24,7 @@ class AuditHttpRequests
         }
 
         // تسجيل الدخول الناجح يُسجَّل يدويًا في LoginController لتجنب التكرار.
-        if ($request->is('login') && $request->isMethod('POST')) {
+        if ($request->is('app/login') && $request->isMethod('POST')) {
             return;
         }
 

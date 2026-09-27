@@ -16,7 +16,7 @@
             <div class="card app-surface mt-4 mb-4">
                 <div class="card-body p-4">
                     <h1 class="h4 mb-3 text-center">Mohaseb Aqary</h1>
-                    <p class="text-muted small text-center mb-4">تسجيل الدخول إلى النظام</p>
+                    <p class="text-muted small text-center mb-4">تسجيل الدخول إلى نظام الإدارة</p>
 
                     @if (session('success'))
                         <div class="alert alert-success py-2">{{ session('success') }}</div>
@@ -41,6 +41,9 @@
                         </div>
                         <button type="submit" class="btn btn-primary w-100">دخول</button>
                     </form>
+                    <p class="text-center small text-muted mt-3 mb-0">
+                        <a href="{{ route('site.home') }}">العودة للموقع</a>
+                    </p>
                 </div>
             </div>
         </div>

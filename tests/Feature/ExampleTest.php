@@ -2,18 +2,23 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_public_and_app_routes_are_separated(): void
     {
-        $response = $this->get('/');
+        $this->assertTrue(Route::has('site.home'));
+        $this->assertTrue(Route::has('site.projects'));
+        $this->assertTrue(Route::has('site.contact'));
+        $this->assertTrue(Route::has('login'));
+        $this->assertTrue(Route::has('home'));
+        $this->assertTrue(Route::has('projects.index'));
+        $this->assertTrue(Route::has('website.brand.update'));
 
-        $response->assertRedirect(route('login'));
+        $this->assertSame('/app/login', route('login', absolute: false));
+        $this->assertSame('/', route('site.home', absolute: false));
+        $this->get('/app/login')->assertOk();
     }
 }

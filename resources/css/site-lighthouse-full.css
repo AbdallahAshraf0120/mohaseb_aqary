@@ -1,0 +1,276 @@
+/* Home first viewport — full-bleed hero, clean hierarchy */
+
+/* Sticky header overlays the hero (no cream band above) */
+.site-header.is-over-hero {
+    position: sticky;
+    top: 0;
+    margin-bottom: -5.5rem;
+    padding: 1rem 0 0;
+    z-index: 50;
+    background: transparent;
+    pointer-events: none;
+}
+
+.site-header.is-over-hero .site-header__inner {
+    pointer-events: auto;
+    max-width: calc(var(--site-max) + 2rem);
+    margin-inline: max(clamp(1.25rem, 4vw, 2.75rem), calc((100% - var(--site-max)) / 2));
+    background: color-mix(in srgb, #0a1210 68%, transparent);
+    border-color: color-mix(in srgb, #fff 16%, transparent);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+}
+
+.site-header.is-over-hero.is-scrolled .site-header__inner {
+    background: color-mix(in srgb, #0a1210 82%, transparent);
+    border-color: color-mix(in srgb, #fff 18%, transparent);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+}
+
+.site-hero--home {
+    min-height: 100svh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    background: #060b10;
+}
+
+.site-hero--home .fx-space {
+    animation: none !important;
+    filter: none !important;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 65% 50% at 68% 42%, rgba(42, 154, 124, 0.26), transparent 62%),
+        radial-gradient(ellipse 45% 38% at 18% 78%, rgba(196, 164, 106, 0.12), transparent 55%),
+        linear-gradient(165deg, #0c1613 0%, #060b10 52%, #080e0c 100%);
+}
+
+/* Darken the text side (inline-start) for readable CTAs */
+.site-hero__veil {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background:
+        linear-gradient(
+            to inline-end,
+            rgba(6, 11, 16, 0.82) 0%,
+            rgba(6, 11, 16, 0.55) 34%,
+            rgba(6, 11, 16, 0.12) 58%,
+            transparent 72%
+        ),
+        linear-gradient(to top, rgba(6, 11, 16, 0.78) 0%, rgba(6, 11, 16, 0.2) 38%, transparent 58%);
+    pointer-events: none;
+}
+
+.site-3d-stage--hero {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    top: 0 !important;
+    bottom: auto !important;
+    inset-inline: 0 !important;
+    transform: none !important;
+    translate: none !important;
+    z-index: 1 !important;
+    opacity: 1 !important;
+    cursor: grab;
+    pointer-events: auto !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+
+.site-3d-stage--hero canvas {
+    width: 100% !important;
+    height: 100% !important;
+    filter: none !important;
+}
+
+.site-hero__panel {
+    position: relative;
+    z-index: 3;
+    width: min(100% - 2.5rem, var(--site-max));
+    margin-inline: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-block: clamp(6.75rem, 12vh, 8rem) clamp(4rem, 9vh, 5.5rem);
+    padding-inline: 0;
+    pointer-events: none;
+}
+
+.site-hero__content--fx {
+    position: relative;
+    z-index: 3 !important;
+    max-width: min(30rem, 92%) !important;
+    padding: 0 !important;
+    padding-inline-start: 0 !important;
+    margin: 0;
+    /* في RTL: ادفع البلوك شوية لليسار من منتصف العمود عشان يبان جنب البرج مش على الطرف */
+    transform: translateX(clamp(-1.5rem, -4vw, -0.25rem));
+    pointer-events: none;
+}
+
+.site-hero__content--fx::before {
+    display: none !important;
+}
+
+.site-hero__content--fx a,
+.site-hero__content--fx .site-btn {
+    pointer-events: auto;
+}
+
+.site-hero--home .site-hero__kicker {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 0 1rem;
+    padding: 0.38rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid rgba(232, 223, 208, 0.24);
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(10px);
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: none;
+    color: rgba(232, 223, 208, 0.95);
+    opacity: 1;
+    animation: site-rise 0.5s var(--site-ease) forwards 0.06s;
+}
+
+.site-hero--home .site-hero__brand {
+    margin: 0 0 0.75rem;
+    font-size: clamp(3.1rem, 8.5vw, 5.4rem);
+    line-height: 1.1;
+    filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45));
+    animation: site-brand-clean 0.85s var(--site-ease) forwards 0.08s;
+}
+
+@keyframes site-brand-clean {
+    from {
+        opacity: 0;
+        transform: translateY(0.9rem);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.site-hero--home .site-hero__title {
+    margin: 0 0 0.85rem;
+    font-size: clamp(1.1rem, 2vw, 1.35rem);
+    font-weight: 600;
+    color: #e8dfd0;
+    max-width: 26rem;
+    opacity: 1;
+    animation: site-rise 0.5s var(--site-ease) forwards 0.16s;
+}
+
+.site-hero--home .site-hero__lead {
+    margin: 0 0 1.55rem;
+    max-width: 26rem;
+    font-size: 0.98rem;
+    line-height: 1.85;
+    color: rgba(255, 255, 255, 0.74);
+    opacity: 1;
+    animation: site-rise 0.5s var(--site-ease) forwards 0.24s;
+}
+
+.site-hero--home .site-hero__actions {
+    gap: 0.65rem;
+    opacity: 1;
+    animation: site-rise 0.5s var(--site-ease) forwards 0.32s;
+}
+
+.site-hero--home .site-btn--hero {
+    min-height: 3rem;
+    padding-inline: 1.4rem;
+    font-size: 0.92rem;
+}
+
+.site-hero--home .site-btn--primary.site-btn--hero {
+    box-shadow: 0 12px 28px rgba(26, 107, 87, 0.38);
+}
+
+.site-hero--home .site-btn--ghost {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
+}
+
+.site-hero--home .site-btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.48);
+}
+
+.site-hero--home .site-hero__scroll {
+    bottom: 1rem;
+    opacity: 0.65;
+    z-index: 4;
+}
+
+.site-marquee {
+    border-block: 1px solid color-mix(in srgb, var(--site-ink) 6%, transparent);
+    background: color-mix(in srgb, var(--site-sand) 55%, var(--site-paper));
+}
+
+.site-section {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 680px;
+}
+
+.site-beacon-sweep {
+    display: none !important;
+}
+
+@media (max-width: 960px) {
+    .site-header.is-over-hero {
+        margin-bottom: -5rem;
+    }
+
+    .site-hero__veil {
+        background:
+            linear-gradient(to top, rgba(6, 11, 16, 0.9) 0%, rgba(6, 11, 16, 0.55) 42%, rgba(6, 11, 16, 0.28) 100%);
+    }
+
+    .site-hero--home {
+        align-items: flex-end;
+    }
+
+    .site-hero__panel {
+        align-items: flex-end;
+        justify-content: flex-start;
+        padding-bottom: clamp(3.75rem, 11vh, 5.5rem);
+        width: min(100% - 2rem, var(--site-max));
+    }
+
+    .site-hero__content--fx {
+        max-width: 100% !important;
+        transform: none;
+    }
+
+    .site-3d-stage--hero {
+        opacity: 0.88 !important;
+    }
+
+    .site-header.is-over-hero .site-header__inner {
+        margin-inline: 1.25rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .site-hero--home .site-hero__brand {
+        font-size: clamp(2.6rem, 12vw, 3.4rem);
+        white-space: normal;
+    }
+
+    .site-hero--home .site-hero__actions {
+        width: 100%;
+    }
+
+    .site-hero--home .site-btn--hero {
+        flex: 1 1 auto;
+    }
+}

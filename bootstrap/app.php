@@ -15,8 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo('/login');
-        $middleware->redirectUsersTo('/projects');
+        $middleware->redirectGuestsTo('/app/login');
+        $middleware->redirectUsersTo('/app/projects');
 
         $middleware->appendToGroup('web', AuditHttpRequests::class);
 

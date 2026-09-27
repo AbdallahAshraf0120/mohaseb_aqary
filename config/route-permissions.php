@@ -148,6 +148,15 @@ return [
     'crm-leads.destroy' => 'crm-leads.destroy',
     'crm-leads.activities.store' => 'crm-leads.activities.store',
 
+    'website.index' => 'website.manage',
+    'website.brand.update' => 'website.manage',
+    'website.edit' => 'website.manage',
+    'website.update' => 'website.manage',
+    'website.projects.index' => 'website.manage',
+    'website.projects.edit' => 'website.manage',
+    'website.projects.update' => 'website.manage',
+    'website.projects.toggle' => 'website.manage',
+
     'land-trading.index' => 'land-trading.index',
     'land-trading.sales' => 'land-trading.view',
     'land-trading.create' => 'land-trading.create',
