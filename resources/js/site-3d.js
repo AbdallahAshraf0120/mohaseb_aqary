@@ -684,6 +684,47 @@ function mountBuilding(el) {
     el.style.touchAction = 'pan-y';
   }
 
+  // جيروسكوب الموبايل — يحرّك البرج مع ميل الهاتف بدون منع السكرول
+  const gyro = {
+    enabled: false,
+    ready: false,
+    beta: 0,
+    gamma: 0,
+    baseBeta: null,
+    baseGamma: null,
+  };
+  const onDeviceOrientation = (event) => {
+    if (event.beta == null || event.gamma == null) return;
+    if (gyro.baseBeta == null) {
+      gyro.baseBeta = event.beta;
+      gyro.baseGamma = event.gamma;
+    }
+    gyro.beta = Math.max(-22, Math.min(22, event.beta - gyro.baseBeta));
+    gyro.gamma = Math.max(-22, Math.min(22, event.gamma - gyro.baseGamma));
+    gyro.ready = true;
+  };
+  const enableGyro = async () => {
+    if (gyro.enabled || reduceMotion || !isHero || !heroPassThrough) return;
+    try {
+      if (
+        typeof DeviceOrientationEvent !== 'undefined'
+        && typeof DeviceOrientationEvent.requestPermission === 'function'
+      ) {
+        const state = await DeviceOrientationEvent.requestPermission();
+        if (state !== 'granted') return;
+      }
+      window.addEventListener('deviceorientation', onDeviceOrientation, { passive: true });
+      gyro.enabled = true;
+      controls.autoRotateSpeed = 0.08;
+    } catch {
+      // أجهزة بدون دعم — يبقى التدوير التلقائي
+    }
+  };
+  if (isHero && heroPassThrough && !reduceMotion) {
+    enableGyro();
+    window.addEventListener('touchstart', () => { enableGyro(); }, { once: true, passive: true });
+  }
+
   let active = false;
   let raf = 0;
   let spark = 0;
@@ -710,7 +751,13 @@ function mountBuilding(el) {
     if (beaconPivot && !reduceMotion) {
       beaconPivot.rotation.y = spark * 0.35;
     }
-    const shouldRender = dragging || frame % 2 === 0;
+    if (gyro.ready && isHero) {
+      const targetY = (gyro.gamma / 22) * 0.42;
+      const targetX = (gyro.beta / 22) * 0.14;
+      model.rotation.y += (targetY - model.rotation.y) * 0.1;
+      model.rotation.x += (targetX - model.rotation.x) * 0.1;
+    }
+    const shouldRender = dragging || gyro.ready || frame % 2 === 0;
     if (shouldRender) {
       if (beaconAura) beaconAura.intensity = 9 + Math.sin(spark * 1.2) * 2;
       if (beaconCore?.material) beaconCore.material.emissiveIntensity = 1.7 + Math.sin(spark * 1.3) * 0.35;
@@ -778,6 +825,9 @@ function mountBuilding(el) {
     stop();
     io.disconnect();
     if (ro) ro.disconnect();
+    if (gyro.enabled) {
+      window.removeEventListener('deviceorientation', onDeviceOrientation);
+    }
     controls.dispose();
     renderer.dispose();
     scene.traverse((obj) => {
