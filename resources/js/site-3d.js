@@ -650,8 +650,8 @@ function mountBuilding(el) {
 
   const model = buildSceneVariant(variant);
   if (isHero && variant === 'lighthouse') {
-    model.position.set(-2.1, -0.45, 0);
-    model.scale.set(1.22, 1.28, 1.22);
+    model.position.set(-2.85, -0.45, 0);
+    model.scale.set(1.18, 1.24, 1.18);
   }
   scene.add(model);
 
@@ -672,7 +672,7 @@ function mountBuilding(el) {
   controls.autoRotate = !reduceMotion;
   controls.autoRotateSpeed = isBg ? 0.35 : (isHero ? 0.28 : 0.9);
   controls.target.set(
-    isHero && variant === 'lighthouse' ? -1.4 : 0,
+    isHero && variant === 'lighthouse' ? -1.9 : 0,
     variant === 'lighthouse' ? (isHero ? 3.9 : 3.2) : 1.75,
     0
   );

@@ -53,10 +53,10 @@
     background:
         linear-gradient(
             to inline-end,
-            rgba(6, 11, 16, 0.82) 0%,
-            rgba(6, 11, 16, 0.55) 34%,
-            rgba(6, 11, 16, 0.12) 58%,
-            transparent 72%
+            rgba(6, 11, 16, 0.88) 0%,
+            rgba(6, 11, 16, 0.62) 22%,
+            rgba(6, 11, 16, 0.18) 42%,
+            transparent 58%
         ),
         linear-gradient(to top, rgba(6, 11, 16, 0.78) 0%, rgba(6, 11, 16, 0.2) 38%, transparent 58%);
     pointer-events: none;
@@ -91,25 +91,29 @@
 .site-hero__panel {
     position: relative;
     z-index: 3;
-    width: min(100% - 2.5rem, var(--site-max));
+    width: min(100% - 2rem, 1280px);
     margin-inline: auto;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start; /* RTL = يمين */
     align-items: center;
     padding-block: clamp(6.75rem, 12vh, 8rem) clamp(4rem, 9vh, 5.5rem);
-    padding-inline: 0;
+    padding-inline-start: clamp(0.5rem, 2vw, 1.25rem);
+    padding-inline-end: 0;
     pointer-events: none;
 }
 
 .site-hero__content--fx {
     position: relative;
     z-index: 3 !important;
-    max-width: min(30rem, 92%) !important;
+    /* الربع الأول يمين الشاشة على الـ PC */
+    max-width: min(24vw, 20rem) !important;
+    width: min(24vw, 20rem);
     padding: 0 !important;
     padding-inline-start: 0 !important;
-    margin: 0;
-    /* في RTL: ادفع البلوك شوية لليسار من منتصف العمود عشان يبان جنب البرج مش على الطرف */
-    transform: translateX(clamp(-1.5rem, -4vw, -0.25rem));
+    margin-inline-start: 0;
+    margin-inline-end: auto;
+    transform: none;
+    text-align: start;
     pointer-events: none;
 }
 
@@ -141,10 +145,11 @@
 
 .site-hero--home .site-hero__brand {
     margin: 0 0 0.75rem;
-    font-size: clamp(3.1rem, 8.5vw, 5.4rem);
+    font-size: clamp(2.6rem, 5.5vw, 4.4rem);
     line-height: 1.1;
     filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45));
     animation: site-brand-clean 0.85s var(--site-ease) forwards 0.08s;
+    white-space: normal;
 }
 
 @keyframes site-brand-clean {
@@ -160,34 +165,37 @@
 
 .site-hero--home .site-hero__title {
     margin: 0 0 0.85rem;
-    font-size: clamp(1.1rem, 2vw, 1.35rem);
+    font-size: clamp(1rem, 1.5vw, 1.25rem);
     font-weight: 600;
     color: #e8dfd0;
-    max-width: 26rem;
+    max-width: none;
     opacity: 1;
     animation: site-rise 0.5s var(--site-ease) forwards 0.16s;
 }
 
 .site-hero--home .site-hero__lead {
     margin: 0 0 1.55rem;
-    max-width: 26rem;
-    font-size: 0.98rem;
-    line-height: 1.85;
+    max-width: none;
+    font-size: 0.92rem;
+    line-height: 1.8;
     color: rgba(255, 255, 255, 0.74);
     opacity: 1;
     animation: site-rise 0.5s var(--site-ease) forwards 0.24s;
 }
 
 .site-hero--home .site-hero__actions {
-    gap: 0.65rem;
+    gap: 0.55rem;
+    flex-direction: column;
+    align-items: stretch;
     opacity: 1;
     animation: site-rise 0.5s var(--site-ease) forwards 0.32s;
 }
 
 .site-hero--home .site-btn--hero {
-    min-height: 3rem;
-    padding-inline: 1.4rem;
-    font-size: 0.92rem;
+    min-height: 2.85rem;
+    padding-inline: 1.15rem;
+    font-size: 0.88rem;
+    width: 100%;
 }
 
 .site-hero--home .site-btn--primary.site-btn--hero {
@@ -243,19 +251,51 @@
         align-items: flex-end;
         justify-content: flex-start;
         padding-bottom: clamp(3.75rem, 11vh, 5.5rem);
-        padding-inline-start: 0.35rem;
-        padding-inline-end: 0.75rem;
-        width: min(100% - 1.25rem, var(--site-max));
-        margin-inline-end: 0;
-        margin-inline-start: auto;
+        padding-inline-start: 0.15rem;
+        padding-inline-end: 0;
+        width: 100%;
+        max-width: none;
+        margin-inline: 0;
     }
 
     .site-hero__content--fx {
-        max-width: min(19.5rem, 82%) !important;
-        margin-inline-start: 0 !important;
+        /* الربع الأول يمين الصفحة (RTL) */
+        max-width: min(42vw, 11.5rem) !important;
+        width: 42vw;
+        margin-inline-start: 0.35rem !important;
         margin-inline-end: auto !important;
         transform: none;
         text-align: start;
+    }
+
+    .site-hero--home .site-hero__brand {
+        font-size: clamp(2.1rem, 9vw, 2.85rem);
+        white-space: normal;
+    }
+
+    .site-hero--home .site-hero__title {
+        font-size: 0.95rem;
+        max-width: none;
+    }
+
+    .site-hero--home .site-hero__lead {
+        font-size: 0.82rem;
+        line-height: 1.7;
+        max-width: none;
+    }
+
+    .site-hero--home .site-hero__actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .site-hero--home .site-btn--hero {
+        width: 100%;
+        min-height: 2.65rem;
+        padding-inline: 0.85rem;
+        font-size: 0.82rem;
     }
 
     .site-3d-stage--hero {
@@ -277,17 +317,23 @@
 
 @media (max-width: 600px) {
     .site-hero__panel {
-        padding-inline-start: 0.25rem;
-        width: min(100% - 0.85rem, var(--site-max));
+        padding-inline-start: 0.1rem;
     }
 
     .site-hero__content--fx {
-        max-width: min(17.5rem, 78%) !important;
+        max-width: min(40vw, 10.25rem) !important;
+        width: 40vw;
+        margin-inline-start: 0.2rem !important;
     }
 
     .site-hero--home .site-hero__brand {
-        font-size: clamp(2.6rem, 12vw, 3.4rem);
+        font-size: clamp(1.85rem, 8.5vw, 2.45rem);
         white-space: normal;
+    }
+
+    .site-hero--home .site-hero__kicker {
+        font-size: 0.68rem;
+        padding: 0.28rem 0.55rem;
     }
 
     .site-hero--home .site-hero__actions {
