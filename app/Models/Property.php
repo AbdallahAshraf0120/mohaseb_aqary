@@ -169,4 +169,26 @@ class Property extends Model
 
         return in_array($floorNumber, $this->mushaaFloorNumbers(), true) ? 0.5 : 1.0;
     }
+
+    /**
+     * عدد الوحدات (شقق/محلات) في دور معيّن: الأرضي = عدد المحلات، الميزان = شقق الميزان، غير كده = شقق الدور.
+     */
+    public function unitsOnFloor(int $floorNumber, bool $isMezzanine = false): int
+    {
+        if ($floorNumber === 0 && ! $isMezzanine) {
+            return max(0, (int) ($this->ground_floor_shops_count ?? 0));
+        }
+
+        if ($isMezzanine) {
+            foreach ((array) ($this->mezzanine_floors ?? []) as $row) {
+                if (is_array($row) && (int) ($row['floor_number'] ?? 0) === $floorNumber) {
+                    return max(0, (int) ($row['apartments_count'] ?? 0));
+                }
+            }
+
+            return 0;
+        }
+
+        return max(0, (int) ($this->apartments_per_floor ?? 0));
+    }
 }

@@ -74,6 +74,8 @@ class RevenueController extends Controller
                 'revenues' => static fn ($q) => $q->orderBy('paid_at')->orderBy('id'),
             ])
             ->where('remaining_amount', '>', 0)
+            // ما ينفعش تحصّل على بيعة مرفوضة أو ممسوحة
+            ->whereHas('sale', fn ($q) => $q->where('approval_status', '!=', 'rejected'))
             ->latest()
             ->get();
 
@@ -180,6 +182,20 @@ class RevenueController extends Controller
 
     public function destroy(Project $project, Revenue $revenue): RedirectResponse
     {
+        $user = request()->user();
+        if (($revenue->approval_status ?? '') === 'approved') {
+            if (! ($user instanceof \App\Models\User && $user->isAdmin())) {
+                return back()->with('error', 'حذف تحصيل معتمد متاح للأدمن بس.');
+            }
+            $after = app(\App\Services\CashboxBalanceService::class)->approvedBalance(
+                (int) $revenue->project_id,
+                ['reference_type' => Revenue::class, 'reference_id' => (int) $revenue->id]
+            );
+            if ($after < -0.00001) {
+                return back()->with('error', 'مش هينفع تمسح التحصيل: الفلوس دي اتصرفت من الصندوق، والرصيد هيبقى بالسالب ('.\App\Support\Money::display($after).' ج.م).');
+            }
+        }
+
         $contractId = (int) $revenue->contract_id;
         $revenueId = (int) $revenue->id;
         $this->revenueAttribution->removeLedgerForRevenue($revenueId);

@@ -8,6 +8,8 @@
         FILTER_VALIDATE_BOOL
     );
     $selectedModel = (string) old('apartment_model', $sale->apartment_model ?? '');
+    $selectedUnit = (int) old('unit_number', $sale->unit_number ?? 0);
+    $takenUnits = $takenUnits ?? [];
     $paymentType = old('payment_type', $sale->payment_type ?? 'cash');
     $installmentSchedule = old('installment_schedule', ($sale->installment_plan ?? [])['schedule_type'] ?? 'monthly');
     $secondaryPayments = old('secondary_payments');
@@ -71,12 +73,13 @@
             'mezzanine_floors' => $mezzanineFloors,
             'mushaa_floors' => $mushaaFloors,
             'models' => collect($p->apartment_models ?? [])->pluck('model_name')->filter()->values()->all(),
+            'apartments_per_floor' => (int) ($p->apartments_per_floor ?? 0),
         ]];
     });
 @endphp
 
 <div class="row g-3">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <label class="form-label">العقار</label>
         <select name="property_id" id="property_id" class="form-select" required>
             <option value="">اختر العقار</option>
@@ -89,6 +92,11 @@
         <label class="form-label">الدور</label>
         <select name="floor_number" id="floor_number" class="form-select" required></select>
         <input type="hidden" name="is_mezzanine" id="is_mezzanine_input" value="{{ $selectedIsMezzanine ? '1' : '0' }}">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">رقم الشقة</label>
+        <select name="unit_number" id="unit_number" class="form-select" required></select>
+        @error('unit_number')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-3">
         <label class="form-label">النموذج</label>
@@ -288,6 +296,48 @@
         const selectedFloor = {{ $selectedFloor }};
         const selectedIsMezzanine = @json($selectedIsMezzanine);
         const selectedModel = @json($selectedModel);
+        const selectedUnit = {{ $selectedUnit }};
+        const takenUnits = @json($takenUnits);
+        const unitSelect = document.getElementById('unit_number');
+
+        // يملأ «رقم الشقة» حسب عدد وحدات الدور، ويقفل الوحدات المبيعة.
+        function refreshUnits() {
+            if (!unitSelect) return;
+            const meta = properties[propertySelect?.value] || {};
+            const opt = floorSelect?.selectedOptions?.[0];
+            const floor = Number(opt?.value ?? 0);
+            const isMezz = opt?.dataset.isMezzanine === '1';
+            let count = 0;
+            if (floor === 0 && !isMezz) {
+                count = Number(meta.ground_floor_shops_count || 0);
+            } else if (isMezz) {
+                const row = (meta.mezzanine_floors || []).find((r) => Number(r.floor_number) === floor);
+                count = Number(row?.apartments_count || 0);
+            } else {
+                count = Number(meta.apartments_per_floor || 0);
+            }
+            if (count < 1) count = 1;
+            const taken = ((takenUnits[propertySelect?.value] || {})[floor + ':' + (isMezz ? 1 : 0)]) || { units: [], unnumbered: 0 };
+            const takenSet = new Set((taken.units || []).map(Number));
+            const keep = Number(unitSelect.value || selectedUnit || 0);
+            unitSelect.innerHTML = '';
+            let firstFree = null;
+            for (let n = 1; n <= count; n++) {
+                const o = document.createElement('option');
+                o.value = String(n);
+                const isTaken = takenSet.has(n);
+                o.textContent = (floor === 0 && !isMezz ? 'محل ' : 'شقة ') + n + (isTaken ? ' — مبيعة' : '');
+                o.disabled = isTaken;
+                if (!isTaken && firstFree === null) firstFree = n;
+                if (n === keep && !isTaken) o.selected = true;
+                unitSelect.appendChild(o);
+            }
+            if (!unitSelect.value || unitSelect.selectedOptions[0]?.disabled) {
+                if (firstFree !== null) unitSelect.value = String(firstFree);
+            }
+            const freeCount = count - takenSet.size - Number(taken.unnumbered || 0);
+            unitSelect.title = freeCount > 0 ? ('متاح ' + freeCount + ' من ' + count) : 'كل وحدات الدور مبيعة';
+        }
         const properties = @json($propertiesMeta);
 
         function syncMezzanineHiddenFromFloor() {
@@ -435,6 +485,7 @@
                 floorSelect.selectedIndex = 0;
             }
             syncMezzanineHiddenFromFloor();
+            refreshUnits();
 
             modelSelect.innerHTML = '';
             const models = meta.models.length ? meta.models : ['نموذج افتراضي'];
@@ -523,7 +574,7 @@
         reindexSecondaryPaymentRows();
 
         propertySelect?.addEventListener('change', refreshPropertyMeta);
-        floorSelect?.addEventListener('change', syncMezzanineHiddenFromFloor);
+        floorSelect?.addEventListener('change', () => { syncMezzanineHiddenFromFloor(); refreshUnits(); });
         paymentType?.addEventListener('change', refreshPaymentType);
         installmentSchedule?.addEventListener('change', refreshPaymentType);
         salePriceInput?.addEventListener('input', recalcDownPaymentFromPercentage);

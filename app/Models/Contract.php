@@ -51,6 +51,15 @@ class Contract extends Model
         return $this->belongsTo(Sale::class);
     }
 
+    /**
+     * العقود اللي بتتحسب في «المتبقي»: بيعتها موجودة ومعتمدة.
+     * عقود البيعات المعلّقة/المرفوضة/الممسوحة مش ديون فعلية على العملاء.
+     */
+    public function scopeActive($query)
+    {
+        return $query->whereHas('sale', fn ($q) => $q->withoutGlobalScope('project')->where('approval_status', 'approved'));
+    }
+
     public function revenues(): HasMany
     {
         return $this->hasMany(Revenue::class);

@@ -19,6 +19,7 @@
         } else {
             $floorLabel = (string) $sale->floor_number;
         }
+        if ($sale->unit_number) { $floorLabel .= ' — '.((int) $sale->floor_number === 0 && ! $sale->is_mezzanine ? 'محل ' : 'شقة ').$sale->unit_number; }
         $revenues = $sale->contract?->revenues ?? collect();
         $contractTotal = (float) ($stats['contract_total'] ?? 0);
         $contractPaid = (float) ($stats['contract_paid'] ?? 0);

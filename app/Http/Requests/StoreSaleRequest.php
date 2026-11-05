@@ -24,6 +24,7 @@ class StoreSaleRequest extends FormRequest
             'property_id' => ['required', 'exists:properties,id'],
             'floor_number' => ['required', 'integer', 'min:0'],
             'is_mezzanine' => ['sometimes', 'boolean'],
+            'unit_number' => ['required', 'integer', 'min:1', 'max:500'],
             'apartment_model' => ['required', 'string', 'max:255'],
             'sale_price' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:1'],
             'payment_type' => ['required', 'in:cash,installment'],
@@ -162,20 +163,34 @@ class StoreSaleRequest extends FormRequest
                 return;
             }
 
-            $modelName = (string) $this->input('apartment_model');
+            // الوحدة = عقار + دور + (ميزان؟) + رقم الشقة. النموذج مجرد نوع، ممكن يتكرر في نفس الدور.
+            $unitsOnFloor = $property->unitsOnFloor($floor, $isMezzanine);
+            $unitNumber = (int) $this->input('unit_number');
+            if ($unitsOnFloor > 0 && $unitNumber > $unitsOnFloor) {
+                $validator->errors()->add('unit_number', 'رقم الشقة أكبر من عدد الوحدات في الدور ده ('.$unitsOnFloor.').');
+
+                return;
+            }
+
             $ignoreSaleId = $this->saleIdToIgnoreForDuplicateUnitCheck();
-            $duplicateQuery = Sale::query()->withoutGlobalScope('project')
+            // المبيعات المرفوضة ما بتحجزش الوحدة
+            $floorSales = Sale::query()->withoutGlobalScope('project')
                 ->where('property_id', (int) $property->id)
                 ->where('floor_number', $floor)
                 ->where('is_mezzanine', $isMezzanine)
-                ->where('apartment_model', $modelName);
-            if ($ignoreSaleId !== null) {
-                $duplicateQuery->whereKeyNot($ignoreSaleId);
-            }
-            if ($duplicateQuery->exists()) {
+                ->where('approval_status', '!=', 'rejected')
+                ->when($ignoreSaleId !== null, fn ($q) => $q->whereKeyNot($ignoreSaleId));
+
+            if ((clone $floorSales)->where('unit_number', $unitNumber)->exists()) {
                 $validator->errors()->add(
-                    'apartment_model',
-                    'لا يمكن إتمام البيعة: هذه الوحدة (نفس العقار والدور والنموذج) مبيعة بالفعل.'
+                    'unit_number',
+                    'لا يمكن إتمام البيعة: الشقة رقم '.$unitNumber.' في الدور ده مبيعة بالفعل.'
+                );
+            } elseif ($unitsOnFloor > 0 && (clone $floorSales)->count() >= $unitsOnFloor) {
+                // يشمل المبيعات القديمة اللي من غير رقم شقة
+                $validator->errors()->add(
+                    'unit_number',
+                    'كل وحدات الدور ده مبيعة بالفعل ('.$unitsOnFloor.' وحدة).'
                 );
             }
 

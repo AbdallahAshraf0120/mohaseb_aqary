@@ -68,7 +68,7 @@ class ClientController extends Controller
             'sales_count' => $sales->count(),
             'total_sale_price' => round((float) $sales->sum(static fn (Sale $s) => (float) $s->sale_price), 5),
             'total_down_payment' => round((float) $sales->sum(static fn (Sale $s) => (float) $s->down_payment), 5),
-            'total_remaining_contracts' => round((float) $sales->sum(static fn (Sale $s) => (float) ($s->contract?->remaining_amount ?? 0)), 5),
+            'total_remaining_contracts' => round((float) $sales->where('approval_status', 'approved')->sum(static fn (Sale $s) => (float) ($s->contract?->remaining_amount ?? 0)), 5),
             'total_collected_revenues' => round((float) Revenue::query()->where('client_id', $client->id)->sum('amount'), 5),
         ];
 

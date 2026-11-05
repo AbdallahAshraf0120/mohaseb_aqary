@@ -82,7 +82,7 @@
                                     <td>SL-{{ str_pad((string) $sale->id, 3, '0', STR_PAD_LEFT) }}</td>
                                     <td class="font-monospace">{{ $sale->sale_date?->format('Y-m-d') ?? '—' }}</td>
                                     <td>
-                                        <div>{{ $sale->property?->name ?? '-' }} / {{ $sale->client?->name ?? '-' }}</div>
+                                        <div>{{ $sale->property?->name ?? '-' }}@if ($sale->unit_number) <span class="text-body-secondary small">(د{{ $sale->floor_number }} · {{ (int) $sale->floor_number === 0 && ! $sale->is_mezzanine ? 'محل' : 'شقة' }} {{ $sale->unit_number }})</span>@endif / {{ $sale->client?->name ?? '-' }}</div>
                                         @if (filled($sale->broker_name))
                                             <div class="small text-body-secondary">البروكر: {{ $sale->broker_name }}</div>
                                         @endif

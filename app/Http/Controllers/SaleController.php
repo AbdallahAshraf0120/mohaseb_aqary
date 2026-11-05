@@ -15,6 +15,7 @@ use App\Services\CashboxLedgerService;
 use App\Services\SaleShareholderAttributionService;
 use App\Support\CurrentProject;
 use App\Support\ListingFilters;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -97,8 +98,10 @@ class SaleController extends Controller
                 'has_mezzanine',
                 'mezzanine_floors',
                 'mushaa_floors',
-                'apartment_models'
+                'apartment_models',
+                'apartments_per_floor'
             )->orderBy('name')->get(),
+            'takenUnits' => $this->takenUnits(null),
             'projectShareholders' => $this->projectShareholders(),
             'modules' => $this->modules(),
         ]);
@@ -116,6 +119,7 @@ class SaleController extends Controller
             'client_id' => $client->id,
             'floor_number' => $validated['floor_number'],
             'is_mezzanine' => (bool) ($validated['is_mezzanine'] ?? false),
+            'unit_number' => (int) $validated['unit_number'],
             'apartment_model' => $validated['apartment_model'],
             'sale_price' => $validated['sale_price'],
             'payment_type' => $validated['payment_type'],
@@ -214,8 +218,10 @@ class SaleController extends Controller
                 'has_mezzanine',
                 'mezzanine_floors',
                 'mushaa_floors',
-                'apartment_models'
+                'apartment_models',
+                'apartments_per_floor'
             )->orderBy('name')->get(),
+            'takenUnits' => $this->takenUnits((int) $sale->id),
             'projectShareholders' => $this->projectShareholders(),
             'modules' => $this->modules(),
         ]);
@@ -232,6 +238,7 @@ class SaleController extends Controller
             'client_id' => $client->id,
             'floor_number' => $validated['floor_number'],
             'is_mezzanine' => (bool) ($validated['is_mezzanine'] ?? false),
+            'unit_number' => (int) $validated['unit_number'],
             'apartment_model' => $validated['apartment_model'],
             'sale_price' => $validated['sale_price'],
             'payment_type' => $validated['payment_type'],
@@ -282,9 +289,47 @@ class SaleController extends Controller
 
     public function destroy(Request $request, Project $project, Sale $sale): RedirectResponse|JsonResponse
     {
-        $this->saleAttribution->removeLedgerForSale((int) $sale->id);
-        $this->cashboxLedger->removeSaleDownPayment((int) $sale->id);
-        $sale->delete();
+        $user = $request->user();
+        $deny = function (string $msg) use ($request, $project) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['ok' => false, 'message' => $msg], 422);
+            }
+
+            return redirect()->route('sales.show', [$project, request()->route('sale')])->with('error', $msg);
+        };
+
+        if (($sale->approval_status ?? '') === 'approved' && ! ($user instanceof \App\Models\User && $user->isAdmin())) {
+            return $deny('حذف بيعة معتمدة متاح للأدمن بس.');
+        }
+
+        // بيعة عليها تحصيلات ما تتمسحش: الفلوس دي اتحصّلت فعلًا ولازم تفضل مربوطة بعقد.
+        $contractId = (int) Contract::query()->where('sale_id', $sale->id)->value('id');
+        $collected = $contractId > 0
+            ? (float) Revenue::query()->where('contract_id', $contractId)->where('approval_status', '!=', 'rejected')->sum('amount')
+            : 0.0;
+        if ($collected > 0.00001) {
+            return $deny('البيعة دي عليها تحصيلات بـ '.\App\Support\Money::display($collected).' ج.م. امسح أو ارفض التحصيلات الأول.');
+        }
+
+        // شيل المقدم من الصندوق بس لو الرصيد يسمح (ما يبقاش الصندوق بالسالب)
+        if (($sale->approval_status ?? '') === 'approved') {
+            $after = app(\App\Services\CashboxBalanceService::class)->approvedBalance(
+                (int) $sale->project_id,
+                ['reference_type' => Sale::class, 'reference_id' => (int) $sale->id]
+            );
+            if ($after < -0.00001) {
+                return $deny('مش هينفع تمسح البيعة: المقدم بتاعها اتصرف من الصندوق، والرصيد هيبقى بالسالب ('.\App\Support\Money::display($after).' ج.م).');
+            }
+        }
+
+        DB::transaction(function () use ($sale, $contractId): void {
+            $this->saleAttribution->removeLedgerForSale((int) $sale->id);
+            $this->cashboxLedger->removeSaleDownPayment((int) $sale->id);
+            if ($contractId > 0) {
+                Contract::query()->whereKey($contractId)->delete();
+            }
+            $sale->delete();
+        });
 
         $message = 'تم حذف البيعة بنجاح.';
 
@@ -321,6 +366,32 @@ class SaleController extends Controller
             ->get()
             ->filter(fn (ProjectShareholder $row) => $row->shareholder !== null)
             ->values();
+    }
+
+    /**
+     * الوحدات المحجوزة لكل عقار ودور (غير المرفوضة)، علشان فورم البيع يقفلها.
+     *
+     * @return array<string, array<string, array{units: list<int>, unnumbered: int}>>
+     */
+    private function takenUnits(?int $exceptSaleId): array
+    {
+        $out = [];
+        Sale::query()
+            ->where('approval_status', '!=', 'rejected')
+            ->when($exceptSaleId !== null, fn ($q) => $q->whereKeyNot($exceptSaleId))
+            ->get(['id', 'property_id', 'floor_number', 'is_mezzanine', 'unit_number'])
+            ->each(function (Sale $s) use (&$out): void {
+                $key = (int) $s->floor_number.':'.($s->is_mezzanine ? 1 : 0);
+                $bucket = $out[(string) $s->property_id][$key] ?? ['units' => [], 'unnumbered' => 0];
+                if ($s->unit_number) {
+                    $bucket['units'][] = (int) $s->unit_number;
+                } else {
+                    $bucket['unnumbered']++;
+                }
+                $out[(string) $s->property_id][$key] = $bucket;
+            });
+
+        return $out;
     }
 
     private function createClientForNewSale(array $validated): Client

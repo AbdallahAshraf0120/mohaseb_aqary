@@ -13,7 +13,7 @@ class RemainingController extends Controller
     public function index(Project $project, Request $request): View
     {
         $filters = ListingFilters::fromRequest($request);
-        $query = Contract::query()->with(['client:id,name', 'property:id,name'])->where('remaining_amount', '>', 0);
+        $query = Contract::query()->active()->with(['client:id,name', 'property:id,name'])->where('remaining_amount', '>', 0);
         if ($filters->q !== '') {
             $like = '%'.$filters->likeTerm().'%';
             $query->where(function ($w) use ($like): void {

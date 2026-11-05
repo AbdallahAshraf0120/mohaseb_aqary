@@ -122,7 +122,7 @@ class SiteSketchController extends Controller
         // عدد المبيعات (المعتمدة والمعلقة) لكل دور لتلوين الخلايا بحسب الواقع.
         $salesByFloor = Sale::query()
             ->where('property_id', $property->id)
-            ->select(['id', 'floor_number', 'approval_status', 'is_mezzanine'])
+            ->select(['id', 'floor_number', 'approval_status', 'is_mezzanine', 'unit_number'])->where('approval_status', '!=', 'rejected')
             ->orderBy('id')
             ->get()
             ->groupBy(fn (Sale $s) => ($s->is_mezzanine ? 'mezz-' : 'floor-').(int) $s->floor_number);
@@ -140,11 +140,14 @@ class SiteSketchController extends Controller
             $approvedQueue = $floorSales->where('approval_status', 'approved')->values();
             $pendingQueue = $floorSales->where('approval_status', 'pending')->values();
 
+            [$bySlot, $approvedQueue, $pendingQueue] = $this->splitSalesBySlot($floorSales);
             for ($slot = 1; $slot <= $apartmentsPerFloor; $slot++) {
                 $key = $floorKeyPrefix.':slot-'.$slot;
                 $computed = 'available';
                 $computedLabel = 'متاح';
-                if ($approvedQueue->isNotEmpty()) {
+                if (isset($bySlot[$slot])) {
+                    [$computed, $computedLabel] = $bySlot[$slot] === 'approved' ? ['sold', 'مباع'] : ['pending', 'تحت الاعتماد'];
+                } elseif ($approvedQueue->isNotEmpty()) {
                     $approvedQueue->shift();
                     $computed = 'sold';
                     $computedLabel = 'مباع';
@@ -174,11 +177,14 @@ class SiteSketchController extends Controller
             $floorSales = collect($salesByFloor->get('mezz-'.$fn) ?? []);
             $approvedQueue = $floorSales->where('approval_status', 'approved')->values();
             $pendingQueue = $floorSales->where('approval_status', 'pending')->values();
+            [$bySlot, $approvedQueue, $pendingQueue] = $this->splitSalesBySlot($floorSales);
             for ($slot = 1; $slot <= $cnt; $slot++) {
                 $key = 'mezz-'.$fn.':slot-'.$slot;
                 $computed = 'available';
                 $computedLabel = 'متاح';
-                if ($approvedQueue->isNotEmpty()) {
+                if (isset($bySlot[$slot])) {
+                    [$computed, $computedLabel] = $bySlot[$slot] === 'approved' ? ['sold', 'مباع'] : ['pending', 'تحت الاعتماد'];
+                } elseif ($approvedQueue->isNotEmpty()) {
                     $approvedQueue->shift();
                     $computed = 'sold';
                     $computedLabel = 'مباع';
@@ -248,6 +254,27 @@ class SiteSketchController extends Controller
             'note' => $override?->note,
             'effective_status' => $effective,
             'effective_label' => $effectiveLabel,
+        ];
+    }
+
+    /**
+     * البيعات اللي ليها رقم شقة بتتحط في مكانها، والقديمة (من غير رقم) بتملى الأماكن الفاضية بالترتيب.
+     *
+     * @return array{0: array<int, string>, 1: \Illuminate\Support\Collection, 2: \Illuminate\Support\Collection}
+     */
+    private function splitSalesBySlot($floorSales): array
+    {
+        $floorSales = collect($floorSales);
+        $bySlot = [];
+        foreach ($floorSales->whereNotNull('unit_number') as $s) {
+            $bySlot[(int) $s->unit_number] = (string) $s->approval_status;
+        }
+        $rest = $floorSales->whereNull('unit_number');
+
+        return [
+            $bySlot,
+            $rest->where('approval_status', 'approved')->values(),
+            $rest->where('approval_status', 'pending')->values(),
         ];
     }
 }

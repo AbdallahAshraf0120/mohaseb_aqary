@@ -29,7 +29,7 @@ class ContractController extends Controller
         $contractKpis = [
             'count' => $forKpis->count(),
             'net_value' => (float) $forKpis->sum(static fn ($c) => max(0, (float) $c->total_price - (float) ($c->sale?->down_payment ?? 0))),
-            'remaining' => (float) $forKpis->sum(static fn ($c) => (float) $c->remaining_amount),
+            'remaining' => (float) $forKpis->filter(static fn ($c) => ($c->sale?->approval_status ?? null) === 'approved')->sum(static fn ($c) => (float) $c->remaining_amount),
         ];
 
         return view('contracts.index', [

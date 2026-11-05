@@ -17,6 +17,7 @@ class Sale extends Model
         'property_id',
         'floor_number',
         'is_mezzanine',
+        'unit_number',
         'apartment_model',
         'sale_price',
         'payment_type',

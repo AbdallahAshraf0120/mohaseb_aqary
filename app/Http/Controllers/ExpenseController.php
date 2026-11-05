@@ -163,6 +163,16 @@ class ExpenseController extends Controller
 
     public function destroy(Request $request, Project $project, Expense $expense): RedirectResponse|JsonResponse
     {
+        $user = $request->user();
+        if (($expense->approval_status ?? '') === 'approved' && ! ($user instanceof \App\Models\User && $user->isAdmin())) {
+            $msg = 'حذف مصروف معتمد متاح للأدمن بس.';
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['ok' => false, 'message' => $msg], 422);
+            }
+
+            return back()->with('error', $msg);
+        }
+
         $this->cashboxLedger->removeExpense((int) $expense->id);
         $expense->delete();
 

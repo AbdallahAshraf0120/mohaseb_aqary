@@ -79,7 +79,7 @@ class ReportController extends Controller
 
             fputcsv($out, ['إجمالي التحصيلات', (string) (float) (clone $revenuesQ)->sum('amount'), 'عدد السجلات', (string) (clone $revenuesQ)->count()]);
             fputcsv($out, ['إجمالي المصروفات', (string) (float) (clone $expensesQ)->sum('amount'), 'عدد السجلات', (string) (clone $expensesQ)->count()]);
-            fputcsv($out, ['المتبقي على العقود', (string) (float) Contract::query()->sum('remaining_amount')]);
+            fputcsv($out, ['المتبقي على العقود', (string) (float) Contract::query()->active()->sum('remaining_amount')]);
             fputcsv($out, []);
             fputcsv($out, ['تحصيلات — التفاصيل']);
             fputcsv($out, ['id', 'paid_at', 'amount', 'client', 'category', 'notes']);
@@ -120,7 +120,7 @@ class ReportController extends Controller
         $w = $this->buildFilteredQueries($request);
         $snap = $this->financialSnapshots($w);
 
-        $contractsQ = Contract::query();
+        $contractsQ = Contract::query()->active();
 
         $exporter = new ProjectReportsExcelExporter(
             project: $project,
@@ -183,8 +183,8 @@ class ReportController extends Controller
         $treasuryOutTruncated = $treasuryOutTotalCount > $pdfRowLimit;
 
         // العقود مش محصورة بفترة التقرير أصلًا (بتعرض الوضع الحالي كله)، فبنرتبها بالأعلى متبقي أولًا لو حصل قص.
-        $contractsTotalCount = Contract::query()->count();
-        $contracts = Contract::query()->with(['client:id,name', 'property:id,name'])
+        $contractsTotalCount = Contract::query()->active()->count();
+        $contracts = Contract::query()->active()->with(['client:id,name', 'property:id,name'])
             ->orderByDesc('remaining_amount')
             ->orderByDesc('id')
             ->limit($pdfRowLimit)
@@ -404,8 +404,8 @@ class ReportController extends Controller
         return [
             'periodStats' => $periodStats,
             'allTime' => $allTime,
-            'contractsRemaining' => (float) Contract::query()->sum('remaining_amount'),
-            'contractsOpenCount' => (int) Contract::query()->where('remaining_amount', '>', 0)->count(),
+            'contractsRemaining' => (float) Contract::query()->active()->sum('remaining_amount'),
+            'contractsOpenCount' => (int) Contract::query()->active()->where('remaining_amount', '>', 0)->count(),
         ];
     }
 
