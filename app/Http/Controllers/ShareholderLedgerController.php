@@ -35,7 +35,7 @@ class ShareholderLedgerController extends Controller
         $data = $request->validate([
             'destination' => ['required', 'string', 'regex:/^(project|land):\d+$/'],
             'type' => ['required', 'string', Rule::in(array_keys(ShareholderLedgerEntry::TYPES))],
-            'amount' => ['required', 'numeric', 'min:0.00001'],
+            'amount' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0.00001'],
             'entry_date' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
             'direction' => [
@@ -88,7 +88,7 @@ class ShareholderLedgerController extends Controller
             'target_project_id' => ['required', 'integer', 'exists:projects,id'],
             'mode' => ['required', 'in:percentage,amount'],
             'percentage' => ['nullable', 'numeric', 'min:0.00001', 'max:100', 'required_if:mode,percentage'],
-            'amount' => ['nullable', 'numeric', 'min:0.00001', 'required_if:mode,amount'],
+            'amount' => ['nullable', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0.00001', 'required_if:mode,amount'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ], [
             'target_project_id.required' => 'اختر المشروع الهدف.',
@@ -127,7 +127,7 @@ class ShareholderLedgerController extends Controller
 
         return redirect()
             ->route('shareholders.show', $shareholder)
-            ->with('success', 'تم توزيع '.number_format((float) $result['amount'], 5).' ج.م إلى المشروع المختار مع تحويلها لصندوقه.');
+            ->with('success', 'تم توزيع '.\App\Support\Money::display((float) $result['amount']).' ج.م إلى المشروع المختار مع تحويلها لصندوقه.');
     }
 
     public function destroy(Shareholder $shareholder, ShareholderLedgerEntry $ledger): RedirectResponse

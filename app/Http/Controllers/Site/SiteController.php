@@ -190,4 +190,21 @@ class SiteController extends Controller
             'site' => $site,
         ], 503));
     }
+
+    /** خريطة الموقع لمحركات البحث: الصفحات العامة + المشاريع المنشورة. */
+    public function sitemap(): \Illuminate\Http\Response
+    {
+        $urls = [route('site.home'), route('site.projects'), route('site.about'), route('site.contact')];
+        foreach (WebsiteProject::query()->published()->orderBy('sort_order')->get(['project_id', 'updated_at']) as $wp) {
+            $urls[] = route('site.projects.show', $wp->project_id);
+        }
+
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+        foreach (array_unique($urls) as $u) {
+            $xml .= '  <url><loc>'.e($u).'</loc></url>'."\n";
+        }
+        $xml .= '</urlset>'."\n";
+
+        return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
+    }
 }

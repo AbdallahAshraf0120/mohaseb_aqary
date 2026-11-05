@@ -24,7 +24,7 @@
                         data-suggested-amount="{{ $suggested !== null ? number_format((float) $suggested, 5, '.', '') : '' }}"
                         @selected($selectedContractId === (string) $contract->id)>
                     CT-{{ now()->format('Y') }}-{{ str_pad((string) $contract->id, 3, '0', STR_PAD_LEFT) }} |
-                    {{ $contract->client?->name }} | متبقي: {{ number_format((float) $contract->remaining_amount, 5) }}
+                    {{ $contract->client?->name }} | متبقي: {{ \App\Support\Money::display((float) $contract->remaining_amount) }}
                 </option>
             @endforeach
         </select>

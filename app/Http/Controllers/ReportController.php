@@ -83,7 +83,7 @@ class ReportController extends Controller
             fputcsv($out, []);
             fputcsv($out, ['تحصيلات — التفاصيل']);
             fputcsv($out, ['id', 'paid_at', 'amount', 'client', 'category', 'notes']);
-            foreach ((clone $revenuesQ)->with(['client:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->cursor() as $r) {
+            foreach ((clone $revenuesQ)->with(['client:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->lazy(500) as $r) {
                 fputcsv($out, [
                     $r->id,
                     optional($r->paid_at)->format('Y-m-d'),

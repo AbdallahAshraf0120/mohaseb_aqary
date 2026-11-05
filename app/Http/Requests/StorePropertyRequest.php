@@ -68,7 +68,7 @@ class StorePropertyRequest extends FormRequest
             'apartment_models.*.bathrooms_count' => ['nullable', 'integer', 'min:0'],
             'apartment_models.*.view_type' => $viewFacingRule,
             'location' => ['nullable', 'string', 'max:255'],
-            'price' => ['required', 'numeric', 'min:0'],
+            'price' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
             'status' => ['required', 'in:available,reserved,sold,rented'],
             'owner_id' => ['nullable', 'exists:users,id'],
             'land_cost' => ['nullable', 'numeric', 'min:0'],
@@ -112,7 +112,7 @@ class StorePropertyRequest extends FormRequest
             if (abs($sum - 100.0) > 0.021) {
                 $v->errors()->add(
                     'shareholder_percentages',
-                    'عند إدخال نسب للمساهمين على العقار يجب أن يكون مجموع النسب الموجبة مساوياً لـ 100٪ (المجموع الحالي: '.number_format($sum, 5).'٪).'
+                    'عند إدخال نسب للمساهمين على العقار يجب أن يكون مجموع النسب الموجبة مساوياً لـ 100٪ (المجموع الحالي: '.\App\Support\Money::display($sum).'٪).'
                 );
             }
         });

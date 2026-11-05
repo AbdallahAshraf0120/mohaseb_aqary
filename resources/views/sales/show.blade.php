@@ -26,11 +26,11 @@
     @endphp
 
     <x-partials.module-kpis :items="[
-        ['label' => 'سعر البيعة', 'value' => number_format((float) $sale->sale_price, 5) . ' ج.م'],
-        ['label' => 'المقدم', 'value' => number_format((float) $sale->down_payment, 5) . ' ج.م'],
-        ['label' => 'أقساط محصّلة', 'value' => number_format($stats['revenues_sum'], 5) . ' ج.م (' . $stats['revenues_count'] . ')'],
-        ['label' => 'إجمالي المدفوع', 'value' => number_format($stats['contract_paid'], 5) . ' ج.م'],
-        ['label' => 'متبقي العقد', 'value' => number_format($stats['contract_remaining'], 5) . ' ج.م'],
+        ['label' => 'سعر البيعة', 'value' => \App\Support\Money::display((float) $sale->sale_price) . ' ج.م'],
+        ['label' => 'المقدم', 'value' => \App\Support\Money::display((float) $sale->down_payment) . ' ج.م'],
+        ['label' => 'أقساط محصّلة', 'value' => \App\Support\Money::display($stats['revenues_sum']) . ' ج.م (' . $stats['revenues_count'] . ')'],
+        ['label' => 'إجمالي المدفوع', 'value' => \App\Support\Money::display($stats['contract_paid']) . ' ج.م'],
+        ['label' => 'متبقي العقد', 'value' => \App\Support\Money::display($stats['contract_remaining']) . ' ج.م'],
     ]" />
 
     <div class="card shadow-sm border-0 mb-3">
@@ -107,7 +107,7 @@
                             <tbody>
                             <tr>
                                 <th class="text-body-secondary align-top py-2" style="width: 40%">سعر البيع</th>
-                                <td class="py-2 font-monospace fw-medium">{{ number_format((float) $sale->sale_price, 5) }} ج.م</td>
+                                <td class="py-2 font-monospace fw-medium">{{ \App\Support\Money::display((float) $sale->sale_price) }} ج.م</td>
                             </tr>
                             <tr>
                                 <th class="text-body-secondary align-top py-2">نوع السداد</th>
@@ -121,16 +121,16 @@
                             </tr>
                             <tr>
                                 <th class="text-body-secondary align-top py-2">المقدم</th>
-                                <td class="py-2 font-monospace">{{ number_format((float) $sale->down_payment, 5) }} ج.م</td>
+                                <td class="py-2 font-monospace">{{ \App\Support\Money::display((float) $sale->down_payment) }} ج.م</td>
                             </tr>
                             <tr>
                                 <th class="text-body-secondary align-top py-2">منه للصندوق</th>
-                                <td class="py-2 font-monospace">{{ number_format($sale->cashboxDownPaymentAmount(), 5) }} ج.م</td>
+                                <td class="py-2 font-monospace">{{ \App\Support\Money::display($sale->cashboxDownPaymentAmount()) }} ج.م</td>
                             </tr>
                             <tr>
                                 <th class="text-body-secondary align-top py-2">منه لحساب مساهم</th>
                                 <td class="py-2">
-                                    <div class="font-monospace">{{ number_format($sale->shareholderDownPaymentAmount(), 5) }} ج.م</div>
+                                    <div class="font-monospace">{{ \App\Support\Money::display($sale->shareholderDownPaymentAmount()) }} ج.م</div>
                                     <div class="fw-medium">{{ $sale->receivedByShareholder?->name ?? '—' }}</div>
                                 </td>
                             </tr>
@@ -153,20 +153,20 @@
                                 </tr>
                                 <tr>
                                     <th class="text-body-secondary align-top py-2">قيمة القسط</th>
-                                    <td class="py-2 font-monospace">{{ number_format((float) ($plan['installment_amount'] ?? $plan['monthly_installment'] ?? 0), 5) }} ج.م</td>
+                                    <td class="py-2 font-monospace">{{ \App\Support\Money::display((float) ($plan['installment_amount'] ?? $plan['monthly_installment'] ?? 0)) }} ج.م</td>
                                 </tr>
                                 <tr>
                                     <th class="text-body-secondary align-top py-2">متبقي بعد المقدم</th>
-                                    <td class="py-2 font-monospace">{{ number_format((float) ($plan['remaining_amount'] ?? 0), 5) }} ج.م</td>
+                                    <td class="py-2 font-monospace">{{ \App\Support\Money::display((float) ($plan['remaining_amount'] ?? 0)) }} ج.م</td>
                                 </tr>
                                 @if (is_array($secondaryList) && count($secondaryList) > 0)
                                     <tr>
                                         <th class="text-body-secondary align-top py-2">دفعات ثانوية</th>
-                                        <td class="py-2 small">{{ count($secondaryList) }} بندًا — <span class="font-monospace">{{ number_format($secondaryTotal, 5) }}</span> ج.م</td>
+                                        <td class="py-2 small">{{ count($secondaryList) }} بندًا — <span class="font-monospace">{{ \App\Support\Money::display($secondaryTotal) }}</span> ج.م</td>
                                     </tr>
                                     <tr>
                                         <th class="text-body-secondary align-top py-2">أساس الأقساط</th>
-                                        <td class="py-2 font-monospace">{{ number_format((float) ($plan['installment_base_for_schedule'] ?? max(0, (float) ($plan['remaining_amount'] ?? 0) - $secondaryTotal)), 5) }} ج.م</td>
+                                        <td class="py-2 font-monospace">{{ \App\Support\Money::display((float) ($plan['installment_base_for_schedule'] ?? max(0, (float) ($plan['remaining_amount'] ?? 0) - $secondaryTotal))) }} ج.م</td>
                                     </tr>
                                 @endif
                             @endif
@@ -221,16 +221,16 @@
                                 </div>
                             </div>
                             <div class="row g-2 small">
-                                <div class="col-md-3"><span class="text-body-secondary">الإجمالي</span><br><span class="font-monospace fw-medium">{{ number_format($stats['contract_total'], 5) }}</span> ج.م</div>
+                                <div class="col-md-3"><span class="text-body-secondary">الإجمالي</span><br><span class="font-monospace fw-medium">{{ \App\Support\Money::display($stats['contract_total']) }}</span> ج.م</div>
                                 <div class="col-md-3">
                                     <span class="text-body-secondary">المدفوع</span><br>
-                                    <span class="font-monospace text-success-emphasis">{{ number_format($stats['contract_paid'], 5) }}</span> ج.م
+                                    <span class="font-monospace text-success-emphasis">{{ \App\Support\Money::display($stats['contract_paid']) }}</span> ج.م
                                     <div class="text-body-secondary mt-1" style="font-size: .75rem;">
-                                        مقدم {{ number_format($stats['down_payment'], 5) }}
-                                        + أقساط {{ number_format($stats['revenues_sum'], 5) }}
+                                        مقدم {{ \App\Support\Money::display($stats['down_payment']) }}
+                                        + أقساط {{ \App\Support\Money::display($stats['revenues_sum']) }}
                                     </div>
                                 </div>
-                                <div class="col-md-3"><span class="text-body-secondary">المتبقي</span><br><span class="font-monospace fw-semibold">{{ number_format($stats['contract_remaining'], 5) }}</span> ج.م</div>
+                                <div class="col-md-3"><span class="text-body-secondary">المتبقي</span><br><span class="font-monospace fw-semibold">{{ \App\Support\Money::display($stats['contract_remaining']) }}</span> ج.م</div>
                                 <div class="col-md-3"><span class="text-body-secondary">الفترة</span><br><span class="font-monospace">{{ $sale->contract->start_date?->format('Y-m-d') ?? '—' }}</span> → <span class="font-monospace">{{ $sale->contract->end_date?->format('Y-m-d') ?? '—' }}</span></div>
                             </div>
                         </div>
@@ -259,7 +259,7 @@
                     <h5 class="mb-0">جدول الاستحقاقات</h5>
                     <div class="small text-body-secondary mt-1">أقساط منتظمة ودفعات ثانوية مرتبة حسب التاريخ</div>
                 </div>
-                <span class="badge text-bg-secondary fs-6">المجموع: {{ number_format($stats['scheduled_total'], 5) }} ج.م</span>
+                <span class="badge text-bg-secondary fs-6">المجموع: {{ \App\Support\Money::display($stats['scheduled_total']) }} ج.م</span>
             </div>
             <div class="card-body">
                 <p class="small text-muted mb-3 border-start border-4 border-secondary ps-3">
@@ -292,9 +292,9 @@
                                     @endif
                                 </td>
                                 <td class="font-monospace">{{ $row['due_date']->format('Y-m-d') }}</td>
-                                <td class="text-end font-monospace">{{ number_format($row['amount'], 5) }}</td>
-                                <td class="text-end font-monospace">{{ number_format($row['paid'], 5) }}</td>
-                                <td class="text-end font-monospace">{{ number_format($row['balance'], 5) }}</td>
+                                <td class="text-end font-monospace">{{ \App\Support\Money::display($row['amount']) }}</td>
+                                <td class="text-end font-monospace">{{ \App\Support\Money::display($row['paid']) }}</td>
+                                <td class="text-end font-monospace">{{ \App\Support\Money::display($row['balance']) }}</td>
                                 <td>
                                     <span class="badge text-bg-{{ $row['status'] === 'مسدد' ? 'success' : ($row['status'] === 'جزئي' ? 'warning' : 'secondary') }}">{{ $row['status'] }}</span>
                                 </td>
@@ -304,9 +304,9 @@
                         <tfoot class="table-group-divider fw-semibold table-light">
                         <tr>
                             <td colspan="3">الإجمالي</td>
-                            <td class="text-end font-monospace">{{ number_format(collect($installmentRows)->sum('amount'), 5) }}</td>
-                            <td class="text-end font-monospace">{{ number_format(collect($installmentRows)->sum('paid'), 5) }}</td>
-                            <td class="text-end font-monospace">{{ number_format(collect($installmentRows)->sum('balance'), 5) }}</td>
+                            <td class="text-end font-monospace">{{ \App\Support\Money::display(collect($installmentRows)->sum('amount')) }}</td>
+                            <td class="text-end font-monospace">{{ \App\Support\Money::display(collect($installmentRows)->sum('paid')) }}</td>
+                            <td class="text-end font-monospace">{{ \App\Support\Money::display(collect($installmentRows)->sum('balance')) }}</td>
                             <td></td>
                         </tr>
                         </tfoot>
@@ -348,7 +348,7 @@
                             <tr>
                                 <td class="font-monospace">—</td>
                                 <td class="font-monospace">{{ $sale->sale_date?->format('Y-m-d') ?? '—' }}</td>
-                                <td class="text-end font-monospace fw-medium">{{ number_format($stats['down_payment'], 5) }}</td>
+                                <td class="text-end font-monospace fw-medium">{{ \App\Support\Money::display($stats['down_payment']) }}</td>
                                 <td><span class="badge text-bg-success">مقدم</span></td>
                                 <td class="small text-break">مقدم البيعة</td>
                                 <td class="text-end"></td>
@@ -359,7 +359,7 @@
                             <tr>
                                 <td class="font-monospace">{{ $rev->id }}</td>
                                 <td class="font-monospace">{{ $rev->paid_at?->format('Y-m-d') ?? '—' }}</td>
-                                <td class="text-end font-monospace fw-medium">{{ number_format((float) $rev->amount, 5) }}</td>
+                                <td class="text-end font-monospace fw-medium">{{ \App\Support\Money::display((float) $rev->amount) }}</td>
                                 <td>
                                     <span class="badge text-bg-light text-dark border">قسط</span>
                                     <span class="small ms-1">{{ $revPm ?: '—' }}</span>
@@ -374,7 +374,7 @@
                         <tfoot class="table-group-divider fw-semibold table-light">
                         <tr>
                             <td colspan="2">المجموع (مقدم + أقساط)</td>
-                            <td class="text-end font-monospace">{{ number_format($stats['contract_paid'], 5) }}</td>
+                            <td class="text-end font-monospace">{{ \App\Support\Money::display($stats['contract_paid']) }}</td>
                             <td colspan="3"></td>
                         </tr>
                         </tfoot>

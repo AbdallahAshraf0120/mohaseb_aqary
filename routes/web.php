@@ -52,7 +52,8 @@ Route::name('site.')->group(function (): void {
         ->name('projects.show');
     Route::get('/about', [SiteController::class, 'about'])->name('about');
     Route::get('/contact', [SiteController::class, 'contact'])->name('contact');
-    Route::post('/contact', [SiteController::class, 'contactStore'])->name('contact.store');
+    Route::post('/contact', [SiteController::class, 'contactStore'])->middleware('throttle:5,1')->name('contact.store');
+    Route::get('/sitemap.xml', [SiteController::class, 'sitemap'])->name('sitemap');
 });
 
 /*
@@ -63,7 +64,7 @@ Route::name('site.')->group(function (): void {
 Route::prefix('app')->group(function (): void {
     Route::middleware('guest')->group(function (): void {
         Route::get('login', [LoginController::class, 'create'])->name('login');
-        Route::post('login', [LoginController::class, 'store']);
+        Route::post('login', [LoginController::class, 'store'])->middleware('throttle:20,1');
     });
 
     Route::middleware('auth')->group(function (): void {

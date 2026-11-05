@@ -192,7 +192,7 @@ final class ProjectReportsExcelExporter
         $headers = ['المعرّف', 'تاريخ التحصيل', 'المبلغ', 'العميل', 'التصنيف', 'طريقة الدفع', 'المصدر', 'ملاحظات'];
         $rows = [$headers];
         /** @var Revenue $rev */
-        foreach ((clone $this->revenuesQuery)->with(['client:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->cursor() as $rev) {
+        foreach ((clone $this->revenuesQuery)->with(['client:id,name'])->orderByDesc('paid_at')->orderByDesc('id')->lazy(500) as $rev) {
             $rows[] = [
                 $rev->id,
                 optional($rev->paid_at)->format('Y-m-d'),
@@ -238,7 +238,7 @@ final class ProjectReportsExcelExporter
         $headers = ['المعرّف', 'تاريخ البيع', 'العميل', 'العقار', 'سعر البيع', 'المقدم', 'نوع الدفع', 'وسيط', 'ملاحظات'];
         $rows = [$headers];
         /** @var Sale $sale */
-        foreach ((clone $this->salesQuery)->with(['client:id,name', 'property:id,name'])->orderByDesc('sale_date')->orderByDesc('id')->cursor() as $sale) {
+        foreach ((clone $this->salesQuery)->with(['client:id,name', 'property:id,name'])->orderByDesc('sale_date')->orderByDesc('id')->lazy(500) as $sale) {
             $rows[] = [
                 $sale->id,
                 optional($sale->sale_date)->format('Y-m-d'),
@@ -283,7 +283,7 @@ final class ProjectReportsExcelExporter
         $headers = ['المعرّف', 'العميل', 'العقار', 'إجمالي السعر', 'المدفوع', 'المتبقي', 'بداية العقد', 'نهاية العقد'];
         $rows = [$headers];
         /** @var Contract $c */
-        foreach ((clone $this->contractsQuery)->with(['client:id,name', 'property:id,name'])->orderBy('id')->cursor() as $c) {
+        foreach ((clone $this->contractsQuery)->with(['client:id,name', 'property:id,name'])->orderBy('id')->lazy(500) as $c) {
             $rows[] = [
                 $c->id,
                 $c->client?->name,

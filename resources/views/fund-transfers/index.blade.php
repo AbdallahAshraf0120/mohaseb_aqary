@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $fmt = fn (float $n): string => number_format($n, 5, '.', ',');
+        $fmt = fn (float $n): string => \App\Support\Money::display($n);
     @endphp
 
     @if (session('success'))

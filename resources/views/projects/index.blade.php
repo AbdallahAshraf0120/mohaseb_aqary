@@ -28,7 +28,7 @@
                                         @endif
                                         @if ((float) $p->capital > 0)
                                             <div class="small text-success-emphasis mt-1">
-                                                رأس المال: <span class="font-monospace fw-semibold">{{ number_format((float) $p->capital, 5) }}</span> ج.م
+                                                رأس المال: <span class="font-monospace fw-semibold">{{ \App\Support\Money::display((float) $p->capital) }}</span> ج.م
                                             </div>
                                         @endif
                                         <div class="small text-body-secondary mt-1">

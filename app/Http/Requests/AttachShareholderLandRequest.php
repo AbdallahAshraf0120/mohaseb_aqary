@@ -22,7 +22,7 @@ class AttachShareholderLandRequest extends FormRequest
         return [
             'land_parcel_id' => ['required', 'integer', Rule::exists('land_parcels', 'id')],
             'share_percentage' => ['required', 'numeric', 'min:0.00001', 'max:100'],
-            'total_investment' => ['nullable', 'numeric', 'min:0'],
+            'total_investment' => ['nullable', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
         ];
     }
 

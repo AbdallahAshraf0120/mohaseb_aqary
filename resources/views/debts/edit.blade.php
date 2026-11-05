@@ -11,7 +11,7 @@
     <div class="card app-surface mb-4" id="pay-from-cashbox">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">سداد من الصندوق</h5>
-            <span class="text-muted small">المتاح: <span class="font-monospace">{{ number_format((float) ($remainingAvailable ?? $debt->remaining_amount), 5) }}</span> ج.م</span>
+            <span class="text-muted small">المتاح: <span class="font-monospace">{{ \App\Support\Money::display((float) ($remainingAvailable ?? $debt->remaining_amount)) }}</span> ج.م</span>
         </div>
         <div class="card-body">
             @php
@@ -74,7 +74,7 @@
                             <tr>
                                 <td>{{ $p->id }}</td>
                                 <td>{{ $p->created_at?->timezone(config('app.timezone'))->format('Y-m-d H:i') }}</td>
-                                <td class="text-end font-monospace">{{ number_format((float) $p->amount, 5) }}</td>
+                                <td class="text-end font-monospace">{{ \App\Support\Money::display((float) $p->amount) }}</td>
                                 <td>{{ $p->note ?: '—' }}</td>
                                 <td>
                                     @if (($p->approval_status ?? 'approved') === 'approved')

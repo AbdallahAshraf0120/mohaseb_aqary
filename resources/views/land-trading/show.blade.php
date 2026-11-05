@@ -72,7 +72,7 @@
                     <div class="small text-body-secondary">المساحة</div>
                     <div class="fw-semibold">
                         @if ($parcel->area_size !== null)
-                            <span class="font-monospace">{{ number_format((float) $parcel->area_size, 5) }}</span> م²
+                            <span class="font-monospace">{{ \App\Support\Money::display((float) $parcel->area_size) }}</span> م²
                         @else
                             —
                         @endif
@@ -81,13 +81,13 @@
                 <div class="col-md-4">
                     <div class="small text-body-secondary">سعر متر الشراء</div>
                     <div class="fw-semibold font-monospace">
-                        {{ $parcel->purchase_price_per_m2 !== null ? number_format((float) $parcel->purchase_price_per_m2, 5).' ج.م' : '—' }}
+                        {{ $parcel->purchase_price_per_m2 !== null ? \App\Support\Money::display((float) $parcel->purchase_price_per_m2).' ج.م' : '—' }}
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="small text-body-secondary">سعر متر البيع</div>
                     <div class="fw-semibold font-monospace">
-                        {{ $parcel->sale_price_per_m2 !== null ? number_format((float) $parcel->sale_price_per_m2, 5).' ج.م' : '—' }}
+                        {{ $parcel->sale_price_per_m2 !== null ? \App\Support\Money::display((float) $parcel->sale_price_per_m2).' ج.م' : '—' }}
                     </div>
                 </div>
             </div>
@@ -95,12 +95,12 @@
     </div>
 
     <x-partials.module-kpis :items="array_values(array_filter([
-        ['label' => 'مدفوع شراء', 'value' => number_format((float) $purchasePaid, 5) . ' ج.م'],
-        ['label' => 'متبقي شراء', 'value' => number_format((float) $purchaseRemaining, 5) . ' ج.م'],
-        ['label' => 'محصّل بيع', 'value' => number_format((float) $salePaid, 5) . ' ج.م'],
-        ['label' => 'متبقي بيع', 'value' => number_format((float) $saleRemaining, 5) . ' ج.م'],
+        ['label' => 'مدفوع شراء', 'value' => \App\Support\Money::display((float) $purchasePaid) . ' ج.م'],
+        ['label' => 'متبقي شراء', 'value' => \App\Support\Money::display((float) $purchaseRemaining) . ' ج.م'],
+        ['label' => 'محصّل بيع', 'value' => \App\Support\Money::display((float) $salePaid) . ' ج.م'],
+        ['label' => 'متبقي بيع', 'value' => \App\Support\Money::display((float) $saleRemaining) . ' ج.م'],
         !empty($partsReady) && $parcel->area_size !== null
-            ? ['label' => 'مساحة متبقية', 'value' => number_format((float) ($remainingArea ?? 0), 5) . ' م²']
+            ? ['label' => 'مساحة متبقية', 'value' => \App\Support\Money::display((float) ($remainingArea ?? 0)) . ' م²']
             : null,
         !empty($partsReady)
             ? ['label' => 'أجزاء البيع', 'value' => (int) ($parts?->count() ?? 0)]
@@ -115,11 +115,11 @@
                     <div class="row g-3">
                         <div class="col-6">
                             <div class="small text-body-secondary">سعر الشراء</div>
-                            <div class="fw-semibold font-monospace">{{ number_format((float) $parcel->purchase_price, 5) }}</div>
+                            <div class="fw-semibold font-monospace">{{ \App\Support\Money::display((float) $parcel->purchase_price) }}</div>
                         </div>
                         <div class="col-6">
                             <div class="small text-body-secondary">المقدم</div>
-                            <div class="fw-semibold font-monospace">{{ number_format((float) ($parcel->purchase_down_payment ?? 0), 5) }}</div>
+                            <div class="fw-semibold font-monospace">{{ \App\Support\Money::display((float) ($parcel->purchase_down_payment ?? 0)) }}</div>
                         </div>
                         <div class="col-6">
                             <div class="small text-body-secondary">البائع</div>
@@ -141,13 +141,13 @@
                         <div class="col-6">
                             <div class="small text-body-secondary">سعر البيع</div>
                             <div class="fw-semibold font-monospace">
-                                {{ $parcel->sale_price !== null ? number_format((float) $parcel->sale_price, 5) : '—' }}
+                                {{ $parcel->sale_price !== null ? \App\Support\Money::display((float) $parcel->sale_price) : '—' }}
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="small text-body-secondary">المقدم</div>
                             <div class="fw-semibold font-monospace">
-                                {{ $parcel->sale_down_payment !== null ? number_format((float) $parcel->sale_down_payment, 5) : '—' }}
+                                {{ $parcel->sale_down_payment !== null ? \App\Support\Money::display((float) $parcel->sale_down_payment) : '—' }}
                             </div>
                         </div>
                         <div class="col-6">
@@ -162,7 +162,7 @@
                             <div class="col-12">
                                 <div class="small text-body-secondary">الربح / الخسارة (سعر)</div>
                                 <div class="fw-bold font-monospace {{ $profit >= 0 ? 'text-success' : 'text-danger' }}">
-                                    {{ number_format($profit, 5) }}
+                                    {{ \App\Support\Money::display($profit) }}
                                 </div>
                             </div>
                         @endif
@@ -186,10 +186,10 @@
                 @if ($parcel->area_size !== null)
                     <div class="d-flex flex-wrap gap-2">
                         <span class="badge text-bg-light border">
-                            إجمالي: <span class="font-monospace">{{ number_format((float) $parcel->area_size, 5) }}</span> م²
+                            إجمالي: <span class="font-monospace">{{ \App\Support\Money::display((float) $parcel->area_size) }}</span> م²
                         </span>
                         <span class="badge text-bg-success-subtle text-success border border-success-subtle">
-                            متبقي: <span class="font-monospace">{{ number_format((float) ($remainingArea ?? 0), 5) }}</span> م²
+                            متبقي: <span class="font-monospace">{{ \App\Support\Money::display((float) ($remainingArea ?? 0)) }}</span> م²
                         </span>
                     </div>
                 @endif
@@ -231,10 +231,10 @@
                                 </td>
                                 <td class="font-monospace small">
                                     @if ($part->area_size !== null)
-                                        {{ number_format((float) $part->area_size, 5) }} م²
+                                        {{ \App\Support\Money::display((float) $part->area_size) }} م²
                                         @php $partPct = $parcel->areaPercentageOfTotal($part->area_size); @endphp
                                         @if ($partPct !== null)
-                                            <div class="text-primary fw-semibold">{{ number_format($partPct, 5) }}%</div>
+                                            <div class="text-primary fw-semibold">{{ \App\Support\Money::display($partPct) }}%</div>
                                         @endif
                                     @else
                                         —
@@ -247,9 +247,9 @@
                                     @endif
                                 </td>
                                 <td class="font-monospace small">{{ optional($part->sale_date)->format('Y-m-d') ?: '—' }}</td>
-                                <td class="text-end font-monospace">{{ number_format((float) $part->sale_price, 5) }}</td>
-                                <td class="text-end font-monospace text-success-emphasis">{{ number_format($pCollected, 5) }}</td>
-                                <td class="text-end font-monospace {{ $pRemaining > 0.00001 ? 'text-danger-emphasis' : '' }}">{{ number_format($pRemaining, 5) }}</td>
+                                <td class="text-end font-monospace">{{ \App\Support\Money::display((float) $part->sale_price) }}</td>
+                                <td class="text-end font-monospace text-success-emphasis">{{ \App\Support\Money::display($pCollected) }}</td>
+                                <td class="text-end font-monospace {{ $pRemaining > 0.00001 ? 'text-danger-emphasis' : '' }}">{{ \App\Support\Money::display($pRemaining) }}</td>
                                 <td><span class="badge {{ $pBadge }}">{{ $part->statusLabel() }}</span></td>
                                 <td class="text-end">
                                     @can('land-trading.manage')
@@ -286,7 +286,7 @@
                                                     <input type="hidden" name="notes" value="تحصيل كاش كامل">
                                                     <div class="col-md-3">
                                                         <div class="small text-body-secondary">تحصيل كاش كامل</div>
-                                                        <div class="fw-semibold font-monospace">{{ number_format($pRemaining, 5) }} ج.م</div>
+                                                        <div class="fw-semibold font-monospace">{{ \App\Support\Money::display($pRemaining) }} ج.م</div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <label class="form-label small">التاريخ</label>
@@ -343,7 +343,7 @@
                                                     @foreach ($part->installmentScheduleWithPaymentSummary() as $row)
                                                         <span class="badge text-bg-light me-1">
                                                             {{ $row['label'] }} {{ $row['due_date']->format('Y-m-d') }} —
-                                                            متبقي {{ number_format($row['balance'], 5) }}
+                                                            متبقي {{ \App\Support\Money::display($row['balance']) }}
                                                         </span>
                                                     @endforeach
                                                 </div>
@@ -371,7 +371,7 @@
                             <div class="small text-body-secondary">املأ البيانات بالترتيب — السعر يُحسب من مساحة الجزء × سعر متر البيع.</div>
                         </div>
                         @if (($parcel->sale_price_per_m2 ?? 0) > 0)
-                            <span class="badge text-bg-primary">سعر متر البيع: {{ number_format((float) $parcel->sale_price_per_m2, 5) }} ج.م</span>
+                            <span class="badge text-bg-primary">سعر متر البيع: {{ \App\Support\Money::display((float) $parcel->sale_price_per_m2) }} ج.م</span>
                         @else
                             <a href="{{ route('land-trading.edit', $parcel) }}" class="btn btn-outline-warning btn-sm">حدّد سعر متر البيع من تعديل الأرض</a>
                         @endif
@@ -422,8 +422,8 @@
                                     @error('area_size') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                                     @if ($parcel->area_size !== null)
                                         <div class="form-text mb-0">
-                                            متاح للبيع: <span class="font-monospace">{{ number_format($remainingAreaJs, 5) }}</span> م²
-                                            من أصل <span class="font-monospace">{{ number_format($totalAreaJs, 5) }}</span>
+                                            متاح للبيع: <span class="font-monospace">{{ \App\Support\Money::display($remainingAreaJs) }}</span> م²
+                                            من أصل <span class="font-monospace">{{ \App\Support\Money::display($totalAreaJs) }}</span>
                                         </div>
                                         <div class="invalid-feedback d-none" id="part_area_client_error">المساحة أكبر من المتاح.</div>
                                     @endif
@@ -437,7 +437,7 @@
                                     </div>
                                     <div class="form-text mb-0" id="part_sale_price_hint">
                                         @if (($parcel->sale_price_per_m2 ?? 0) > 0)
-                                            يُحسب تلقائيًا: المساحة × {{ number_format((float) $parcel->sale_price_per_m2, 5) }}
+                                            يُحسب تلقائيًا: المساحة × {{ \App\Support\Money::display((float) $parcel->sale_price_per_m2) }}
                                         @else
                                             أدخل السعر يدويًا أو حدّد سعر المتر من تعديل الأرض
                                         @endif
@@ -605,7 +605,7 @@
                             <div class="small text-body-secondary">عمود «مدفوع» يتحدث تلقائيًا من السدادات في السجل بالأسفل</div>
                         </div>
                         <span class="badge text-bg-danger">
-                            مدفوع إجمالي: {{ number_format((float) ($purchasePaid ?? 0), 5) }} ج.م
+                            مدفوع إجمالي: {{ \App\Support\Money::display((float) ($purchasePaid ?? 0)) }} ج.م
                         </span>
                     </div>
                     <div class="card-body p-0">
@@ -628,9 +628,9 @@
                                         <td>{{ $row['number'] }}</td>
                                         <td>{{ $row['label'] ?? $row['kind'] }}</td>
                                         <td class="font-monospace small">{{ $row['due_date']->format('Y-m-d') }}</td>
-                                        <td class="text-end font-monospace">{{ number_format($row['amount'], 5) }}</td>
-                                        <td class="text-end font-monospace">{{ number_format($row['paid'], 5) }}</td>
-                                        <td class="text-end font-monospace">{{ number_format($row['balance'], 5) }}</td>
+                                        <td class="text-end font-monospace">{{ \App\Support\Money::display($row['amount']) }}</td>
+                                        <td class="text-end font-monospace">{{ \App\Support\Money::display($row['paid']) }}</td>
+                                        <td class="text-end font-monospace">{{ \App\Support\Money::display($row['balance']) }}</td>
                                         <td><span class="badge text-bg-light">{{ $row['status'] }}</span></td>
                                     </tr>
                                 @empty
@@ -721,9 +721,9 @@
                                         <td>{{ $row['number'] }}</td>
                                         <td>{{ $row['label'] ?? $row['kind'] }}</td>
                                         <td class="font-monospace small">{{ $row['due_date']->format('Y-m-d') }}</td>
-                                        <td class="text-end font-monospace">{{ number_format($row['amount'], 5) }}</td>
-                                        <td class="text-end font-monospace">{{ number_format($row['paid'], 5) }}</td>
-                                        <td class="text-end font-monospace">{{ number_format($row['balance'], 5) }}</td>
+                                        <td class="text-end font-monospace">{{ \App\Support\Money::display($row['amount']) }}</td>
+                                        <td class="text-end font-monospace">{{ \App\Support\Money::display($row['paid']) }}</td>
+                                        <td class="text-end font-monospace">{{ \App\Support\Money::display($row['balance']) }}</td>
                                         <td><span class="badge text-bg-light">{{ $row['status'] }}</span></td>
                                     </tr>
                                 @empty
@@ -820,7 +820,7 @@
                                 </td>
                                 <td class="small">{{ $payment->part?->name ?? '—' }}</td>
                                 <td>{{ $payment->kindLabel() }}</td>
-                                <td class="text-end font-monospace">{{ number_format((float) $payment->amount, 5) }}</td>
+                                <td class="text-end font-monospace">{{ \App\Support\Money::display((float) $payment->amount) }}</td>
                                 <td class="small">
                                     @if ($payment->side === 'purchase')
                                         {{ $payment->paidByShareholder?->name ?? '—' }}
@@ -867,9 +867,9 @@
                 <h6 class="mb-0">مساهمو الأرض — مخطط / فعلي</h6>
                 <div class="small text-body-secondary">
                     المخطط = الاتفاق · الفعلي = التمويل المدفوع · رأس مال مخطط:
-                    <span class="font-monospace">{{ number_format((float) ($parcel->planned_capital ?? $parcel->purchase_price), 5) }}</span>
+                    <span class="font-monospace">{{ \App\Support\Money::display((float) ($parcel->planned_capital ?? $parcel->purchase_price)) }}</span>
                     · فعلي:
-                    <span class="font-monospace">{{ number_format((float) ($parcel->actual_capital ?? 0), 5) }}</span>
+                    <span class="font-monospace">{{ \App\Support\Money::display((float) ($parcel->actual_capital ?? 0)) }}</span>
                 </div>
             </div>
             <div class="d-flex gap-2 flex-wrap">
@@ -909,12 +909,12 @@
                         @endphp
                         <tr>
                             <td class="fw-semibold">{{ $row->shareholder->name }}</td>
-                            <td class="text-end font-monospace">{{ number_format($plannedInv, 5) }}</td>
-                            <td class="text-end">{{ number_format((float) ($row->planned_percentage ?? $row->share_percentage ?? 0), 5) }}%</td>
-                            <td class="text-end font-monospace">{{ number_format($actualInv, 5) }}</td>
-                            <td class="text-end">{{ number_format((float) ($row->actual_percentage ?? 0), 5) }}%</td>
+                            <td class="text-end font-monospace">{{ \App\Support\Money::display($plannedInv) }}</td>
+                            <td class="text-end">{{ \App\Support\Money::display((float) ($row->planned_percentage ?? $row->share_percentage ?? 0)) }}%</td>
+                            <td class="text-end font-monospace">{{ \App\Support\Money::display($actualInv) }}</td>
+                            <td class="text-end">{{ \App\Support\Money::display((float) ($row->actual_percentage ?? 0)) }}%</td>
                             <td class="text-end font-monospace {{ $gap > 0.00001 ? 'text-danger' : ($gap < -0.00001 ? 'text-success' : '') }}">
-                                {{ number_format($gap, 5) }}
+                                {{ \App\Support\Money::display($gap) }}
                             </td>
                             <td class="text-end">
                                 <a href="{{ route('shareholders.show', $row->shareholder) }}" class="btn btn-outline-info btn-sm">فتح</a>
@@ -945,7 +945,7 @@
                         @csrf
                         <div class="col-md-3">
                             <div class="small text-body-secondary">دفعة #{{ $pending->id }} — {{ $pending->paid_at?->format('Y-m-d') }}</div>
-                            <div class="fw-semibold font-monospace">{{ number_format((float) $pending->amount, 5) }} ج.م</div>
+                            <div class="fw-semibold font-monospace">{{ \App\Support\Money::display((float) $pending->amount) }} ج.م</div>
                             <div class="small">{{ $pending->part?->name ?? 'بيع كامل' }}</div>
                         </div>
                         <div class="col-md-3">
@@ -973,7 +973,7 @@
                 <div class="small text-body-secondary">بعد التوزيع تُسجَّل في جاري المساهم (تسوية دائن) دون تكرار حركة الصندوق.</div>
             </div>
             <span class="badge text-bg-light">
-                إجمالي موزّع: {{ number_format((float) ($saleDistributions ?? collect())->sum('amount'), 5) }} ج.م
+                إجمالي موزّع: {{ \App\Support\Money::display((float) ($saleDistributions ?? collect())->sum('amount')) }} ج.م
             </span>
         </div>
         <div class="card-body p-0">
@@ -995,12 +995,12 @@
                                 {{ $dist->payment?->paid_at?->format('Y-m-d') ?? $dist->entry_date?->format('Y-m-d') ?? $dist->created_at?->format('Y-m-d') }}
                             </td>
                             <td class="fw-semibold">{{ $dist->shareholder?->name ?? '—' }}</td>
-                            <td class="text-end font-monospace text-success-emphasis">+{{ number_format((float) $dist->amount, 5) }}</td>
+                            <td class="text-end font-monospace text-success-emphasis">+{{ \App\Support\Money::display((float) $dist->amount) }}</td>
                             <td class="small">
                                 @if (method_exists($dist, 'basisLabel'))
                                     {{ $dist->basisLabel() }}
                                     @if ($dist->percentage_used !== null)
-                                        ({{ number_format((float) $dist->percentage_used, 5) }}%)
+                                        ({{ \App\Support\Money::display((float) $dist->percentage_used) }}%)
                                     @endif
                                 @else
                                     {{ $dist->notes ?: '—' }}

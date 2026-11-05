@@ -47,7 +47,7 @@
                             @selected((string) old('project_id', request('project_id')) === (string) $p->id)>
                         {{ $p->name }}
                         @if ($cap > 0)
-                            — رأس المال: {{ number_format($cap, 5) }} ج.م
+                            — رأس المال: {{ \App\Support\Money::display($cap) }} ج.م
                         @endif
                     </option>
                 @endforeach
@@ -67,7 +67,7 @@
                             @selected((string) old('land_parcel_id') === (string) $land->id)>
                         {{ $land->name }}
                         @if ($lcap > 0)
-                            — شراء: {{ number_format($lcap, 5) }} ج.م
+                            — شراء: {{ \App\Support\Money::display($lcap) }} ج.م
                         @endif
                     </option>
                 @endforeach

@@ -55,7 +55,7 @@ class ProjectController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:50', 'unique:projects,code'],
-            'capital' => ['nullable', 'numeric', 'min:0'],
+            'capital' => ['nullable', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
         ]);
         $data['is_active'] = true;
         $data['is_draft'] = false;
@@ -94,7 +94,7 @@ class ProjectController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:50', Rule::unique('projects', 'code')->ignore($project->id)],
-            'capital' => ['nullable', 'numeric', 'min:0'],
+            'capital' => ['nullable', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
             'contract_template' => ['nullable', 'file', 'mimes:docx', 'max:20480'],
             'remove_contract_template' => ['nullable', 'in:0,1'],
         ]);

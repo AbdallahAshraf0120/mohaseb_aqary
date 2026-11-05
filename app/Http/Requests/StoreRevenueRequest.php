@@ -23,7 +23,7 @@ class StoreRevenueRequest extends FormRequest
             'contract_id' => ['required', 'exists:contracts,id'],
             'sale_id' => ['nullable', 'exists:sales,id'],
             'client_id' => ['required', 'exists:clients,id'],
-            'amount' => ['required', 'numeric', 'min:0.00001'],
+            'amount' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0.00001'],
             'category' => ['required', 'string', 'max:255'],
             'source' => ['nullable', 'string', 'max:255'],
             'paid_at' => ['required', 'date'],

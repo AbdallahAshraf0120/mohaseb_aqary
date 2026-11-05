@@ -38,7 +38,7 @@ class StoreShareholderRequest extends FormRequest
                 $landsReady ? Rule::exists('land_parcels', 'id') : 'integer',
             ]),
             'share_percentage' => ['required', 'numeric', 'min:0.00001', 'max:100'],
-            'total_investment' => ['nullable', 'numeric', 'min:0'],
+            'total_investment' => ['nullable', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
         ];
     }
 

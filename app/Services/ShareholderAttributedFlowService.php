@@ -76,7 +76,8 @@ final class ShareholderAttributedFlowService
                     'contract' => static fn ($q) => $q->withoutGlobalScope('project')->select('id', 'property_id', 'sale_id', 'project_id'),
                     'sale' => static fn ($q) => $q->withoutGlobalScope('project')->select('id', 'property_id', 'floor_number'),
                 ])
-                ->cursor() as $revenue
+                // lazy() مش cursor(): الـ cursor بيتجاهل with() فكان بيعمل استعلامين لكل تحصيل (آلاف الاستعلامات).
+                ->lazy(500) as $revenue
         ) {
             /** @var Revenue $revenue */
             $contract = $revenue->contract;

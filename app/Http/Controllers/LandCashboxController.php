@@ -77,7 +77,7 @@ class LandCashboxController extends Controller
     {
         $data = $request->validate([
             'type' => ['required', 'in:revenue,expense'],
-            'amount' => ['required', 'numeric', 'min:0.00001'],
+            'amount' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0.00001'],
             'description' => ['nullable', 'string'],
         ]);
 

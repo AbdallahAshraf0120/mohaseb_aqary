@@ -157,6 +157,73 @@ class LandParcelPaymentService
         });
     }
 
+    /**
+     * اعتماد دفعة أرض معلّقة (اتسجلت من مستخدم غير الأدمن): نفس اللي بيحصل للدفعة المعتمدة وقت التسجيل.
+     */
+    public function approve(LandParcelPayment $payment, User $user): void
+    {
+        DB::transaction(function () use ($payment, $user): void {
+            if (($payment->approval_status ?? '') !== 'pending') {
+                throw new InvalidArgumentException('الدفعة دي مش معلّقة.');
+            }
+
+            $payment->update([
+                'approval_status' => 'approved',
+                'approved_at' => now(),
+                'approved_by' => (int) $user->id,
+                'rejected_at' => null,
+                'rejected_by' => null,
+                'rejection_reason' => null,
+            ]);
+            $payment->refresh();
+
+            // بيتأكد من رصيد صندوق الأراضي قبل اعتماد دفعة شراء
+            $this->cashboxLedgerService->syncFromLandParcelPayment($payment);
+
+            $parcel = $payment->landParcel()->first();
+            if (! $parcel instanceof LandParcel) {
+                return;
+            }
+
+            $paidById = $payment->paid_by_shareholder_id ?? null;
+            $receivedById = $payment->received_by_shareholder_id ?? null;
+
+            if ($payment->side === LandParcelPayment::SIDE_PURCHASE && $paidById !== null) {
+                $this->postPurchaseToShareholderLedger($parcel, $payment, (int) $paidById, $user);
+                $this->ownershipService->syncLandActual((int) $parcel->id);
+            }
+
+            if ($payment->side === LandParcelPayment::SIDE_SALE && $receivedById !== null) {
+                $this->distributeSale(
+                    $parcel,
+                    $payment,
+                    LandParcelPaymentDistribution::BASIS_MANUAL,
+                    $user,
+                    [['shareholder_id' => (int) $receivedById, 'amount' => round((float) $payment->amount, 5)]]
+                );
+            }
+        });
+    }
+
+    public function reject(LandParcelPayment $payment, User $user, ?string $reason): void
+    {
+        DB::transaction(function () use ($payment, $user, $reason): void {
+            if (($payment->approval_status ?? '') !== 'pending') {
+                throw new InvalidArgumentException('الدفعة دي مش معلّقة.');
+            }
+
+            $payment->update([
+                'approval_status' => 'rejected',
+                'rejected_at' => now(),
+                'rejected_by' => (int) $user->id,
+                'rejection_reason' => $reason ? trim($reason) : null,
+                'approved_at' => null,
+                'approved_by' => null,
+            ]);
+            $this->cashboxLedgerService->syncFromLandParcelPayment($payment->refresh());
+        });
+    }
+
     private function assertParcelShareholder(int $parcelId, int $shareholderId, string $message): void
     {
         $member = LandParcelShareholder::query()

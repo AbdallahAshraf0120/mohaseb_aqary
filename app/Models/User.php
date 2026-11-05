@@ -15,6 +15,22 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, LogsActivity, Notifiable;
 
+    /**
+     * أسماء Routes (بادئة) ← اسم وحدة الصلاحية في role_permissions.
+     * الأطول أولاً. البادئة الكاملة بدون نقطة تُترجم إلى <module>.view.
+     *
+     * @var array<string, string>
+     */
+    private const ROUTE_MODULE_ALIASES = [
+        'crm-leads.activities' => 'crm',
+        'crm-leads' => 'crm',
+        'activity-log' => 'activity_log',
+        'tasks.updates.store' => 'tasks',
+        'projects.landing' => 'projects',
+        'dashboard' => 'dashboard',
+        'home' => 'dashboard',
+    ];
+
     /** @var list<string>|null */
     protected ?array $permissionSlugCache = null;
 
@@ -150,6 +166,17 @@ class User extends Authenticatable
         }
         if (in_array($slug, $set, true)) {
             return true;
+        }
+
+        // أسماء Routes لا تطابق اسم وحدة الصلاحية (مثلاً crm-leads.* ↔ crm.*).
+        foreach (self::ROUTE_MODULE_ALIASES as $routePrefix => $permissionModule) {
+            if ($slug === $routePrefix || str_starts_with($slug, $routePrefix.'.')) {
+                $rest = substr($slug, strlen($routePrefix));
+                $mapped = $permissionModule.($rest === '' ? '.view' : $rest);
+                if ($mapped !== $slug && $this->slugAllowedBySet($mapped, $set)) {
+                    return true;
+                }
+            }
         }
 
         $pos = strrpos($slug, '.');

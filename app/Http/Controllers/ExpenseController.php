@@ -186,7 +186,7 @@ class ExpenseController extends Controller
     {
         $projectId = (int) app(CurrentProject::class)->id();
         $data = $request->validate([
-            'amount' => ['required', 'numeric', 'min:1'],
+            'amount' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:1'],
             'expense_type_id' => [
                 'required',
                 'integer',

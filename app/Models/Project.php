@@ -181,6 +181,11 @@ class Project extends Model
         return $this->hasMany(Debt::class);
     }
 
+    public function expenseTypes(): HasMany
+    {
+        return $this->hasMany(ExpenseType::class);
+    }
+
     public function leads(): HasMany
     {
         return $this->hasMany(CrmLead::class, 'project_id');

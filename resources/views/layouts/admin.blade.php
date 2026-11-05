@@ -485,6 +485,28 @@
             } catch (e) {}
         })();
     </script>
+    <script>
+        // تأكيد قبل حفظ أي مبلغ كبير بشكل غير معتاد (حماية من الأصفار الزيادة).
+        (function () {
+            const LIMIT = 50000000; // 50 مليون
+            const MONEY = /(amount|price|payment|capital|investment|total)/i;
+            document.addEventListener('submit', function (e) {
+                const form = e.target;
+                if (!(form instanceof HTMLFormElement) || form.dataset.bigAmountOk === '1') return;
+                const big = Array.from(form.querySelectorAll('input'))
+                    .filter(function (i) { return MONEY.test(i.name || '') && i.type !== 'hidden'; })
+                    .map(function (i) { return parseFloat(String(i.value).replace(/,/g, '')); })
+                    .filter(function (v) { return isFinite(v) && v >= LIMIT; });
+                if (!big.length) return;
+                const max = Math.max.apply(null, big);
+                if (!window.confirm('المبلغ ' + max.toLocaleString('en-US') + ' ج.م كبير جدًا. متأكد إنه مكتوب صح؟')) {
+                    e.preventDefault();
+                    return;
+                }
+                form.dataset.bigAmountOk = '1';
+            }, true);
+        })();
+    </script>
     @stack('scripts')
 </body>
 </html>

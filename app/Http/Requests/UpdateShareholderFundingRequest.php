@@ -25,7 +25,7 @@ class UpdateShareholderFundingRequest extends FormRequest
             'target_type' => ['required', Rule::in(['project', 'land'])],
             'target_id' => ['required', 'integer', 'min:1'],
             'share_percentage' => ['required', 'numeric', 'min:0.00001', 'max:100'],
-            'total_investment' => ['nullable', 'numeric', 'min:0'],
+            'total_investment' => ['nullable', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
         ];
     }
 

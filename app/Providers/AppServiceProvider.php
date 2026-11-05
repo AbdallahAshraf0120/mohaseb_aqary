@@ -49,6 +49,12 @@ class AppServiceProvider extends ServiceProvider
                 return true;
             }
 
+            // صلاحية مش متسجلة كـ Gate (مثلاً اتضافت لجدول permissions بعد الـ boot، أو في الاختبارات):
+            // نرجع لنفس منطق hasPermission بدل ما نرفض تلقائياً.
+            if ($user instanceof User && ! Gate::has($ability) && $user->hasPermission($ability)) {
+                return true;
+            }
+
             return null;
         });
 
@@ -67,10 +73,17 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Route::bind('project', function (string $value): Project {
-            return Project::query()
+            $project = Project::query()
                 ->whereKey($value)
                 ->where('is_active', true)
                 ->firstOrFail();
+
+            // {project} بيتربط قبل باقي الموديلات في نفس الـ URL (sale, contract, ...).
+            // لازم المشروع الحالي يتظبط هنا، مش بس في SyncProjectFromRoute (اللي بيشتغل بعد الـ bindings)،
+            // وإلا السجل بيتدور عليه في مشروع آخر صفحة اتفتحت في الجلسة ويرجع 404.
+            app(\App\Support\CurrentProject::class)->force((int) $project->id);
+
+            return $project;
         });
 
         Route::bind('managedProject', function (string $value): Project {

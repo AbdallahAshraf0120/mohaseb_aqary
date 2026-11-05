@@ -29,7 +29,7 @@ return new class extends Migration
 
         // رصيد تاريخي: رأس المال المسجّل سابقاً بدون حركة صندوق
         $now = now();
-        Shareholder::query()->withoutProjectScope()->orderBy('id')->chunkById(100, function ($shareholders) use ($now): void {
+        Shareholder::query()->withoutGlobalScopes()->orderBy('id')->chunkById(100, function ($shareholders) use ($now): void {
             $rows = [];
             foreach ($shareholders as $shareholder) {
                 $amount = round((float) $shareholder->total_investment, 2);

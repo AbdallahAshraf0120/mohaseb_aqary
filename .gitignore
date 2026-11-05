@@ -22,3 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# ملفات تسويق ومخرجات مؤقتة (مش جزء من الكود)
+/marketing/
+/Claude outputs/

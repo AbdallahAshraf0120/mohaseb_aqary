@@ -15,8 +15,8 @@
     @endif
 
     <x-partials.module-kpis :items="[
-        ['label' => 'رصيد الجاري الموحّد', 'value' => number_format((float) $ledgerBalance, 5) . ' ج.م'],
-        ['label' => 'رأس المال (دفتر)', 'value' => number_format((float) $capitalDepositsTotal, 5) . ' ج.م'],
+        ['label' => 'رصيد الجاري الموحّد', 'value' => \App\Support\Money::display((float) $ledgerBalance) . ' ج.م'],
+        ['label' => 'رأس المال (دفتر)', 'value' => \App\Support\Money::display((float) $capitalDepositsTotal) . ' ج.م'],
         ['label' => 'مشاريع', 'value' => $memberships->count()],
         ['label' => 'أراضي بيع/شراء', 'value' => $landMemberships->count()],
     ]" />
@@ -63,12 +63,12 @@
                                             {{ $row->project->name }}
                                         </a>
                                     </td>
-                                    <td class="text-end font-monospace">{{ number_format($pInv, 5) }}</td>
-                                    <td class="text-end">{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 5) }}%</td>
-                                    <td class="text-end font-monospace">{{ number_format($aInv, 5) }}</td>
-                                    <td class="text-end">{{ number_format((float) ($row->membership->actual_percentage ?? 0), 5) }}%</td>
+                                    <td class="text-end font-monospace">{{ \App\Support\Money::display($pInv) }}</td>
+                                    <td class="text-end">{{ \App\Support\Money::display((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0)) }}%</td>
+                                    <td class="text-end font-monospace">{{ \App\Support\Money::display($aInv) }}</td>
+                                    <td class="text-end">{{ \App\Support\Money::display((float) ($row->membership->actual_percentage ?? 0)) }}%</td>
                                     <td class="text-end font-monospace fw-bold fs-6 {{ $row->ledger_balance >= 0 ? 'text-success' : 'text-danger' }}">
-                                        {{ number_format((float) $row->ledger_balance, 5) }}
+                                        {{ \App\Support\Money::display((float) $row->ledger_balance) }}
                                     </td>
                                     @can('shareholders.manage')
                                         <td class="text-end">
@@ -126,12 +126,12 @@
                                             —
                                         @endif
                                     </td>
-                                    <td class="text-end font-monospace">{{ number_format($lpInv, 5) }}</td>
-                                    <td class="text-end">{{ number_format((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0), 5) }}%</td>
-                                    <td class="text-end font-monospace">{{ number_format($laInv, 5) }}</td>
-                                    <td class="text-end">{{ number_format((float) ($row->membership->actual_percentage ?? 0), 5) }}%</td>
+                                    <td class="text-end font-monospace">{{ \App\Support\Money::display($lpInv) }}</td>
+                                    <td class="text-end">{{ \App\Support\Money::display((float) ($row->membership->planned_percentage ?? $row->membership->share_percentage ?? 0)) }}%</td>
+                                    <td class="text-end font-monospace">{{ \App\Support\Money::display($laInv) }}</td>
+                                    <td class="text-end">{{ \App\Support\Money::display((float) ($row->membership->actual_percentage ?? 0)) }}%</td>
                                     <td class="text-end font-monospace {{ $row->ledger_balance >= 0 ? 'text-success' : 'text-danger' }}">
-                                        {{ number_format((float) $row->ledger_balance, 5) }}
+                                        {{ \App\Support\Money::display((float) $row->ledger_balance) }}
                                     </td>
                                     @can('shareholders.manage')
                                         <td class="text-end">
@@ -214,7 +214,7 @@
                                         <option value="">اختر…</option>
                                         @foreach ($availableLands as $land)
                                             <option value="{{ $land->id }}">
-                                                {{ $land->name }} — شراء {{ number_format((float) $land->purchase_price, 5) }}
+                                                {{ $land->name }} — شراء {{ \App\Support\Money::display((float) $land->purchase_price) }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -287,7 +287,7 @@
                                 </span>
                                 <div class="small text-body-secondary">{{ $payment->kindLabel() }}</div>
                             </td>
-                            <td class="text-end font-monospace">{{ number_format((float) $payment->amount, 5) }}</td>
+                            <td class="text-end font-monospace">{{ \App\Support\Money::display((float) $payment->amount) }}</td>
                             <td class="small">
                                 @if ($payment->side === 'purchase')
                                     @if ($payment->paidByShareholder)
@@ -340,7 +340,7 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="mb-0"><i class="fa-solid fa-book-open text-primary ms-1"></i> دفتر جاري المساهم (موحّد)</h5>
             <span class="badge {{ $ledgerBalance >= 0 ? 'text-bg-success' : 'text-bg-danger' }}">
-                الرصيد: {{ number_format((float) $ledgerBalance, 5) }} ج.م
+                الرصيد: {{ \App\Support\Money::display((float) $ledgerBalance) }} ج.م
             </span>
         </div>
         <div class="card-body">
@@ -460,11 +460,11 @@
                                 @endif
                             </td>
                             <td class="text-end font-monospace fw-semibold {{ $entry->direction === 'credit' ? 'text-success' : 'text-danger' }}">
-                                {{ $entry->direction === 'credit' ? '+' : '−' }}{{ number_format((float) $entry->amount, 5) }}
+                                {{ $entry->direction === 'credit' ? '+' : '−' }}{{ \App\Support\Money::display((float) $entry->amount) }}
                             </td>
                             <td class="text-end font-monospace fw-semibold {{ (float) ($entry->project_running_balance ?? $entry->running_balance ?? 0) >= 0 ? 'text-success' : 'text-danger' }}"
                                 title="جاري المساهم في مشروع الوجهة بعد هذه الحركة">
-                                {{ number_format((float) ($entry->project_running_balance ?? $entry->running_balance ?? 0), 5) }}
+                                {{ \App\Support\Money::display((float) ($entry->project_running_balance ?? $entry->running_balance ?? 0)) }}
                             </td>
                             <td class="small">
                                 @if ($entry->treasuryTransaction && $entry->project)
@@ -588,10 +588,10 @@
                                     {{ $row->project->name }}
                                 </a>
                             </td>
-                            <td class="text-end font-monospace">{{ number_format((float) $row->attributed_operating, 5) }}</td>
-                            <td class="text-end font-monospace">{{ number_format((float) $row->attributed_cost, 5) }}</td>
+                            <td class="text-end font-monospace">{{ \App\Support\Money::display((float) $row->attributed_operating) }}</td>
+                            <td class="text-end font-monospace">{{ \App\Support\Money::display((float) $row->attributed_cost) }}</td>
                             <td class="text-end font-monospace {{ $row->approx_current >= 0 ? 'text-success' : 'text-danger' }}">
-                                {{ number_format((float) $row->approx_current, 5) }}
+                                {{ \App\Support\Money::display((float) $row->approx_current) }}
                             </td>
                         </tr>
                     @empty
@@ -640,7 +640,7 @@
                                 @endif
                             </td>
                             <td>{{ $p->area?->name ?? '—' }}</td>
-                            <td><span class="badge text-bg-primary">{{ number_format((float) $item->percentage, 5) }}%</span></td>
+                            <td><span class="badge text-bg-primary">{{ \App\Support\Money::display((float) $item->percentage) }}%</span></td>
                             <td class="text-end">
                                 <a href="{{ route('properties.show', [$p->project_id, $p]) }}" class="btn btn-outline-info btn-sm">عرض</a>
                             </td>

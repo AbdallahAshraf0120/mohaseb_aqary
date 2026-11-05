@@ -213,7 +213,7 @@ class ShareholderLedgerService
         $remaining = $source->remainingAllocatableAmount();
         if ($shareAmount > $remaining + 0.00001) {
             throw new InvalidArgumentException(
-                'المبلغ أكبر من المتبقي القابل للتوزيع (المتاح: '.number_format($remaining, 5).' ج.م).'
+                'المبلغ أكبر من المتبقي القابل للتوزيع (المتاح: '.\App\Support\Money::display($remaining).' ج.م).'
             );
         }
 

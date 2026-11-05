@@ -27,7 +27,7 @@ class UpdateDebtRequest extends StoreDebtRequest
             if ($paid + 0.000009 < $sumPayments) {
                 $v->errors()->add(
                     'paid_amount',
-                    'المسدَّد الإجمالي لا يمكن أن يقل عن مجموع سدادات الصندوق ('.number_format($sumPayments, 5).' ج.م).'
+                    'المسدَّد الإجمالي لا يمكن أن يقل عن مجموع سدادات الصندوق ('.\App\Support\Money::display($sumPayments).' ج.م).'
                 );
             }
         });

@@ -37,8 +37,8 @@
                     <div class="progress-bar bg-success" style="width: {{ $progressPct }}%"></div>
                 </div>
                 <div class="d-flex flex-wrap justify-content-between gap-2 mt-2 small">
-                    <span>المدفوع: <strong class="font-monospace">{{ number_format($paid, 5) }}</strong> ج.م</span>
-                    <span>المتبقي: <strong class="font-monospace">{{ number_format((float) $contract->remaining_amount, 5) }}</strong> ج.م</span>
+                    <span>المدفوع: <strong class="font-monospace">{{ \App\Support\Money::display($paid) }}</strong> ج.م</span>
+                    <span>المتبقي: <strong class="font-monospace">{{ \App\Support\Money::display((float) $contract->remaining_amount) }}</strong> ج.م</span>
                 </div>
             </div>
 
@@ -106,23 +106,23 @@
                             <tbody>
                             <tr>
                                 <th class="text-body-secondary align-top py-2" style="width: 40%">إجمالي السعر</th>
-                                <td class="py-2 font-monospace fw-medium">{{ number_format($total, 5) }} ج.م</td>
+                                <td class="py-2 font-monospace fw-medium">{{ \App\Support\Money::display($total) }} ج.م</td>
                             </tr>
                             <tr>
                                 <th class="text-body-secondary align-top py-2">المقدم</th>
-                                <td class="py-2 font-monospace">{{ number_format($downPayment, 5) }} ج.م</td>
+                                <td class="py-2 font-monospace">{{ \App\Support\Money::display($downPayment) }} ج.م</td>
                             </tr>
                             <tr>
                                 <th class="text-body-secondary align-top py-2">بعد المقدم</th>
-                                <td class="py-2 font-monospace">{{ number_format($netContractValue, 5) }} ج.م</td>
+                                <td class="py-2 font-monospace">{{ \App\Support\Money::display($netContractValue) }} ج.م</td>
                             </tr>
                             <tr>
                                 <th class="text-body-secondary align-top py-2">المسدَّد</th>
-                                <td class="py-2 font-monospace text-success-emphasis">{{ number_format($paid, 5) }} ج.م</td>
+                                <td class="py-2 font-monospace text-success-emphasis">{{ \App\Support\Money::display($paid) }} ج.م</td>
                             </tr>
                             <tr>
                                 <th class="text-body-secondary align-top py-2">المتبقي</th>
-                                <td class="py-2 font-monospace fw-semibold">{{ number_format((float) $contract->remaining_amount, 5) }} ج.م</td>
+                                <td class="py-2 font-monospace fw-semibold">{{ \App\Support\Money::display((float) $contract->remaining_amount) }} ج.م</td>
                             </tr>
                             </tbody>
                         </table>

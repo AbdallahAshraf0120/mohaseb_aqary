@@ -13,7 +13,7 @@
         <div class="col-lg-4 col-md-6">
             <div class="small-box text-bg-light border">
                 <div class="inner">
-                    <h5 class="mb-2">{{ number_format($totalSales, 5) }} ج.م</h5>
+                    <h5 class="mb-2">{{ \App\Support\Money::display($totalSales) }} ج.م</h5>
                     <p class="mb-0">المبيعات الكلية</p>
                     <p class="mb-0 small text-body-secondary">المعتمدة فقط</p>
                 </div>
@@ -22,11 +22,11 @@
         <div class="col-lg-4 col-md-6">
             <div class="small-box text-bg-light border">
                 <div class="inner">
-                    <h5 class="mb-2">{{ number_format($totalCollected, 5) }} ج.م</h5>
+                    <h5 class="mb-2">{{ \App\Support\Money::display($totalCollected) }} ج.م</h5>
                     <p class="mb-0">الدفعات المحصلة</p>
                     <p class="mb-0 small text-body-secondary">
-                        مقدمات {{ number_format($totalDownPayments, 5) }}
-                        + أقساط {{ number_format($totalInstallments, 5) }}
+                        مقدمات {{ \App\Support\Money::display($totalDownPayments) }}
+                        + أقساط {{ \App\Support\Money::display($totalInstallments) }}
                     </p>
                 </div>
             </div>
@@ -34,7 +34,7 @@
         <div class="col-lg-4 col-md-6">
             <div class="small-box text-bg-light border">
                 <div class="inner">
-                    <h5 class="mb-2">{{ number_format($remaining, 5) }} ج.م</h5>
+                    <h5 class="mb-2">{{ \App\Support\Money::display($remaining) }} ج.م</h5>
                     <p class="mb-0">المتبقي من المبيعات</p>
                 </div>
             </div>
@@ -87,13 +87,13 @@
                                             <div class="small text-body-secondary">البروكر: {{ $sale->broker_name }}</div>
                                         @endif
                                     </td>
-                                    <td>{{ number_format((float) $sale->sale_price, 5) }} ج.م</td>
+                                    <td>{{ \App\Support\Money::display((float) $sale->sale_price) }} ج.م</td>
                                     <td>
-                                        <div class="font-monospace">{{ number_format((float) $sale->down_payment, 5) }} ج.م</div>
+                                        <div class="font-monospace">{{ \App\Support\Money::display((float) $sale->down_payment) }} ج.م</div>
                                         @if ($sale->shareholderDownPaymentAmount() >= 0.00001 || $sale->cashboxDownPaymentAmount() + 0.000009 < (float) $sale->down_payment)
                                             <div class="small text-body-secondary">
-                                                صندوق {{ number_format($sale->cashboxDownPaymentAmount(), 5) }}
-                                                · مساهم {{ number_format($sale->shareholderDownPaymentAmount(), 5) }}
+                                                صندوق {{ \App\Support\Money::display($sale->cashboxDownPaymentAmount()) }}
+                                                · مساهم {{ \App\Support\Money::display($sale->shareholderDownPaymentAmount()) }}
                                             </div>
                                         @endif
                                     </td>

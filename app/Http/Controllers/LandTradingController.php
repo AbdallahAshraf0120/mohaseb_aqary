@@ -363,7 +363,7 @@ class LandTradingController extends Controller
             'side' => ['required', 'in:purchase,sale'],
             'land_parcel_part_id' => $partIdRules,
             'kind' => ['required', 'in:down_payment,installment,secondary,other'],
-            'amount' => ['required', 'numeric', 'min:0.00001'],
+            'amount' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0.00001'],
             'paid_at' => ['required', 'date'],
             'payment_method' => ['required', 'in:cash,bank_transfer,check'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -546,12 +546,12 @@ class LandTradingController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'area_size' => $areaRules,
             'status' => ['required', 'string', Rule::in(array_keys(LandParcelPart::STATUSES))],
-            'sale_price' => ['required', 'numeric', 'min:0.00001'],
+            'sale_price' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0.00001'],
             'sale_date' => ['nullable', 'date'],
             'sold_to' => ['nullable', 'string', 'max:255'],
             'sale_phone' => ['nullable', 'string', 'max:50'],
             'sale_payment_type' => ['required', 'in:cash,installment'],
-            'sale_down_payment' => ['nullable', 'numeric', 'min:0'],
+            'sale_down_payment' => ['nullable', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
             'sale_installment_months' => ['nullable', 'integer', 'min:1', 'required_if:sale_payment_type,installment'],
             'sale_installment_schedule' => ['nullable', 'in:monthly,quarterly,semiannual', 'required_if:sale_payment_type,installment'],
             'sale_installment_start_date' => ['nullable', 'date', 'required_if:sale_payment_type,installment'],
@@ -559,7 +559,7 @@ class LandTradingController extends Controller
         ], [
             'area_size.required' => 'المساحة مطلوبة لتحديد نسبة الجزء من الأرض.',
             'area_size.max' => $remaining !== null
-                ? 'المساحة أكبر من المتاح. المتبقي: '.number_format($remaining, 5).' م².'
+                ? 'المساحة أكبر من المتاح. المتبقي: '.\App\Support\Money::display($remaining).' م².'
                 : 'المساحة غير صحيحة.',
             'area_size.min' => 'أدخل مساحة أكبر من صفر.',
         ]);
@@ -604,21 +604,21 @@ class LandTradingController extends Controller
             'sale_price_per_m2' => ['nullable', 'numeric', 'min:0'],
             'deed_number' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'string', Rule::in(array_keys(LandParcel::STATUSES))],
-            'purchase_price' => ['required', 'numeric', 'min:0'],
+            'purchase_price' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
             'purchase_date' => ['nullable', 'date'],
             'purchased_from' => ['nullable', 'string', 'max:255'],
             'purchase_phone' => ['nullable', 'string', 'max:50'],
             'purchase_payment_type' => ['required', 'in:cash,installment'],
-            'purchase_down_payment' => ['nullable', 'numeric', 'min:0'],
+            'purchase_down_payment' => ['nullable', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
             'purchase_installment_months' => ['nullable', 'integer', 'min:1', 'required_if:purchase_payment_type,installment'],
             'purchase_installment_schedule' => ['nullable', 'in:monthly,quarterly,semiannual', 'required_if:purchase_payment_type,installment'],
             'purchase_installment_start_date' => ['nullable', 'date', 'required_if:purchase_payment_type,installment'],
-            'sale_price' => ['nullable', 'numeric', 'min:0'],
+            'sale_price' => ['nullable', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
             'sale_date' => ['nullable', 'date'],
             'sold_to' => ['nullable', 'string', 'max:255'],
             'sale_phone' => ['nullable', 'string', 'max:50'],
             'sale_payment_type' => ['nullable', 'in:cash,installment'],
-            'sale_down_payment' => ['nullable', 'numeric', 'min:0'],
+            'sale_down_payment' => ['nullable', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
             'sale_installment_months' => ['nullable', 'integer', 'min:1', 'required_if:sale_payment_type,installment'],
             'sale_installment_schedule' => ['nullable', 'in:monthly,quarterly,semiannual', 'required_if:sale_payment_type,installment'],
             'sale_installment_start_date' => ['nullable', 'date', 'required_if:sale_payment_type,installment'],
@@ -648,7 +648,7 @@ class LandTradingController extends Controller
                 && $request->route('parcel')->parts()->exists();
             if (! $hasParts) {
                 $request->validate([
-                    'sale_price' => ['required', 'numeric', 'min:0'],
+                    'sale_price' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
                 ], [
                     'sale_price.required' => 'سعر البيع مطلوب عند حالة «مباعة» (أو أضف أجزاء بيع من صفحة الأرض).',
                 ]);

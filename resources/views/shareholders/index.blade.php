@@ -4,8 +4,8 @@
     <x-partials.module-kpis :items="[
         ['label' => 'عدد المساهمين', 'value' => (int) ($shareholderKpis['count'] ?? 0)],
         ['label' => 'روابط المشاريع', 'value' => (int) ($shareholderKpis['memberships_count'] ?? 0)],
-        ['label' => 'مجموع رأس المال (دفتر)', 'value' => number_format((float) ($shareholderKpis['total_investment'] ?? 0), 5) . ' ج.م'],
-        ['label' => 'مجموع جاري المساهمين', 'value' => number_format((float) ($shareholderKpis['ledger_balance_total'] ?? 0), 5) . ' ج.م'],
+        ['label' => 'مجموع رأس المال (دفتر)', 'value' => \App\Support\Money::display((float) ($shareholderKpis['total_investment'] ?? 0)) . ' ج.م'],
+        ['label' => 'مجموع جاري المساهمين', 'value' => \App\Support\Money::display((float) ($shareholderKpis['ledger_balance_total'] ?? 0)) . ' ج.م'],
     ]" />
 
     <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
@@ -94,9 +94,9 @@
                                     <span class="text-muted">—</span>
                                 @endforelse
                             </td>
-                            <td class="text-end font-monospace">{{ number_format((float) ($shareholder->capital_deposits_total ?? 0), 5) }}</td>
+                            <td class="text-end font-monospace">{{ \App\Support\Money::display((float) ($shareholder->capital_deposits_total ?? 0)) }}</td>
                             <td class="text-end font-monospace fw-semibold {{ ($shareholder->ledger_balance ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
-                                {{ number_format((float) ($shareholder->ledger_balance ?? 0), 5) }}
+                                {{ \App\Support\Money::display((float) ($shareholder->ledger_balance ?? 0)) }}
                             </td>
                             <td class="text-end">
                                 <a href="{{ route('shareholders.show', $shareholder) }}" class="btn btn-outline-info btn-sm">بروفايل</a>

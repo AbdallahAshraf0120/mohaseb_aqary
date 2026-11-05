@@ -9,10 +9,10 @@
     @endphp
 
     <x-partials.module-kpis :items="[
-        ['label' => 'قيمة المبيعات', 'value' => number_format($totalSales, 5) . ' ج.م'],
-        ['label' => 'المحصّل', 'value' => number_format($totalCollected, 5) . ' ج.م'],
-        ['label' => 'المتبقي', 'value' => number_format($totalRemaining, 5) . ' ج.م'],
-        ['label' => 'ربح السعر (بيع − شراء)', 'value' => number_format($profit, 5) . ' ج.م'],
+        ['label' => 'قيمة المبيعات', 'value' => \App\Support\Money::display($totalSales) . ' ج.م'],
+        ['label' => 'المحصّل', 'value' => \App\Support\Money::display($totalCollected) . ' ج.م'],
+        ['label' => 'المتبقي', 'value' => \App\Support\Money::display($totalRemaining) . ' ج.م'],
+        ['label' => 'ربح السعر (بيع − شراء)', 'value' => \App\Support\Money::display($profit) . ' ج.م'],
         ['label' => 'عدد البيعات', 'value' => (int) ($saleTotals['count'] ?? 0)],
         ['label' => 'مباعة بالكامل', 'value' => (int) ($saleTotals['sold_count'] ?? 0)],
     ]" />
@@ -145,11 +145,11 @@
                             <td class="font-monospace small">{{ optional($parcel->sale_date)->format('Y-m-d') ?: '—' }}</td>
                             <td>{{ $payLabel }}</td>
                             <td class="text-end font-monospace">
-                                {{ $salePrice > 0 ? number_format($salePrice, 5) : '—' }}
+                                {{ $salePrice > 0 ? \App\Support\Money::display($salePrice) : '—' }}
                             </td>
-                            <td class="text-end font-monospace text-success-emphasis">{{ number_format($collected, 5) }}</td>
+                            <td class="text-end font-monospace text-success-emphasis">{{ \App\Support\Money::display($collected) }}</td>
                             <td class="text-end font-monospace {{ $remaining > 0.00001 ? 'text-danger-emphasis' : 'text-body-secondary' }}">
-                                {{ number_format($remaining, 5) }}
+                                {{ \App\Support\Money::display($remaining) }}
                             </td>
                             <td><span class="badge {{ $badge }}">{{ $parcel->statusLabel() }}</span></td>
                             <td class="text-end">

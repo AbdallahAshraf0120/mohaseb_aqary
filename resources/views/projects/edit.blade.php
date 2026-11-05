@@ -50,7 +50,7 @@
                             @enderror
                             <div class="form-text">
                                 الاتفاق الأصلي لنسب المساهمين. رأس المال الفعلي الحالي:
-                                <span class="font-monospace fw-semibold">{{ number_format((float) ($project->actual_capital ?? 0), 5) }}</span>
+                                <span class="font-monospace fw-semibold">{{ \App\Support\Money::display((float) ($project->actual_capital ?? 0)) }}</span>
                                 ج.م
                             </div>
                         </div>

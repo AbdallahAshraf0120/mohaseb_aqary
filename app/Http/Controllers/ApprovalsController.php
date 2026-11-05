@@ -6,6 +6,8 @@ use App\Models\Contract;
 use App\Models\Debt;
 use App\Models\DebtPayment;
 use App\Models\Expense;
+use App\Models\FundTransfer;
+use App\Models\LandParcelPayment;
 use App\Models\Project;
 use App\Models\Revenue;
 use App\Models\Sale;
@@ -13,9 +15,12 @@ use App\Models\TreasuryTransaction;
 use App\Models\User;
 use App\Services\CashboxBalanceService;
 use App\Services\CashboxLedgerService;
+use App\Services\LandParcelPaymentService;
 use App\Services\RevenueShareholderAttributionService;
 use App\Services\SaleShareholderAttributionService;
 use App\Support\CurrentProject;
+use App\Support\LandTradingCashbox;
+use Illuminate\Support\Collection;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,6 +34,7 @@ class ApprovalsController extends Controller
         private readonly CashboxBalanceService $cashboxBalanceService,
         private readonly RevenueShareholderAttributionService $revenueAttribution,
         private readonly SaleShareholderAttributionService $saleAttribution,
+        private readonly LandParcelPaymentService $landPayments,
     ) {}
 
     /**
@@ -55,7 +61,21 @@ class ApprovalsController extends Controller
             ->where('approval_status', 'pending')
             ->with(['project:id,name']);
 
+        // دفعات أراضي البيع والشراء المعلّقة (بتتسجل على صندوق الأراضي)
+        $landPaymentsQ = LandParcelPayment::query()
+            ->where('approval_status', 'pending')
+            ->with(['landParcel:id,name', 'part:id,name']);
+        // حركات صندوق مربوطة بجاري مساهم أو تحويل بين الصناديق — كانت بتتسجل معلّقة ومفيش مكان يعتمدها
+        $linkedTreasuryQ = TreasuryTransaction::query()->withoutProjectScope()
+            ->whereIn('reference_type', self::LINKED_TREASURY_TYPES)
+            ->where('approval_status', 'pending')
+            ->with(['project:id,name']);
+
         if ($projectId !== null) {
+            $linkedTreasuryQ->where('project_id', $projectId);
+            if ($projectId !== LandTradingCashbox::projectId()) {
+                $landPaymentsQ->whereRaw('1 = 0');
+            }
             $revenuesQ->where('project_id', $projectId);
             $expensesQ->where('project_id', $projectId);
             $salesQ->where('project_id', $projectId);
@@ -69,6 +89,8 @@ class ApprovalsController extends Controller
             'sales' => (clone $salesQ)->latest('sale_date')->latest('id')->limit(25)->get(),
             'debt_payments' => (clone $debtPaymentsQ)->latest('id')->limit(25)->get(),
             'manual_treasury' => (clone $manualTreasuryQ)->latest('id')->limit(25)->get(),
+            'land_payments' => (clone $landPaymentsQ)->latest('id')->limit(25)->get(),
+            'linked_treasury' => $this->groupLinkedTreasury((clone $linkedTreasuryQ)->latest('id')->limit(50)->get())->take(25)->values(),
         ];
 
         $counts = [
@@ -77,6 +99,8 @@ class ApprovalsController extends Controller
             'sales' => (clone $salesQ)->count(),
             'debt_payments' => (clone $debtPaymentsQ)->count(),
             'manual_treasury' => (clone $manualTreasuryQ)->count(),
+            'land_payments' => (clone $landPaymentsQ)->count(),
+            'linked_treasury' => $this->groupLinkedTreasury((clone $linkedTreasuryQ)->get())->count(),
         ];
 
         return view('approvals.index', [
@@ -104,6 +128,8 @@ class ApprovalsController extends Controller
                         'sale' => $this->approveSale($id, (int) $user->id),
                         'debt_payment' => $this->approveDebtPayment($id, (int) $user->id),
                         'manual_treasury' => $this->approveManualTreasury($id, (int) $user->id),
+                        'land_payment' => $this->landPayments->approve(LandParcelPayment::query()->findOrFail($id), $user),
+                        'linked_treasury' => $this->decideLinkedTreasury($id, (int) $user->id, 'approved', null),
                         default => throw new \InvalidArgumentException('unknown_type'),
                     };
                 });
@@ -134,6 +160,8 @@ class ApprovalsController extends Controller
                         'sale' => $this->rejectSale($id, (int) $user->id, $reason),
                         'debt_payment' => $this->rejectDebtPayment($id, (int) $user->id, $reason),
                         'manual_treasury' => $this->rejectManualTreasury($id, (int) $user->id, $reason),
+                        'land_payment' => $this->landPayments->reject(LandParcelPayment::query()->findOrFail($id), $user, $reason),
+                        'linked_treasury' => $this->decideLinkedTreasury($id, (int) $user->id, 'rejected', $reason),
                         default => throw new \InvalidArgumentException('unknown_type'),
                     };
                 });
@@ -170,7 +198,8 @@ class ApprovalsController extends Controller
             'expense' => (int) (Expense::query()->withoutProjectScope()->whereKey($id)->value('project_id') ?? 0),
             'sale' => (int) (Sale::query()->withoutProjectScope()->whereKey($id)->value('project_id') ?? 0),
             'debt_payment' => $this->resolveDebtPaymentProjectId($id),
-            'manual_treasury' => (int) (TreasuryTransaction::query()->withoutProjectScope()->whereKey($id)->value('project_id') ?? 0),
+            'manual_treasury', 'linked_treasury' => (int) (TreasuryTransaction::query()->withoutProjectScope()->whereKey($id)->value('project_id') ?? 0),
+            'land_payment' => LandParcelPayment::query()->whereKey($id)->exists() ? (int) LandTradingCashbox::projectId() : 0,
             default => 0,
         };
 
@@ -364,6 +393,72 @@ class ApprovalsController extends Controller
             'approved_at' => null,
             'approved_by' => null,
         ]);
+    }
+
+    /** حركات صندوق ليها مرجع بس بتتعتمد من هنا (مفيش موديل ليه شاشة اعتماد خاصة). */
+    private const LINKED_TREASURY_TYPES = ['shareholder_ledger_entry', FundTransfer::class];
+
+    /**
+     * طرفي نفس العملية (تحويل صناديق = صرف من مشروع + قبض في مشروع) بيتعرضوا كسطر واحد.
+     *
+     * @param  Collection<int, TreasuryTransaction>  $rows
+     * @return Collection<int, TreasuryTransaction>
+     */
+    private function groupLinkedTreasury(Collection $rows): Collection
+    {
+        return $rows->groupBy(fn (TreasuryTransaction $tx) => $this->linkedGroupKey($tx))
+            ->map(function (Collection $legs) {
+                $main = $legs->firstWhere('type', 'expense') ?? $legs->first();
+                $main->setAttribute('legs_count', $legs->count());
+                $main->setAttribute('legs_projects', $legs->map(fn ($l) => $l->project?->name)->filter()->unique()->implode(' ← '));
+
+                return $main;
+            })
+            ->values();
+    }
+
+    private function linkedGroupKey(TreasuryTransaction $tx): string
+    {
+        if ($tx->reference_type === FundTransfer::class && (int) $tx->reference_id > 0) {
+            return 'ft:'.$tx->reference_id;
+        }
+
+        // نقل جاري مساهم بين مشروعين: حركتين اتعملوا في نفس اللحظة بنفس الوصف
+        return 'sl:'.md5((string) $tx->description.'|'.optional($tx->created_at)->format('Y-m-d H:i:s'));
+    }
+
+    private function decideLinkedTreasury(int $id, int $userId, string $status, ?string $reason): void
+    {
+        $tx = TreasuryTransaction::query()->withoutProjectScope()
+            ->whereIn('reference_type', self::LINKED_TREASURY_TYPES)
+            ->findOrFail($id);
+
+        $candidates = TreasuryTransaction::query()->withoutProjectScope()
+            ->where('reference_type', $tx->reference_type)
+            ->where('approval_status', 'pending')
+            ->when(
+                $tx->reference_type === FundTransfer::class && (int) $tx->reference_id > 0,
+                fn ($q) => $q->where('reference_id', $tx->reference_id),
+                fn ($q) => $q->where('description', $tx->description)->where('created_at', $tx->created_at)
+            )
+            ->get();
+        $legs = $candidates->filter(fn (TreasuryTransaction $l) => $this->linkedGroupKey($l) === $this->linkedGroupKey($tx));
+        if ($legs->isEmpty()) {
+            throw new InvalidArgumentException('العملية دي مش معلّقة.');
+        }
+
+        foreach ($legs as $leg) {
+            if ($status === 'approved' && $leg->type === 'expense') {
+                $this->cashboxBalanceService->assertCanSpend(
+                    (int) $leg->project_id,
+                    (float) $leg->amount,
+                    ['treasury_id' => (int) $leg->id]
+                );
+            }
+            $leg->update($status === 'approved'
+                ? ['approval_status' => 'approved', 'approved_at' => now(), 'approved_by' => $userId, 'rejected_at' => null, 'rejected_by' => null, 'rejection_reason' => null]
+                : ['approval_status' => 'rejected', 'rejected_at' => now(), 'rejected_by' => $userId, 'rejection_reason' => $reason ? trim($reason) : null, 'approved_at' => null, 'approved_by' => null]);
+        }
     }
 
     private function recalculateContract(int $contractId): void

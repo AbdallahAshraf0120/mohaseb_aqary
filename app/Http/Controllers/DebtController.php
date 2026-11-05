@@ -94,7 +94,7 @@ class DebtController extends Controller
     public function payFromCashbox(Request $request, Project $project, Debt $debt): RedirectResponse
     {
         $validated = $request->validate([
-            'amount' => ['required', 'numeric', 'min:0.00001'],
+            'amount' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0.00001'],
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -106,7 +106,7 @@ class DebtController extends Controller
         if ($amount - $remaining > 0.009) {
             return redirect()
                 ->route('debts.edit', [$project, $debt])
-                ->withErrors(['pay_amount' => 'المبلغ أكبر من المتبقي في الذمة ('.number_format($remaining, 5).' ج.م).'])
+                ->withErrors(['pay_amount' => 'المبلغ أكبر من المتبقي في الذمة ('.\App\Support\Money::display($remaining).' ج.م).'])
                 ->withInput();
         }
 

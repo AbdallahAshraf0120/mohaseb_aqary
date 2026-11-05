@@ -25,9 +25,9 @@ class StoreSaleRequest extends FormRequest
             'floor_number' => ['required', 'integer', 'min:0'],
             'is_mezzanine' => ['sometimes', 'boolean'],
             'apartment_model' => ['required', 'string', 'max:255'],
-            'sale_price' => ['required', 'numeric', 'min:1'],
+            'sale_price' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:1'],
             'payment_type' => ['required', 'in:cash,installment'],
-            'down_payment' => ['nullable', 'numeric', 'min:0'],
+            'down_payment' => ['nullable', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
             'installment_months' => ['nullable', 'integer', 'min:1', 'required_if:payment_type,installment'],
             'installment_schedule' => ['nullable', 'in:monthly,quarterly,semiannual', 'required_if:payment_type,installment'],
             'installment_start_date' => ['nullable', 'date', 'required_if:payment_type,installment'],
@@ -69,7 +69,7 @@ class StoreSaleRequest extends FormRequest
                 if ($sharePart > $downPayment + 0.000009) {
                     $validator->errors()->add(
                         'shareholder_down_payment_amount',
-                        'مبلغ حساب المساهم لا يمكن أن يتجاوز المقدم ('.number_format($downPayment, 5).' ج.م).'
+                        'مبلغ حساب المساهم لا يمكن أن يتجاوز المقدم ('.\App\Support\Money::display($downPayment).' ج.م).'
                     );
                 }
             } elseif (Schema::hasColumn('sales', 'received_by_shareholder_id')
@@ -192,7 +192,7 @@ class StoreSaleRequest extends FormRequest
                 if ($secondaryTotal > $remaining + 0.00001) {
                     $validator->errors()->add(
                         'secondary_payments',
-                        'إجمالي الدفعات الثانوية لا يمكن أن يتجاوز المتبقي بعد المقدم ('.number_format($remaining, 5).' ج.م).'
+                        'إجمالي الدفعات الثانوية لا يمكن أن يتجاوز المتبقي بعد المقدم ('.\App\Support\Money::display($remaining).' ج.م).'
                     );
                 }
                 $cnt = (int) ($plan['installments_count'] ?? 0);

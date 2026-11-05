@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $fmt = fn (float $n): string => number_format($n, 5, '.', ',');
-        $totalPending = (int) (($counts['revenues'] ?? 0) + ($counts['expenses'] ?? 0) + ($counts['sales'] ?? 0) + ($counts['debt_payments'] ?? 0) + ($counts['manual_treasury'] ?? 0));
+        $fmt = fn (float $n): string => \App\Support\Money::display($n);
+        $totalPending = (int) (($counts['revenues'] ?? 0) + ($counts['expenses'] ?? 0) + ($counts['sales'] ?? 0) + ($counts['debt_payments'] ?? 0) + ($counts['manual_treasury'] ?? 0) + ($counts['land_payments'] ?? 0) + ($counts['linked_treasury'] ?? 0));
     @endphp
 
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
@@ -75,7 +75,7 @@
                         <div class="col-md-3">
                             <div class="rounded-3 border bg-body-tertiary bg-opacity-50 p-3 h-100">
                                 <div class="small text-body-secondary mb-1">ذمم/يدوي</div>
-                                <div class="fw-bold font-monospace">{{ (int) (($counts['debt_payments'] ?? 0) + ($counts['manual_treasury'] ?? 0)) }}</div>
+                                <div class="fw-bold font-monospace">{{ (int) (($counts['debt_payments'] ?? 0) + ($counts['manual_treasury'] ?? 0) + ($counts['land_payments'] ?? 0) + ($counts['linked_treasury'] ?? 0)) }}</div>
                             </div>
                         </div>
                     </div>
@@ -123,6 +123,20 @@
                     'rows' => $pending['manual_treasury'],
                     'type' => 'manual_treasury',
                     'icon' => 'fa-vault',
+                ],
+                [
+                    'key' => 'linked_treasury',
+                    'title' => 'جاري مساهمين وتحويلات صناديق',
+                    'rows' => $pending['linked_treasury'],
+                    'type' => 'linked_treasury',
+                    'icon' => 'fa-right-left',
+                ],
+                [
+                    'key' => 'land_payments',
+                    'title' => 'دفعات أراضي معلّقة',
+                    'rows' => $pending['land_payments'],
+                    'type' => 'land_payment',
+                    'icon' => 'fa-map-location-dot',
                 ],
             ];
         @endphp
@@ -177,14 +191,27 @@
                                 <tbody>
                                 @forelse ($section['rows'] as $row)
                                     @php
-                                        $rowProject = $section['key'] === 'debt_payments' ? $row->debt?->project : $row->project;
+                                        $rowProject = match ($section['key']) {
+                                            'debt_payments' => $row->debt?->project,
+                                            'land_payments' => null,
+                                            default => $row->project,
+                                        };
+                                        $rowProjectName = $section['key'] === 'land_payments' ? 'صندوق الأراضي' : ($section['key'] === 'linked_treasury' && ($row->legs_projects ?? '') !== '' ? $row->legs_projects : ($rowProject?->name ?? '—'));
+                                        $rowDesc = match ($section['key']) {
+                                            'revenues' => ($row->category ?? 'تحصيل').' — '.($row->client?->name ?? '—'),
+                                            'expenses' => ($row->category ?? 'مصروف').' — '.($row->description ?? '—'),
+                                            'sales' => 'بيعة #'.$row->id.' — '.($row->property?->name ?? '—').' / '.($row->client?->name ?? '—'),
+                                            'debt_payments' => 'ذمة #'.$row->debt_id.' — '.($row->debt?->creditor_name ?? '—'),
+                                            'land_payments' => ($row->side === 'purchase' ? 'دفعة شراء' : 'تحصيل بيع').' — '.($row->landParcel?->name ?? '—'),
+                                            default => ($row->type === 'revenue' ? 'قبض' : 'صرف').' — '.($row->description ?? '—'),
+                                        };
                                     @endphp
                                     <tr>
                                         <td class="small font-monospace text-body-secondary">#{{ $row->id }}</td>
                                         <td class="small">
                                             <div class="mb-1">
                                                 <span class="badge text-bg-light text-body-secondary border">
-                                                    <i class="fa-solid fa-diagram-project ms-1"></i>{{ $rowProject?->name ?? '—' }}
+                                                    <i class="fa-solid fa-diagram-project ms-1"></i>{{ $rowProjectName }}
                                                 </span>
                                             </div>
                                             @if ($section['key'] === 'revenues')
@@ -198,8 +225,8 @@
                                                 <div class="fw-semibold">بيعة #{{ $row->id }}</div>
                                                 <div class="text-body-secondary">{{ $row->property?->name ?? '—' }} / {{ $row->client?->name ?? '—' }}</div>
                                                 <div class="text-body-secondary small">
-                                                    صندوق {{ number_format($row->cashboxDownPaymentAmount(), 5) }}
-                                                    · مساهم {{ number_format($row->shareholderDownPaymentAmount(), 5) }}
+                                                    صندوق {{ \App\Support\Money::display($row->cashboxDownPaymentAmount()) }}
+                                                    · مساهم {{ \App\Support\Money::display($row->shareholderDownPaymentAmount()) }}
                                                     @if ($row->receivedByShareholder)
                                                         ({{ $row->receivedByShareholder->name }})
                                                     @endif
@@ -207,6 +234,15 @@
                                             @elseif ($section['key'] === 'debt_payments')
                                                 <div class="fw-semibold">ذمة #{{ $row->debt_id }} — {{ $row->debt?->creditor_name ?? '—' }}</div>
                                                 <div class="text-body-secondary">{{ $row->note ?? '—' }}</div>
+                                            @elseif ($section['key'] === 'land_payments')
+                                                <div class="fw-semibold">{{ $row->side === 'purchase' ? 'دفعة شراء أرض' : 'تحصيل بيع أرض' }} — {{ $row->landParcel?->name ?? '—' }}</div>
+                                                <div class="text-body-secondary">{{ $row->part?->name ? 'جزء: '.$row->part->name.' · ' : '' }}{{ $row->notes ?? '—' }}</div>
+                                            @elseif ($section['key'] === 'linked_treasury')
+                                                <div class="fw-semibold">{{ $row->reference_type === 'shareholder_ledger_entry' ? 'جاري مساهم' : 'تحويل بين الصناديق' }}</div>
+                                                <div class="text-body-secondary">{{ $row->description ?? '—' }}</div>
+                                                @if ((int) ($row->legs_count ?? 1) > 1)
+                                                    <div class="text-body-secondary small">الاعتماد أو الرفض بيتطبق على طرفي العملية ({{ (int) $row->legs_count }} حركات).</div>
+                                                @endif
                                             @else
                                                 <div class="fw-semibold">{{ $row->type === 'revenue' ? 'قبض يدوي' : 'صرف يدوي' }}</div>
                                                 <div class="text-body-secondary">{{ $row->description ?? '—' }}</div>
@@ -234,7 +270,7 @@
                                                     data-bs-target="#rejectModal"
                                                     data-approval-type="{{ $section['type'] }}"
                                                     data-approval-id="{{ $row->id }}"
-                                                    data-approval-desc="@if ($section['key'] === 'revenues'){{ ($row->category ?? 'تحصيل') . ' — ' . ($row->client?->name ?? '—') }}@elseif ($section['key'] === 'expenses'){{ ($row->category ?? 'مصروف') . ' — ' . ($row->description ?? '—') }}@elseif ($section['key'] === 'sales'){{ 'بيعة #' . $row->id . ' — ' . ($row->property?->name ?? '—') . ' / ' . ($row->client?->name ?? '—') }}@elseif ($section['key'] === 'debt_payments'){{ 'ذمة #' . $row->debt_id . ' — ' . ($row->debt?->creditor_name ?? '—') }}@else{{ ($row->type === 'revenue' ? 'قبض يدوي' : 'صرف يدوي') . ' — ' . ($row->description ?? '—') }}@endif"
+                                                    data-approval-desc="{{ $rowDesc }}"
                                                 >
                                                     <i class="fa-solid fa-xmark ms-1"></i> رفض
                                                 </button>
@@ -306,7 +342,7 @@
 
                 descEl.textContent = desc;
                 reasonEl.value = '';
-                form.action = @json(url('/approvals')) + '/' + encodeURIComponent(type) + '/' + encodeURIComponent(id) + '/reject';
+                form.action = @json(route('approvals.reject', ['type' => '__TYPE__', 'id' => 0])).replace('__TYPE__', encodeURIComponent(type)).replace('/0/reject', '/' + encodeURIComponent(id) + '/reject');
             });
         })();
     </script>
