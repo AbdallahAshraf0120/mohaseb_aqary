@@ -15,7 +15,7 @@ class ContractController extends Controller
     public function index(Project $project, Request $request): View
     {
         $filters = ListingFilters::fromRequest($request);
-        $query = Contract::query()->with(['client:id,name', 'property:id,name', 'sale:id,down_payment']);
+        $query = Contract::query()->with(['client:id,name', 'property:id,name', 'sale:id,down_payment,approval_status']);
         if ($filters->q !== '') {
             $like = '%'.$filters->likeTerm().'%';
             $query->where(function ($w) use ($like): void {
@@ -28,7 +28,8 @@ class ContractController extends Controller
         $forKpis = (clone $query)->get();
         $contractKpis = [
             'count' => $forKpis->count(),
-            'net_value' => (float) $forKpis->sum(static fn ($c) => max(0, (float) $c->total_price - (float) ($c->sale?->down_payment ?? 0))),
+            // العقود الشغالة بس (البيعة معتمدة) — المعلّق والمرفوض والملغي مش داخلين
+            'net_value' => (float) $forKpis->filter(static fn ($c) => ($c->sale?->approval_status ?? null) === 'approved')->sum(static fn ($c) => max(0, (float) $c->total_price - (float) ($c->sale?->down_payment ?? 0))),
             'remaining' => (float) $forKpis->filter(static fn ($c) => ($c->sale?->approval_status ?? null) === 'approved')->sum(static fn ($c) => (float) $c->remaining_amount),
         ];
 

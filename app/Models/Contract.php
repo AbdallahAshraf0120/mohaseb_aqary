@@ -55,6 +55,14 @@ class Contract extends Model
      * العقود اللي بتتحسب في «المتبقي»: بيعتها موجودة ومعتمدة.
      * عقود البيعات المعلّقة/المرفوضة/الممسوحة مش ديون فعلية على العملاء.
      */
+    /** رقم العقد ثابت (سنة إنشاء العقد مش السنة الحالية): CT-2026-007 */
+    public function number(): string
+    {
+        $year = ($this->start_date ?? $this->created_at)?->format('Y') ?? now()->format('Y');
+
+        return 'CT-'.$year.'-'.str_pad((string) $this->id, 3, '0', STR_PAD_LEFT);
+    }
+
     public function scopeActive($query)
     {
         return $query->whereHas('sale', fn ($q) => $q->withoutGlobalScope('project')->where('approval_status', 'approved'));

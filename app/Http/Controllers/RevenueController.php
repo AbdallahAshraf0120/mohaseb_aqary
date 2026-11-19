@@ -36,7 +36,7 @@ class RevenueController extends Controller
             'avg_amount' => (float) (clone $approvedTotals)->avg('amount'),
         ];
 
-        $listQuery = Revenue::query()->with(['client:id,name', 'contract:id', 'receivedByShareholder:id,name']);
+        $listQuery = Revenue::query()->with(['client:id,name', 'contract:id,start_date,created_at', 'receivedByShareholder:id,name']);
         $this->applyRevenueListingFilters($listQuery, $filters);
         $revenues = $listQuery->latest()->paginate(15)->withQueryString();
 
@@ -166,7 +166,12 @@ class RevenueController extends Controller
         } elseif (empty($payload['cheque_status'])) {
             $payload['cheque_status'] = $revenue->cheque_status ?: Revenue::CHEQUE_IN_HAND;
         }
-        if ($wasApproved) {
+        $editorIsAdmin = $request->user() instanceof \App\Models\User && $request->user()->isAdmin();
+        if ($wasApproved && $editorIsAdmin) {
+            $payload['approved_at'] = now();
+            $payload['approved_by'] = (int) $request->user()->id;
+            $wasApproved = false; // مش هيبقى معلّق
+        } elseif ($wasApproved) {
             $payload['approval_status'] = 'pending';
             $payload['approved_at'] = null;
             $payload['approved_by'] = null;

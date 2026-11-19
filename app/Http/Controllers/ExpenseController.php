@@ -140,7 +140,12 @@ class ExpenseController extends Controller
         }
 
         $wasApproved = ($expense->approval_status ?? 'approved') === 'approved';
-        if ($wasApproved) {
+        $editorIsAdmin = $request->user() instanceof \App\Models\User && $request->user()->isAdmin();
+        if ($wasApproved && $editorIsAdmin) {
+            $data['approved_at'] = now();
+            $data['approved_by'] = (int) $request->user()->id;
+            $wasApproved = false;
+        } elseif ($wasApproved) {
             $data['approval_status'] = 'pending';
             $data['approved_at'] = null;
             $data['approved_by'] = null;

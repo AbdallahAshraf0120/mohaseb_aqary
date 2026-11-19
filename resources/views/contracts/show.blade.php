@@ -14,7 +14,7 @@
             <div>
                 <div class="text-body-secondary small mb-1">عقد</div>
                 <h4 class="mb-0 fw-semibold">
-                    CT-{{ now()->format('Y') }}-{{ str_pad((string) $contract->id, 3, '0', STR_PAD_LEFT) }}
+                    {{ $contract->number() }}
                 </h4>
             </div>
             <div class="d-flex flex-wrap gap-2">

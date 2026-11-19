@@ -33,7 +33,7 @@ class RecalculateContractBalances extends Command
                 $paidFromRevenues = (float) Revenue::query()
                     ->withoutProjectScope()
                     ->where('contract_id', $contract->id)
-                    ->where('approval_status', 'approved')
+                    ->counted()
                     ->sum('amount');
 
                 $downPayment = (($contract->sale?->approval_status ?? 'approved') === 'approved')

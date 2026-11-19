@@ -95,7 +95,7 @@
                                         <span>
                                             @if ($revenue->contract_id)
                                                 <a href="{{ route('contracts.show', [$project, $revenue->contract]) }}" class="fw-semibold text-decoration-none">
-                                                    CT-{{ now()->format('Y') }}-{{ str_pad((string) $revenue->contract_id, 3, '0', STR_PAD_LEFT) }}
+                                                    {{ $revenue->contract?->number() ?? ('CT-'.$revenue->contract_id) }}
                                                     <i class="fa-solid fa-up-right-from-square fa-xs opacity-50 ms-1"></i>
                                                 </a>
                                             @else

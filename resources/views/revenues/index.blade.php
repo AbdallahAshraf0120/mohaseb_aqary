@@ -42,7 +42,7 @@
                             <td>{{ $revenues->firstItem() + $loop->index }}</td>
                             <td class="font-monospace small">{{ $revenue->receiptNumber() }}</td>
                             <td>{{ $revenue->client?->name ?? '-' }}</td>
-                            <td>{{ $revenue->contract_id ? 'CT-' . now()->format('Y') . '-' . str_pad((string) $revenue->contract_id, 3, '0', STR_PAD_LEFT) : '-' }}</td>
+                            <td>{{ $revenue->contract?->number() ?? '-' }}</td>
                             <td>{{ $revenue->receivedByShareholder?->name ?? '—' }}</td>
                             <td>{{ \App\Support\Money::display((float) $revenue->amount) }}
                                 <div class="small text-body-secondary">{{ $revenue->methodLabel() }}@if ($revenue->chequeStatusLabel()) · {{ $revenue->chequeStatusLabel() }}@endif</div></td>

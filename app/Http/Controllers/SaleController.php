@@ -304,7 +304,12 @@ class SaleController extends Controller
                 $update['shareholder_down_payment_amount'] = $sharePart;
             }
         }
-        if ($wasApproved) {
+        // الأدمن لما يعدّل بيعة معتمدة بتفضل معتمدة؛ غير كده بترجع معلّقة لحد ما الأدمن يراجعها
+        $editorIsAdmin = $request->user() instanceof \App\Models\User && $request->user()->isAdmin();
+        if ($wasApproved && $editorIsAdmin) {
+            $update['approved_at'] = now();
+            $update['approved_by'] = (int) $request->user()->id;
+        } elseif ($wasApproved) {
             $update['approval_status'] = 'pending';
             $update['approved_at'] = null;
             $update['approved_by'] = null;

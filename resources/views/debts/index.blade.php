@@ -20,10 +20,7 @@
             </a>
         </div>
         <div class="card-body">
-            <p class="small text-body-secondary mb-3">
-                من هنا تضيف <strong>مورداً وذمة دائنة</strong>: المسار <code>المشروع الحالي → ذمم دائنة → إضافة مورد / ذمة</code>، أو زر «+» بجانب «ذمم دائنة» في القائمة الجانبية تحت اسم المشروع.
-                السجلات القديمة المرتبطة بعميل تظهر تحت اسم العميل حتى تُحدَّث باسم مورد صريح.
-            </p>
+
             <div class="table-responsive">
                 <table class="table table-striped align-middle">
                     <thead>
@@ -47,7 +44,7 @@
                             <td class="text-end font-monospace">{{ \App\Support\Money::display((float) $debt->total_amount) }}</td>
                             <td class="text-end font-monospace">{{ \App\Support\Money::display((float) $debt->paid_amount) }}</td>
                             <td class="text-end font-monospace">{{ \App\Support\Money::display((float) $debt->remaining_amount) }}</td>
-                            <td>{{ $debt->status }}</td>
+                            <td>@if ($debt->status === 'closed')<span class="badge text-bg-success">مسدّدة</span>@else<span class="badge text-bg-warning">مفتوحة</span>@endif</td>
                             <td class="text-end text-nowrap">
                                 @if ((float) $debt->remaining_amount > 0.009)
                                     <a href="{{ route('debts.edit', [$project, $debt]) }}#pay-from-cashbox" class="btn btn-outline-success btn-sm">سداد من الصندوق</a>

@@ -34,7 +34,7 @@
                     @forelse ($contracts as $contract)
                         <tr>
                             <td>{{ $contracts->firstItem() + $loop->index }}</td>
-                            <td>CT-{{ now()->format('Y') }}-{{ str_pad((string) $contract->id, 3, '0', STR_PAD_LEFT) }}</td>
+                            <td>{{ $contract->number() }}</td>
                             <td>{{ $contract->client?->name ?? '-' }}</td>
                             <td>{{ $contract->property?->name ?? '-' }}</td>
                             @php($netContractValue = max(0, (float) $contract->total_price - (float) ($contract->sale?->down_payment ?? 0)))

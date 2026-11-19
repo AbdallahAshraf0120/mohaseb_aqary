@@ -24,7 +24,7 @@
                     @forelse ($contracts as $contract)
                         <tr>
                             <td>{{ $contracts->firstItem() + $loop->index }}</td>
-                            <td>CT-{{ now()->format('Y') }}-{{ str_pad((string) $contract->id, 3, '0', STR_PAD_LEFT) }}</td>
+                            <td>{{ $contract->number() }}</td>
                             <td>{{ $contract->client?->name ?? '-' }}</td>
                             <td>{{ $contract->property?->name ?? '-' }}</td>
                             <td class="font-monospace">{{ \App\Support\Money::display((float) $contract->remaining_amount) }}</td>
