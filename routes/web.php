@@ -49,6 +49,17 @@ use Illuminate\Support\Facades\Route;
 | Public marketing site (root) — no auth
 |--------------------------------------------------------------------------
 */
+// ستايل الواجهة: بيتقدّم من Laravel نفسه عشان يشتغل حتى لو public_html مش فيه نسخة من public/css
+Route::get('/ui-assets/ui.css', function () {
+    $path = public_path('css/ui.css');
+    abort_unless(is_file($path), 404);
+
+    return response()->file($path, [
+        'Content-Type' => 'text/css; charset=UTF-8',
+        'Cache-Control' => 'public, max-age=31536000, immutable',
+    ]);
+})->name('ui.css');
+
 Route::name('site.')->group(function (): void {
     Route::get('/', [SiteController::class, 'home'])->name('home');
     Route::get('/projects', [SiteController::class, 'projects'])->name('projects');
