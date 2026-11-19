@@ -224,6 +224,18 @@ class AppServiceProvider extends ServiceProvider
                 ->all();
 
             $view->with('projectSidebarActions', $filtered);
+
+            // القائمة الجديدة: مجموعات حسب الشغل على المشروع الحالي
+            $routeProject = request()->route()?->parameter('project');
+            $navProject = $routeProject instanceof Project ? $routeProject : null;
+            if (! $navProject && $pidNav) {
+                $navProject = Project::query()->listed()->whereKey($pidNav)->first();
+            }
+            if (! $navProject) {
+                $navProject = Project::query()->listed()->orderBy('name')->first();
+            }
+            $view->with('navProject', $navProject);
+            $view->with('navGroups', \App\Support\Navigation::groups($user instanceof User ? $user : null, $navProject, $pendingApprovalsCount));
         });
     }
 }

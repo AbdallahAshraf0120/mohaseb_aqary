@@ -24,105 +24,97 @@
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/ui.css') }}?v={{ @filemtime(public_path('css/ui.css')) }}">
 </head>
-<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+<body class="layout-fixed sidebar-expand-lg ma-ui">
+    @php
+        $navUser = auth()->user();
+        $navUserName = (string) ($navUser?->name ?? '');
+        $navInitials = trim(mb_substr($navUserName, 0, 1)) ?: 'U';
+        $roleLabels = ['admin' => 'مدير النظام', 'accountant' => 'محاسب', 'sales' => 'مبيعات', 'viewer' => 'مشاهد'];
+        $navProjectsList = $navProjects ?? collect();
+    @endphp
     <div class="app-wrapper">
-        <nav class="app-header navbar navbar-expand bg-body border-bottom border-secondary-subtle">
-            <div class="container-fluid">
-                <ul class="navbar-nav">
+        <nav class="app-header navbar navbar-expand ma-topbar">
+            <div class="container-fluid gap-2">
+                <ul class="navbar-nav align-items-center gap-1">
                     <li class="nav-item">
-                        <a class="nav-link" data-lte-toggle="sidebar" href="#" role="button">
+                        <a class="nav-link ma-icon-btn" data-lte-toggle="sidebar" href="#" role="button" title="القائمة">
                             <i class="fa-solid fa-bars"></i>
                         </a>
                     </li>
-                    <li class="nav-item d-none d-md-block">
-                        @if ($navCurrentProject ?? null)
-                            <a href="{{ route('properties.index') }}" class="nav-link">الرئيسية</a>
-                        @else
-                            <a href="{{ route('projects.index') }}" class="nav-link">المشاريع</a>
-                        @endif
-                    </li>
-                </ul>
-                <ul class="navbar-nav ms-auto align-items-center gap-2">
-                    <li class="nav-item py-1">
-                        <button type="button"
-                                class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
-                                id="themeToggle"
-                                title="تبديل الوضع الليلي">
-                            <i class="fa-solid fa-moon"></i>
-                            <span class="d-none d-lg-inline">المظهر</span>
-                        </button>
-                    </li>
-
-                    @php
-                        $hasQuickLinks = auth()->user()?->can('projects.view')
-                            || auth()->user()?->can('users.view')
-                            || auth()->user()?->can('activity_log.view');
-                    @endphp
-                    @if ($hasQuickLinks)
-                        <li class="nav-item dropdown py-1">
-                            <a class="nav-link d-inline-flex align-items-center gap-2"
-                               href="#"
-                               role="button"
-                               data-bs-toggle="dropdown"
-                               aria-expanded="false">
-                                <i class="fa-solid fa-grid-2"></i>
-                                <span class="small d-none d-lg-inline">اختصارات</span>
-                                <i class="fa-solid fa-angle-down small opacity-75"></i>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                @can('projects.view')
-                                    <li>
-                                        <a class="dropdown-item" href="{{ route('projects.index') }}">
-                                            <i class="fa-solid fa-diagram-project ms-2"></i> إدارة المشاريع
+                    @if ($navProjectsList->isNotEmpty())
+                        <li class="nav-item dropdown">
+                            <button class="btn ma-project-switch dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-folder-tree"></i>
+                                <span class="text-truncate">{{ $navProject?->name ?? 'اختر مشروع' }}</span>
+                            </button>
+                            <div class="dropdown-menu ma-project-menu shadow">
+                                <div class="px-3 pt-2 pb-1 small text-body-secondary">التبديل لمشروع</div>
+                                @if ($navProjectsList->count() > 6)
+                                    <div class="px-2 pb-2">
+                                        <input type="search" class="form-control form-control-sm" placeholder="ابحث عن مشروع…" oninput="var q=this.value.trim();this.closest('.dropdown-menu').querySelectorAll('[data-project-name]').forEach(function(a){a.style.display=a.dataset.projectName.indexOf(q)>-1?'':'none'})">
+                                    </div>
+                                @endif
+                                <div class="ma-project-list">
+                                    @foreach ($navProjectsList as $np)
+                                        <a class="dropdown-item d-flex align-items-center justify-content-between gap-2 {{ ($navProject?->id === $np->id) ? 'active' : '' }}"
+                                           data-project-name="{{ $np->name }}"
+                                           href="{{ route('dashboard', $np) }}">
+                                            <span class="text-truncate">{{ $np->name }}</span>
+                                            @if ($navProject?->id === $np->id)<i class="fa-solid fa-check small"></i>@endif
                                         </a>
-                                    </li>
+                                    @endforeach
+                                </div>
+                                @can('projects.manage')
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="{{ route('projects.index') }}"><i class="fa-solid fa-gear ms-2"></i> إدارة المشاريع</a>
                                 @endcan
-                                @can('users.view')
-                                    <li>
-                                        <a class="dropdown-item" href="{{ route('users.index') }}">
-                                            <i class="fa-solid fa-users-gear ms-2"></i> المستخدمون
-                                        </a>
-                                    </li>
-                                @endcan
-                                @can('activity_log.view')
-                                    <li>
-                                        <a class="dropdown-item" href="{{ route('activity-log.index') }}">
-                                            <i class="fa-solid fa-clipboard-list ms-2"></i> سجل النشاط
-                                        </a>
-                                    </li>
-                                @endcan
-                            </ul>
+                            </div>
                         </li>
                     @endif
-                    @php
-                        $navUser = auth()->user();
-                        $navUserName = (string) ($navUser?->name ?? '');
-                        $navInitials = trim(mb_substr($navUserName, 0, 1));
-                        if ($navInitials === '') {
-                            $navInitials = 'U';
-                        }
-                    @endphp
-                    <li class="nav-item dropdown py-1">
-                        <a class="nav-link d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-body-secondary text-body"
-                                  style="width: 32px; height: 32px; font-weight: 700;">
-                                {{ $navInitials }}
+                </ul>
+                <ul class="navbar-nav ms-auto align-items-center gap-1">
+                    @can('approvals.index')
+                        <li class="nav-item">
+                            <a href="{{ route('approvals.index') }}" class="nav-link ma-icon-btn position-relative" title="طلبات الاعتماد">
+                                <i class="fa-regular fa-bell"></i>
+                                @if (($pendingApprovalsCount ?? 0) > 0)
+                                    <span class="ma-dot-badge">{{ $pendingApprovalsCount > 99 ? '99+' : $pendingApprovalsCount }}</span>
+                                @endif
+                            </a>
+                        </li>
+                    @endcan
+                    <li class="nav-item">
+                        <button type="button" class="nav-link ma-icon-btn border-0 bg-transparent" id="themeToggle" title="تبديل الوضع الليلي">
+                            <i class="fa-solid fa-moon"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link d-flex align-items-center gap-2 ma-user" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="ma-avatar">{{ $navInitials }}</span>
+                            <span class="d-none d-lg-flex flex-column lh-sm text-start">
+                                <span class="fw-semibold small">{{ $navUserName ?: 'المستخدم' }}</span>
+                                <span class="text-body-secondary" style="font-size:.72rem">{{ $roleLabels[$navUser?->role] ?? $navUser?->role }}</span>
                             </span>
-                            <span class="small d-none d-lg-inline">{{ $navUserName ?: 'المستخدم' }}</span>
-                            <i class="fa-solid fa-angle-down small opacity-75"></i>
+                            <i class="fa-solid fa-angle-down small opacity-50"></i>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <h6 class="dropdown-header">{{ $navUserName ?: 'المستخدم' }}</h6>
-                            </li>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><h6 class="dropdown-header">{{ $navUserName ?: 'المستخدم' }}</h6></li>
+                            @can('users.view')
+                                <li><a class="dropdown-item" href="{{ route('users.index') }}"><i class="fa-solid fa-users-gear ms-2"></i> المستخدمين</a></li>
+                            @endcan
+                            @can('activity_log.view')
+                                <li><a class="dropdown-item" href="{{ route('activity-log.index') }}"><i class="fa-solid fa-clipboard-list ms-2"></i> سجل النشاط</a></li>
+                            @endcan
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="post" action="{{ route('logout') }}" class="mb-0">
                                     @csrf
-                                    <button type="submit" class="dropdown-item">
-                                        <i class="fa-solid fa-right-from-bracket ms-2"></i> تسجيل خروج
-                                    </button>
+                                    <button type="submit" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket ms-2"></i> تسجيل خروج</button>
                                 </form>
                             </li>
                         </ul>
@@ -131,308 +123,70 @@
             </div>
         </nav>
 
-        <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
-            <div class="sidebar-brand">
-                <a href="{{ route('home') }}" class="brand-link">
-                    <span class="brand-text fw-light">Mohaseb Aqary</span>
+        <aside class="app-sidebar ma-sidebar">
+            <div class="sidebar-brand ma-brand">
+                <a href="{{ route('home') }}" class="brand-link d-flex align-items-center gap-2">
+                    <span class="ma-logo"><i class="fa-solid fa-building-columns"></i></span>
+                    <span class="brand-text">محاسب عقاري</span>
                 </a>
             </div>
             <div class="sidebar-wrapper">
                 <nav class="mt-2">
-                    <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
-                        <li class="nav-item has-treeview {{ $projectsTreeOpen ? 'menu-open' : '' }}">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon fa-solid fa-diagram-project"></i>
-                                <p>
-                                    المشاريع
-                                    <i class="nav-arrow fa-solid fa-angle-left"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                @forelse (($navProjects ?? collect()) as $np)
-                                    @php
-                                        $isThisProject = $routeProject && (int) $routeProject->id === (int) $np->id;
-                                    @endphp
-                                    <li class="nav-item has-treeview {{ $isThisProject ? 'menu-open' : '' }}">
-                                        <a href="#" class="nav-link">
-                                            <i class="nav-icon fa-solid fa-folder-tree"></i>
-                                            <p>
-                                                {{ $np->name }}
-                                                <i class="nav-arrow fa-solid fa-angle-left"></i>
-                                            </p>
-                                        </a>
-                                        <ul class="nav nav-treeview">
-                                            @foreach (($projectSidebarActions ?? []) as $action)
-                                                @php
-                                                    $subActive = $isThisProject && collect((array) $action['active'])
-                                                        ->contains(fn (string $p) => request()->routeIs($p));
-                                                    $canCreateFromMenu = !empty($action['create_route']);
-                                                    $subCreateActive = $isThisProject && $canCreateFromMenu
-                                                        && collect((array) ($action['create_active'] ?? []))
-                                                            ->contains(fn (string $p) => request()->routeIs($p));
-                                                @endphp
-                                                <li class="nav-item">
-                                                    <div class="d-flex align-items-center gap-1">
-                                                        <a href="{{ route($action['route'], $np) }}"
-                                                           class="nav-link flex-grow-1 {{ $subActive ? 'active' : '' }}">
-                                                            <i class="nav-icon fa-solid {{ $action['icon'] }}"></i>
-                                                            <p>{{ $action['label'] }}</p>
-                                                        </a>
-                                                        @if ($canCreateFromMenu)
-                                                            <a href="{{ route($action['create_route'], $np) }}"
-                                                               class="nav-link px-2 {{ $subCreateActive ? 'active' : '' }}"
-                                                               title="إضافة">
-                                                                <i class="nav-icon fa-solid fa-circle-plus"></i>
-                                                            </a>
-                                                        @endif
-                                                    </div>
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    </li>
-                                @empty
+                    <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu" data-accordion="false">
+                        @foreach (($navGroups ?? []) as $group)
+                            @if ($group['title'] === null)
+                                @foreach ($group['items'] as $item)
                                     <li class="nav-item">
-                                        <span class="nav-link text-secondary small">لا توجد مشاريع معروضة</span>
-                                    </li>
-                                @endforelse
-                            </ul>
-                        </li>
-                        @php
-                            $settingsMenuProject = $layoutProject ?? ($navCurrentProject ?? null) ?? (($navProjects ?? collect())->first());
-                        @endphp
-                        @can('projects.manage')
-                            <li class="nav-item">
-                                <a href="{{ route('projects.index') }}"
-                                   class="nav-link {{ request()->routeIs('projects.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-folder-plus"></i>
-                                    <p>المسودة وإضافة مشروع</p>
-                                </a>
-                            </li>
-                        @endcan
-                        @can('settings.manage')
-                            <li class="nav-item">
-                                @if ($settingsMenuProject)
-                                    <a href="{{ route('settings.edit', $settingsMenuProject) }}"
-                                       class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                                        <i class="nav-icon fa-solid fa-gear"></i>
-                                        <p>الإعدادات</p>
-                                    </a>
-                                @else
-                                    <span class="nav-link text-secondary">
-                                        <i class="nav-icon fa-solid fa-gear"></i>
-                                        <p>الإعدادات</p>
-                                    </span>
-                                @endif
-                            </li>
-                        @endcan
-                        @can('crm.view')
-                            <li class="nav-item">
-                                <a href="{{ route('crm-leads.index') }}"
-                                   class="nav-link {{ request()->routeIs('crm-leads.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-address-book"></i>
-                                    <p>CRM - متابعة العملاء</p>
-                                </a>
-                            </li>
-                        @endcan
-                        @can('website.manage')
-                            <li class="nav-item has-treeview {{ request()->routeIs('website.*') ? 'menu-open' : '' }}">
-                                <a href="#" class="nav-link {{ request()->routeIs('website.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-globe"></i>
-                                    <p>
-                                        الموقع الإلكتروني
-                                        <i class="nav-arrow fa-solid fa-angle-left"></i>
-                                    </p>
-                                </a>
-                                <ul class="nav nav-treeview">
-                                    <li class="nav-item">
-                                        <a href="{{ route('website.index') }}"
-                                           class="nav-link {{ request()->routeIs('website.index') ? 'active' : '' }}">
-                                            <i class="nav-icon fa-solid fa-table-cells-large"></i>
-                                            <p>لوحة الموقع</p>
+                                        <a href="{{ $item['url'] }}" class="nav-link {{ $item['active'] ? 'active' : '' }}">
+                                            <i class="nav-icon fa-solid {{ $item['icon'] }}"></i>
+                                            <p class="flex-grow-1">{{ $item['label'] }}</p>
+                                            @if ($item['badge'])<span class="badge rounded-pill text-bg-danger ms-auto">{{ $item['badge'] }}</span>@endif
                                         </a>
                                     </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('website.projects.index') }}"
-                                           class="nav-link {{ request()->routeIs('website.projects.*') ? 'active' : '' }}">
-                                            <i class="nav-icon fa-solid fa-building"></i>
-                                            <p>مشاريع الموقع</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('website.edit', 'general') }}"
-                                           class="nav-link {{ request()->routeIs('website.edit') && request()->route('section') === 'general' ? 'active' : '' }}">
-                                            <i class="nav-icon fa-solid fa-id-card"></i>
-                                            <p>الهوية والتواصل</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('website.edit', 'home') }}"
-                                           class="nav-link {{ request()->routeIs('website.edit') && request()->route('section') === 'home' ? 'active' : '' }}">
-                                            <i class="nav-icon fa-solid fa-house"></i>
-                                            <p>الصفحة الرئيسية</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('website.edit', 'about') }}"
-                                           class="nav-link {{ request()->routeIs('website.edit') && request()->route('section') === 'about' ? 'active' : '' }}">
-                                            <i class="nav-icon fa-solid fa-building"></i>
-                                            <p>من نحن</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('website.edit', 'trust') }}"
-                                           class="nav-link {{ request()->routeIs('website.edit') && request()->route('section') === 'trust' ? 'active' : '' }}">
-                                            <i class="nav-icon fa-solid fa-shield-halved"></i>
-                                            <p>لماذا نحن والخدمات</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('website.edit', 'contact') }}"
-                                           class="nav-link {{ request()->routeIs('website.edit') && request()->route('section') === 'contact' ? 'active' : '' }}">
-                                            <i class="nav-icon fa-solid fa-envelope-open-text"></i>
-                                            <p>صفحة التواصل</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ url('/') }}" target="_blank" rel="noopener" class="nav-link">
-                                            <i class="nav-icon fa-solid fa-arrow-up-right-from-square"></i>
-                                            <p>فتح الموقع</p>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        @endcan
-                        @can('land-trading.view')
-                            <li class="nav-item">
-                                <a href="{{ route('land-trading.index') }}"
-                                   class="nav-link {{ request()->routeIs('land-trading.index') || request()->routeIs('land-trading.create') || request()->routeIs('land-trading.edit') || request()->routeIs('land-trading.show') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-map"></i>
-                                    <p>أراضي البيع والشراء</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('land-trading.sales') }}"
-                                   class="nav-link {{ request()->routeIs('land-trading.sales') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-handshake"></i>
-                                    <p>مبيعات الأراضي</p>
-                                </a>
-                            </li>
-                        @endcan
-                        @can('site-sketch.view')
-                            <li class="nav-item">
-                                <a href="{{ route('site-sketch.index') }}"
-                                   class="nav-link {{ request()->routeIs('site-sketch.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-table-cells"></i>
-                                    <p>مخطط الموقع</p>
-                                </a>
-                            </li>
-                        @endcan
-                        @can('tasks.view')
-                            @can('tasks.manage')
-                                <li class="nav-item">
-                                    <a href="{{ route('tasks.index') }}"
-                                       class="nav-link {{ request()->routeIs('tasks.*') ? 'active' : '' }}">
-                                        <i class="nav-icon fa-solid fa-list-check"></i>
-                                        <p>المهام</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('tasks.mine') }}"
-                                       class="nav-link {{ request()->routeIs('tasks.mine') ? 'active' : '' }}">
-                                        <i class="nav-icon fa-solid fa-user-check"></i>
-                                        <p>مهامي</p>
-                                    </a>
-                                </li>
+                                @endforeach
                             @else
-                                <li class="nav-item">
-                                    <a href="{{ route('tasks.mine') }}"
-                                       class="nav-link {{ request()->routeIs('tasks.*') ? 'active' : '' }}">
-                                        <i class="nav-icon fa-solid fa-list-check"></i>
-                                        <p>مهامي</p>
+                                <li class="nav-item ma-group {{ $group['open'] ? 'menu-open' : '' }}" data-group="{{ $group['title'] }}">
+                                    <a href="#" class="nav-link ma-group-link">
+                                        <i class="nav-icon fa-solid {{ $group['icon'] }}"></i>
+                                        <p>{{ $group['title'] }} <i class="nav-arrow fa-solid fa-angle-left"></i></p>
                                     </a>
+                                    <ul class="nav nav-treeview">
+                                        @foreach ($group['items'] as $item)
+                                            <li class="nav-item">
+                                                <div class="d-flex align-items-center">
+                                                    <a href="{{ $item['url'] }}" class="nav-link flex-grow-1 {{ $item['active'] ? 'active' : '' }}">
+                                                        <i class="nav-icon fa-solid {{ $item['icon'] }}"></i>
+                                                        <p>{{ $item['label'] }}</p>
+                                                    </a>
+                                                    @if ($item['create_url'])
+                                                        <a href="{{ $item['create_url'] }}" class="ma-add-btn" title="إضافة"><i class="fa-solid fa-plus"></i></a>
+                                                    @endif
+                                                </div>
+                                            </li>
+                                        @endforeach
+                                    </ul>
                                 </li>
-                            @endcan
-                        @endcan
-                        @can('cashbox.view')
-                            <li class="nav-item">
-                                <a href="{{ route('land-cashbox.index') }}"
-                                   class="nav-link {{ request()->routeIs('land-cashbox.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-map-location-dot"></i>
-                                    <p>صندوق الأراضي</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('fund-transfers.index') }}"
-                                   class="nav-link {{ request()->routeIs('fund-transfers.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-right-left"></i>
-                                    <p>تحويلات الصناديق</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('global-cashbox.index') }}"
-                                   class="nav-link {{ request()->routeIs('global-cashbox.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-vault"></i>
-                                    <p>الصندوق الشامل</p>
-                                </a>
-                            </li>
-                        @endcan
-                        @can('approvals.index')
-                            <li class="nav-item">
-                                <a href="{{ route('approvals.index') }}"
-                                   class="nav-link d-flex align-items-center {{ request()->routeIs('approvals.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-user-check"></i>
-                                    <p class="flex-grow-1">طلبات الاعتماد</p>
-                                    @if (($pendingApprovalsCount ?? 0) > 0)
-                                        <span class="badge text-bg-danger rounded-pill ms-1">{{ $pendingApprovalsCount }}</span>
-                                    @endif
-                                </a>
-                            </li>
-                        @endcan
-                        @can('shareholders.view')
-                            <li class="nav-item">
-                                <a href="{{ route('shareholders.index') }}"
-                                   class="nav-link {{ request()->routeIs('shareholders.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-people-group"></i>
-                                    <p>إدارة المساهمين</p>
-                                </a>
-                            </li>
-                        @endcan
-                        @can('users.view')
-                            <li class="nav-item">
-                                <a href="{{ route('users.index') }}"
-                                   class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-users-gear"></i>
-                                    <p>المستخدمون والأدوار</p>
-                                </a>
-                            </li>
-                        @endcan
-                        @can('activity_log.view')
-                            <li class="nav-item">
-                                <a href="{{ route('activity-log.index') }}"
-                                   class="nav-link {{ request()->routeIs('activity-log.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fa-solid fa-clipboard-list"></i>
-                                    <p>سجل النشاط</p>
-                                </a>
-                            </li>
-                        @endcan
+                            @endif
+                        @endforeach
                     </ul>
                 </nav>
             </div>
         </aside>
 
         <main class="app-main">
-            <div class="app-content-header">
+            <div class="app-content-header ma-page-head">
                 <div class="container-fluid">
-                    @if ($layoutProject)
-                        <div class="d-flex flex-wrap align-items-baseline gap-2 mb-2 pb-2 border-bottom border-secondary-subtle">
-                            <span class="text-body-secondary small">المشروع</span>
-                            <span class="fw-semibold fs-5">{{ $layoutProject->name }}</span>
-                            @if ($layoutProject->code)
-                                <span class="badge text-bg-light border text-body-secondary">{{ $layoutProject->code }}</span>
+                    <div class="d-flex flex-wrap align-items-end justify-content-between gap-2">
+                        <div class="min-w-0">
+                            @if ($layoutProject)
+                                <div class="ma-crumb"><i class="fa-solid fa-folder-tree"></i><span>{{ $layoutProject->name }}</span></div>
                             @endif
+                            <h1 class="ma-page-title">{{ $pageTitle ?? 'لوحة التحكم' }}</h1>
                         </div>
-                    @endif
-                    <h3 class="mb-0">{{ $pageTitle ?? 'Dashboard' }}</h3>
+                        @hasSection('page-actions')
+                            <div class="d-flex flex-wrap gap-2">@yield('page-actions')</div>
+                        @endif
+                    </div>
                 </div>
             </div>
             <div class="app-content">
@@ -520,6 +274,30 @@
                 }
                 form.dataset.bigAmountOk = '1';
             }, true);
+        })();
+    </script>
+    <script>
+        // تذكّر المجموعات المفتوحة في القائمة الجانبية
+        (function () {
+            var KEY = 'ma_nav_open';
+            var saved = [];
+            try { saved = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) {}
+            var groups = document.querySelectorAll('.ma-sidebar .ma-group');
+            groups.forEach(function (g) {
+                if (saved.indexOf(g.dataset.group) > -1 && !g.classList.contains('menu-open')) {
+                    g.classList.add('menu-open');
+                    var ul = g.querySelector('.nav-treeview'); if (ul) ul.style.display = 'block';
+                }
+            });
+            document.querySelectorAll('.ma-sidebar .ma-group-link').forEach(function (a) {
+                a.addEventListener('click', function () {
+                    setTimeout(function () {
+                        var open = Array.prototype.filter.call(groups, function (g) { return g.classList.contains('menu-open'); })
+                            .map(function (g) { return g.dataset.group; });
+                        try { localStorage.setItem(KEY, JSON.stringify(open)); } catch (e) {}
+                    }, 400);
+                });
+            });
         })();
     </script>
     @stack('scripts')

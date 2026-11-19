@@ -8,7 +8,6 @@
 
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
-            <h4 class="mb-1 fw-semibold">طلبات الاعتماد</h4>
             <p class="small text-body-secondary mb-0">اعتماد أو رفض العمليات المعلقة من كل المشاريع في مكان واحد، قبل احتسابها في الصندوق والتقارير.</p>
         </div>
         <form method="get" action="{{ route('approvals.index') }}" class="d-flex align-items-center gap-2">

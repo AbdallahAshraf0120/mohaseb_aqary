@@ -1,36 +1,20 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="row g-3">
-        <div class="col-lg-8">
-            <div class="card app-surface h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">بيانات البيعة</h5>
-                    <a href="{{ route('sales.index') }}" class="btn btn-outline-secondary btn-sm">رجوع</a>
-                </div>
-                <div class="card-body">
-                    <form method="post" action="{{ route('sales.store') }}">
-                        @include('sales._form')
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-primary">حفظ البيعة</button>
-                        </div>
-                    </form>
-                </div>
+    @section('page-actions')
+        <a href="{{ route('sales.index') }}" class="btn btn-light"><i class="fa-solid fa-arrow-right ms-1"></i> رجوع للمبيعات</a>
+    @endsection
+
+    <form method="post" action="{{ route('sales.store') }}" class="ma-form-page">
+        <div class="card app-surface mb-3">
+            <div class="card-header"><h5>بيانات البيعة</h5></div>
+            <div class="card-body">
+                @include('sales._form')
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="card app-surface h-100">
-                <div class="card-header">
-                    <h5 class="mb-0">اجراءات سريعة</h5>
-                </div>
-                <div class="card-body d-flex flex-column gap-2">
-                    <button type="button" class="btn btn-outline-secondary text-start">تسجيل بيع</button>
-                    <button type="button" class="btn btn-outline-secondary text-start">جدولة اقساط</button>
-                    <button type="button" class="btn btn-outline-secondary text-start">توليد إيصال مقدم</button>
-                    <hr>
-                    <a href="{{ route('sales.index') }}" class="btn btn-primary">رجوع إلى قائمة المبيعات</a>
-                </div>
-            </div>
+        <div class="ma-form-actions">
+            <a href="{{ route('sales.index') }}" class="btn btn-light">إلغاء</a>
+            <button type="submit" class="btn btn-primary px-4"><i class="fa-solid fa-check ms-1"></i> حفظ البيعة</button>
         </div>
-    </div>
+    </form>
 @endsection

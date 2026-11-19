@@ -9,46 +9,28 @@
         $remaining = round(max(0, $totalSales - $totalCollected), 5);
     @endphp
 
-    <div class="row g-3 mb-3">
-        <div class="col-lg-4 col-md-6">
-            <div class="small-box text-bg-light border">
-                <div class="inner">
-                    <h5 class="mb-2">{{ \App\Support\Money::display($totalSales) }} ج.م</h5>
-                    <p class="mb-0">المبيعات الكلية</p>
-                    <p class="mb-0 small text-body-secondary">المعتمدة فقط</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-6">
-            <div class="small-box text-bg-light border">
-                <div class="inner">
-                    <h5 class="mb-2">{{ \App\Support\Money::display($totalCollected) }} ج.م</h5>
-                    <p class="mb-0">الدفعات المحصلة</p>
-                    <p class="mb-0 small text-body-secondary">
-                        مقدمات {{ \App\Support\Money::display($totalDownPayments) }}
-                        + أقساط {{ \App\Support\Money::display($totalInstallments) }}
-                    </p>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-6">
-            <div class="small-box text-bg-light border">
-                <div class="inner">
-                    <h5 class="mb-2">{{ \App\Support\Money::display($remaining) }} ج.م</h5>
-                    <p class="mb-0">المتبقي من المبيعات</p>
-                </div>
-            </div>
-        </div>
-    </div>
+    @section('page-actions')
+        @can('sales.manage')
+            <a href="{{ route('sales.create', $project) }}" class="btn btn-primary"><i class="fa-solid fa-plus ms-1"></i> تسجيل بيعة</a>
+            <a href="{{ route('reservations.create', $project) }}" class="btn btn-light"><i class="fa-solid fa-bookmark ms-1"></i> حجز وحدة</a>
+        @endcan
+    @endsection
+
+    <x-partials.module-kpis :items="[
+        ['label' => 'المبيعات المعتمدة', 'value' => \App\Support\Money::display($totalSales).' ج.م', 'icon' => 'fa-file-contract'],
+        ['label' => 'المحصّل', 'value' => \App\Support\Money::display($totalCollected).' ج.م', 'icon' => 'fa-coins', 'tone' => 'success',
+            'hint' => 'مقدمات '.\App\Support\Money::display($totalDownPayments).' + أقساط '.\App\Support\Money::display($totalInstallments)],
+        ['label' => 'المتبقي على العملاء', 'value' => \App\Support\Money::display($remaining).' ج.م', 'icon' => 'fa-hourglass-half', 'tone' => 'warning', 'url' => route('remaining.due', $project)],
+    ]" />
 
     <x-listing.filters
         :placeholder="'عميل، هاتف، عقار، بروكر…'"
         :help="'تصفية حسب تاريخ البيعة (عمود تاريخ البيع). الملخصات أعلاه تعكس نفس الفلاتر.'"
     />
 
-    <div class="row g-3">
-        <div class="col-lg-8">
-            <div class="card app-surface h-100">
+    <div>
+        <div>
+            <div class="card app-surface">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">بيانات المبيعات</h5>
                     @if (request()->filled('q') || request()->filled('date_from') || request()->filled('date_to'))
@@ -135,20 +117,6 @@
             </div>
         </div>
 
-        <div class="col-lg-4">
-            <div class="card app-surface h-100">
-                <div class="card-header">
-                    <h5 class="mb-0">اجراءات سريعة</h5>
-                </div>
-                <div class="card-body d-flex flex-column gap-2">
-                    <a href="{{ route('sales.create') }}" class="btn btn-outline-secondary text-start">تسجيل بيع</a>
-                    <a href="{{ route('sales.create') }}" class="btn btn-outline-secondary text-start">جدولة اقساط</a>
-                    <a href="{{ route('sales.create') }}" class="btn btn-outline-secondary text-start">توليد إيصال مقدم</a>
-                    <hr>
-                    <a href="{{ route('revenues.index') }}" class="btn btn-primary">الانتقال إلى التحصيل</a>
-                </div>
-            </div>
-        </div>
     </div>
 @endsection
 
