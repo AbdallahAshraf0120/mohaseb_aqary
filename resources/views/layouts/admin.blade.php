@@ -249,11 +249,15 @@
                 applyTheme(initial);
                 syncIcon(initial);
 
-                btn.addEventListener('click', function () {
+                // بنمسك الضغطة قبل أي سكريبت تاني (app.js كان بيبدّل مرة كمان فالوضع يرجع زي ما هو)
+                document.addEventListener('click', function (e) {
+                    if (!e.target.closest || !e.target.closest('#themeToggle')) return;
+                    e.preventDefault();
+                    e.stopPropagation();
                     var next = (getTheme() === 'dark') ? 'light' : 'dark';
                     applyTheme(next);
                     syncIcon(next);
-                });
+                }, true);
 
                 window.__maThemeToggleBound = true;
             } catch (e) {}
