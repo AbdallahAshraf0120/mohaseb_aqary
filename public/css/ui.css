@@ -77,6 +77,92 @@
     --bs-secondary-bg: #1f2836;
 }
 
+/* ---- قواعد قديمة من resources/css/app.css (اتنقلت هنا لأن الصفحات دلوقتي مش بتحمّل app.css) ---- */
+
+/* Shell for list/form/detail pages — matches refined sales/revenues/contracts screens */
+.app-surface {
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: var(--bs-box-shadow-sm);
+    overflow: hidden;
+}
+
+.app-surface > .card-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    background-color: var(--bs-secondary-bg);
+    border-bottom: 0;
+    padding: 0.875rem 1.25rem;
+}
+
+.app-surface > .card-header h5,
+.app-surface > .card-header h6,
+.app-surface > .card-header .card-title {
+    font-weight: 600;
+}
+
+.app-surface > .card-body:not(.p-0) {
+    padding: 1.5rem;
+}
+
+/* Dashboard: compact stat tiles inside app-surface */
+.dashboard-stat-tile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--bs-border-color-translucent);
+    background-color: var(--bs-body-bg);
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.dashboard-stat-tile:hover {
+    border-color: var(--bs-primary);
+    box-shadow: var(--bs-box-shadow-sm);
+}
+
+.dashboard-stat-tile .tile-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    flex-shrink: 0;
+}
+
+.dashboard-kpi-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.dashboard-kpi-link:hover .dashboard-kpi-card {
+    transform: translateY(-2px);
+    box-shadow: var(--bs-box-shadow);
+}
+
+.dashboard-kpi-card {
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* TomSelect: keep search input visible with AdminLTE */
+.ts-wrapper .ts-control {
+    min-height: calc(1.5em + .75rem + 2px);
+}
+.ts-wrapper .ts-control > input {
+    min-width: 8rem !important;
+    width: auto !important;
+}
+.ts-wrapper.single .ts-control {
+    cursor: text;
+}
+
 /* --------------------------------------------------------------- الأساس */
 body.ma-ui {
     background: var(--ma-bg) !important;
@@ -520,3 +606,14 @@ a.ma-kpi:hover { border-color: var(--ma-primary); color: inherit; transform: tra
 .ma-ui .card > .card-header::after,
 .ma-ui .card > .card-header::before { display: none !important; }
 .ma-ui .card > .card-header > .card-title { float: none; }
+
+/* الموبايل: الهيدر ما يطلعش برّه الشاشة */
+.ma-ui .app-wrapper { overflow-x: clip; }
+@media (max-width: 575.98px) {
+    .ma-topbar .container-fluid { padding-inline: .5rem; gap: .25rem !important; }
+    .ma-project-switch { max-width: 150px; padding: .35rem .55rem; font-size: .82rem; }
+    .ma-topbar .ma-user .fa-angle-down { display: none; }
+    .ma-icon-btn { width: 34px; height: 34px; }
+}
+/* الخلية اللي فيها مبلغ + «ج.م» تفضل سطر واحد */
+.ma-ui .table td { overflow-wrap: normal; }

@@ -49,16 +49,20 @@ use Illuminate\Support\Facades\Route;
 | Public marketing site (root) — no auth
 |--------------------------------------------------------------------------
 */
-// ستايل الواجهة: بيتقدّم من Laravel نفسه عشان يشتغل حتى لو public_html مش فيه نسخة من public/css
-Route::get('/ui-assets/ui.css', function () {
-    $path = public_path('css/ui.css');
-    abort_unless(is_file($path), 404);
+// ملفات الواجهة الثابتة (ستايل RTL، أيقونات، خطوط): بتتقدّم من Laravel نفسه عشان تشتغل
+// حتى لو public_html على السيرفر مش فيه نسخة من public/css و public/vendor.
+Route::get('/ui-assets/{path}', function (string $path) {
+    $types = ['css' => 'text/css; charset=UTF-8', 'woff2' => 'font/woff2', 'woff' => 'font/woff', 'ttf' => 'font/ttf', 'svg' => 'image/svg+xml', 'png' => 'image/png'];
+    $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    abort_unless(isset($types[$ext]) && ! str_contains($path, '..') && (str_starts_with($path, 'css/') || str_starts_with($path, 'vendor/')), 404);
+    $full = public_path($path);
+    abort_unless(is_file($full), 404);
 
-    return response()->file($path, [
-        'Content-Type' => 'text/css; charset=UTF-8',
+    return response()->file($full, [
+        'Content-Type' => $types[$ext],
         'Cache-Control' => 'public, max-age=31536000, immutable',
     ]);
-})->name('ui.css');
+})->where('path', '.*')->name('ui.asset');
 
 Route::name('site.')->group(function (): void {
     Route::get('/', [SiteController::class, 'home'])->name('home');

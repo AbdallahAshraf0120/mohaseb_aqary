@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -21,13 +21,18 @@
             } catch (e) {}
         })();
     </script>
+    @php $uiV = @filemtime(public_path('css/ui.css')); @endphp
+    {{-- ستايل عربي من اليمين للشمال (AdminLTE + Bootstrap RTL) — مش من Vite عشان Vite بيبني نسخة LTR --}}
+    <link rel="stylesheet" href="{{ route('ui.asset', ['path' => 'vendor/adminlte/adminlte.rtl.min.css']) }}">
+    <link rel="stylesheet" href="{{ route('ui.asset', ['path' => 'vendor/fontawesome/css/all.min.css']) }}">
+    <link rel="stylesheet" href="{{ route('ui.asset', ['path' => 'vendor/tom-select/tom-select.bootstrap5.min.css']) }}">
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite(['resources/js/app.js'])
     @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ route('ui.css', ['v' => @filemtime(public_path('css/ui.css'))]) }}">
+    <link rel="stylesheet" href="{{ route('ui.asset', ['path' => 'css/ui.css', 'v' => $uiV]) }}">
 </head>
 <body class="layout-fixed sidebar-expand-lg ma-ui">
     @php
