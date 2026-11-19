@@ -12,7 +12,10 @@
     />
 
     <div class="card app-surface mb-4">
-        <div class="card-header"><h5 class="mb-0">كشف المتبقي على العقود</h5></div>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">كشف المتبقي على العقود</h5>
+            <a href="{{ route('remaining.due', $project) }}" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-calendar-xmark ms-1"></i> الأقساط المتأخرة</a>
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-striped align-middle">

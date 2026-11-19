@@ -122,7 +122,7 @@ class SiteSketchController extends Controller
         // عدد المبيعات (المعتمدة والمعلقة) لكل دور لتلوين الخلايا بحسب الواقع.
         $salesByFloor = Sale::query()
             ->where('property_id', $property->id)
-            ->select(['id', 'floor_number', 'approval_status', 'is_mezzanine', 'unit_number'])->where('approval_status', '!=', 'rejected')
+            ->select(['id', 'floor_number', 'approval_status', 'is_mezzanine', 'unit_number'])->whereNotIn('approval_status', ['rejected', 'cancelled'])
             ->orderBy('id')
             ->get()
             ->groupBy(fn (Sale $s) => ($s->is_mezzanine ? 'mezz-' : 'floor-').(int) $s->floor_number);

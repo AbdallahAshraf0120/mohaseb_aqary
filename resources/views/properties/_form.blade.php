@@ -101,6 +101,16 @@
         <input type="text" name="property_type" class="form-control" value="{{ old('property_type', $property->property_type ?? '') }}" required>
     </div>
     <div class="col-md-6">
+        <label class="form-label">شكل الوحدات</label>
+        @php $unitKind = (string) old('unit_kind', $property->unit_kind ?? 'apartment'); @endphp
+        <select name="unit_kind" id="unit_kind" class="form-select">
+            @foreach (\App\Models\Property::UNIT_KINDS as $k => [$plural, $single])
+                <option value="{{ $k }}" data-word="{{ $single }}" @selected($unitKind === $k)>{{ $plural }}</option>
+            @endforeach
+        </select>
+        <div class="form-text">عمارة بأدوار وشقق، أو وحدات مستقلة (فيلات، تاون هاوس، قطع أراضي، محلات…) بترقيم 1، 2، 3…</div>
+    </div>
+    <div class="col-md-6">
         <label class="form-label d-flex justify-content-between align-items-center">
             <span>الأرض</span>
             <a href="{{ route('lands.create', $project) }}" class="small text-decoration-none">+ إضافة أرض جديدة</a>
@@ -202,27 +212,27 @@
         </div>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-3 js-building-only">
         <label class="form-label">إجمالي أدوار البرج</label>
         <input type="number" min="1" name="building_total_floors" id="building_total_floors" class="form-control"
                value="{{ $buildingTotalFloors }}" required>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3 js-building-only">
         <label class="form-label">عدد الأدوار المسجلة</label>
         <input type="number" min="1" name="floors_count" id="floors_count" class="form-control"
                value="{{ old('floors_count', $property->floors_count ?? 1) }}" required>
     </div>
     <div class="col-md-3">
-        <label class="form-label">عدد الشقق بكل دور متكرر</label>
+        <label class="form-label" id="apartments-per-floor-label" data-building="عدد الشقق بكل دور متكرر">عدد الشقق بكل دور متكرر</label>
         <input type="number" min="1" name="apartments_per_floor" id="apartments_per_floor" class="form-control"
                value="{{ old('apartments_per_floor', $property->apartments_per_floor ?? 1) }}" required>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3 js-building-only">
         <label class="form-label">عدد محلات الأرضي (دور 0)</label>
         <input type="number" min="0" name="ground_floor_shops_count" id="ground_floor_shops_count" class="form-control"
                value="{{ old('ground_floor_shops_count', $property->ground_floor_shops_count ?? 0) }}">
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3 js-building-only">
         <label class="form-label d-flex justify-content-between align-items-center">
             <span>إجمالي الشقق بالعقار</span>
             <button type="button" class="btn btn-link btn-sm p-0" id="recalculate-total">إعادة الحساب</button>
@@ -235,7 +245,7 @@
         </p>
     </div>
 
-    <div class="col-12">
+    <div class="col-12 js-building-only">
         <div class="card border-secondary-subtle shadow-sm rounded-3 mb-3 overflow-hidden">
             <div class="card-header py-2 bg-body-secondary border-0"><strong>اختيار الأدوار المسجلة بالعقار</strong></div>
             <div class="card-body">
@@ -245,7 +255,7 @@
         </div>
     </div>
 
-    <div class="col-12">
+    <div class="col-12 js-building-only">
         <div class="card border-secondary-subtle shadow-sm rounded-3 mb-3 overflow-hidden">
             <div class="card-header py-2 bg-body-secondary border-0"><strong>أدوار مشاعة في العقار</strong></div>
             <div class="card-body">
@@ -270,7 +280,7 @@
         </div>
     </div>
 
-    <div class="col-12">
+    <div class="col-12 js-building-only">
         <div class="card border-secondary-subtle shadow-sm rounded-3 mb-3 overflow-hidden">
             <div class="card-header d-flex justify-content-between align-items-center py-2 bg-body-secondary border-0">
                 <strong>أدوار الميزان (أكثر من ميزان)</strong>
@@ -706,5 +716,31 @@
         syncRegisteredFloors();
         syncMushaaFloors();
         syncTotal();
+    })();
+</script>
+
+<script>
+    (function () {
+        const kind = document.getElementById('unit_kind');
+        if (!kind) return;
+        const label = document.getElementById('apartments-per-floor-label');
+        const perFloor = document.getElementById('apartments_per_floor');
+        const total = document.getElementById('total_apartments');
+        function apply() {
+            const standalone = kind.value !== 'apartment';
+            document.querySelectorAll('.js-building-only').forEach((el) => { el.style.display = standalone ? 'none' : ''; });
+            if (label) {
+                const word = kind.selectedOptions[0]?.dataset.word || 'وحدة';
+                label.textContent = standalone ? ('عدد الوحدات (' + kind.selectedOptions[0].textContent.trim() + ')') : label.dataset.building;
+            }
+            if (standalone) {
+                ['building_total_floors', 'floors_count'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = 1; });
+                const shops = document.getElementById('ground_floor_shops_count'); if (shops) shops.value = 0;
+                if (total && perFloor) total.value = perFloor.value || 1;
+            }
+        }
+        kind.addEventListener('change', apply);
+        perFloor?.addEventListener('input', () => { if (kind.value !== 'apartment' && total) total.value = perFloor.value || 1; });
+        apply();
     })();
 </script>

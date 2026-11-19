@@ -20,6 +20,7 @@ class StoreDebtRequest extends FormRequest
         return [
             'creditor_name' => ['required', 'string', 'max:255'],
             'purchase_description' => ['nullable', 'string', 'max:2000'],
+            'property_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('properties', 'id')->where(fn ($q) => $q->where('project_id', (int) app(\App\Support\CurrentProject::class)->id()))],
             'total_amount' => ['required', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0.00001'],
             'paid_amount' => ['nullable', 'numeric', 'max:'.\App\Support\Money::MAX_AMOUNT, 'min:0'],
         ];

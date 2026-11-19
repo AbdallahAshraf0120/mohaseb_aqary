@@ -103,6 +103,8 @@
                                             <span class="badge text-bg-success">معتمد</span>
                                         @elseif (($sale->approval_status ?? '') === 'pending')
                                             <span class="badge text-bg-warning">معلق</span>
+                                        @elseif (($sale->approval_status ?? '') === 'cancelled')
+                                            <span class="badge text-bg-danger">ملغي</span>
                                         @else
                                             <span class="badge text-bg-secondary">مرفوض</span>
                                         @endif

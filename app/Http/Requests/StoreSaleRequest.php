@@ -45,6 +45,7 @@ class StoreSaleRequest extends FormRequest
             'client_phone' => ['required', 'string', 'max:30'],
             'client_email' => ['nullable', 'email', 'max:255'],
             'client_national_id' => ['nullable', 'string', 'max:50'],
+            'reservation_id' => ['nullable', 'integer'],
         ];
 
         if (Schema::hasColumn('sales', 'received_by_shareholder_id')) {
@@ -178,8 +179,18 @@ class StoreSaleRequest extends FormRequest
                 ->where('property_id', (int) $property->id)
                 ->where('floor_number', $floor)
                 ->where('is_mezzanine', $isMezzanine)
-                ->where('approval_status', '!=', 'rejected')
+                ->whereNotIn('approval_status', ['rejected', 'cancelled'])
                 ->when($ignoreSaleId !== null, fn ($q) => $q->whereKeyNot($ignoreSaleId));
+
+            // حجز ساري على نفس الوحدة لعميل تاني بيمنع البيع (إلا لو البيعة دي تحويل للحجز ده)
+            $reservation = \App\Models\Reservation::query()->withoutGlobalScope('project')->blocking()
+                ->where('property_id', (int) $property->id)->where('floor_number', $floor)
+                ->where('is_mezzanine', $isMezzanine)->where('unit_number', $unitNumber)->first();
+            if ($reservation && (int) $this->input('reservation_id') !== (int) $reservation->id) {
+                $validator->errors()->add('unit_number', 'الوحدة دي محجوزة لـ «'.($reservation->client?->name ?? '').'» لحد '.optional($reservation->expires_at)->format('Y-m-d').'. حوّل الحجز لبيعة من صفحة الحجوزات أو ألغيه الأول.');
+
+                return;
+            }
 
             if ((clone $floorSales)->where('unit_number', $unitNumber)->exists()) {
                 $validator->errors()->add(

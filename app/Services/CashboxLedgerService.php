@@ -20,6 +20,14 @@ class CashboxLedgerService
 
     public function syncFromRevenue(Revenue $revenue): void
     {
+        // شيك لسه ما اتصرفش (أو مرتد): مش فلوس في الصندوق
+        if ($revenue->payment_method === 'check' && $revenue->cheque_status !== null
+            && $revenue->cheque_status !== Revenue::CHEQUE_CLEARED) {
+            $this->removeRevenue((int) $revenue->id);
+
+            return;
+        }
+
         TreasuryTransaction::query()->updateOrCreate(
             [
                 'project_id' => $revenue->project_id,
@@ -121,7 +129,8 @@ class CashboxLedgerService
                 'type' => 'revenue',
                 'amount' => $amount,
                 'description' => $label,
-                'approval_status' => (string) ($sale->approval_status ?? 'approved'),
+                // البيعة الملغية: المقدم اتقبض فعلًا (والاسترداد بيتسجل لوحده)
+                'approval_status' => ($sale->approval_status ?? 'approved') === 'cancelled' ? 'approved' : (string) ($sale->approval_status ?? 'approved'),
             ]
         );
     }
@@ -247,7 +256,7 @@ class CashboxLedgerService
         try {
             Revenue::query()->where('approval_status', 'approved')->orderBy('id')->each(fn (Revenue $r) => $this->syncFromRevenue($r));
             Expense::query()->where('approval_status', 'approved')->orderBy('id')->each(fn (Expense $e) => $this->syncFromExpense($e));
-            Sale::query()->where('approval_status', 'approved')->orderBy('id')->each(fn (Sale $s) => $this->syncSaleDownPayment($s));
+            Sale::query()->whereIn('approval_status', ['approved', 'cancelled'])->orderBy('id')->each(fn (Sale $s) => $this->syncSaleDownPayment($s));
             DebtPayment::query()
                 ->where('approval_status', 'approved')
                 ->with(['debt' => static fn ($q) => $q->withoutGlobalScopes()])

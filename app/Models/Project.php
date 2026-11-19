@@ -181,6 +181,11 @@ class Project extends Model
         return $this->hasMany(Debt::class);
     }
 
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(Reservation::class);
+    }
+
     public function expenseTypes(): HasMany
     {
         return $this->hasMany(ExpenseType::class);

@@ -158,6 +158,14 @@ class RevenueController extends Controller
         $oldContractId = (int) $revenue->contract_id;
         $wasApproved = $revenue->approval_status === 'approved';
         $payload = $request->validated();
+        if (($payload['payment_method'] ?? $revenue->payment_method) !== 'check') {
+            $payload['cheque_number'] = null;
+            $payload['cheque_bank'] = null;
+            $payload['cheque_due_date'] = null;
+            $payload['cheque_status'] = null;
+        } elseif (empty($payload['cheque_status'])) {
+            $payload['cheque_status'] = $revenue->cheque_status ?: Revenue::CHEQUE_IN_HAND;
+        }
         if ($wasApproved) {
             $payload['approval_status'] = 'pending';
             $payload['approved_at'] = null;
@@ -239,7 +247,7 @@ class RevenueController extends Controller
 
         $paidFromRevenues = (float) Revenue::query()
             ->where('contract_id', $contractId)
-            ->where('approval_status', 'approved')
+            ->counted()
             ->sum('amount');
         $downPayment = (float) (($contract->sale?->approval_status ?? 'approved') === 'approved' ? ($contract->sale?->down_payment ?? 0) : 0);
         $paid = $downPayment + $paidFromRevenues;

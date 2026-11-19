@@ -471,7 +471,7 @@ class ApprovalsController extends Controller
         $paidFromRevenues = (float) Revenue::query()
             ->withoutProjectScope()
             ->where('contract_id', $contractId)
-            ->where('approval_status', 'approved')
+            ->counted()
             ->sum('amount');
         $downPayment = (float) (($contract->sale?->approval_status ?? 'approved') === 'approved' ? ($contract->sale?->down_payment ?? 0) : 0);
         $paid = $downPayment + $paidFromRevenues;

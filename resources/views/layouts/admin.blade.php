@@ -437,7 +437,22 @@
             </div>
             <div class="app-content">
                 <div class="container-fluid">
+                    {{-- رسائل الخطأ لأي صفحة مش بتعرضها بنفسها --}}
+                    @foreach (['error' => 'danger', 'warning' => 'warning'] as $flashKey => $flashClass)
+                        @if (is_string(session($flashKey)) && session($flashKey) !== '')
+                            <div class="alert alert-{{ $flashClass }} js-flash-fallback" data-flash="{{ session($flashKey) }}">{{ session($flashKey) }}</div>
+                        @endif
+                    @endforeach
                     @yield('content')
+                    <script>
+                        document.querySelectorAll('.js-flash-fallback').forEach(function (el) {
+                            var msg = el.getAttribute('data-flash');
+                            var dup = Array.prototype.some.call(document.querySelectorAll('.alert:not(.js-flash-fallback)'), function (a) {
+                                return a.textContent.trim() === msg.trim();
+                            });
+                            if (dup) el.remove();
+                        });
+                    </script>
                 </div>
             </div>
         </main>

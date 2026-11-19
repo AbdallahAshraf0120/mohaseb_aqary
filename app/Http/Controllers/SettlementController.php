@@ -42,7 +42,7 @@ class SettlementController extends Controller
         $downPayments = (float) (clone $salesQ)->sum('down_payment');
         $salesCount = (int) (clone $salesQ)->count();
 
-        $revQ = Revenue::query()->withoutGlobalScope('project')->where('project_id', $pid)->where('approval_status', 'approved');
+        $revQ = Revenue::query()->withoutGlobalScope('project')->where('project_id', $pid)->counted();
         $filters->applyWhereDate($revQ, 'paid_at');
         $collections = (float) $revQ->sum('amount');
 
@@ -69,14 +69,30 @@ class SettlementController extends Controller
         // المسدد للموردين بره الصندوق (اتسجل وقت إنشاء الذمة)
         $supplierPaidTotal = max(0.0, $supplierPurchases - $supplierOpen);
 
+        // ===== التعاقدات الملغية: اللي اتقبض منها فعلًا واللي اترد =====
+        $cancelledQ = Sale::query()->withoutGlobalScope('project')->where('project_id', $pid)->where('approval_status', 'cancelled');
+        $filters->applyWhereDate($cancelledQ, 'sale_date');
+        $cancelledIds = (clone $cancelledQ)->pluck('id');
+        $cancelledDown = (float) (clone $cancelledQ)->sum('down_payment');
+        $cancelledCollected = $cancelledIds->isEmpty() ? 0.0 : (float) Revenue::query()->withoutGlobalScope('project')
+            ->whereIn('sale_id', $cancelledIds)->counted()->sum('amount');
+        $refundQ = TreasuryTransaction::query()->withoutGlobalScope('project')->where('project_id', $pid)
+            ->where('reference_type', 'sale_refund')->where('approval_status', 'approved');
+        $filters->applyWhereDate($refundQ, 'created_at');
+        $refunds = (float) $refundQ->sum('amount');
+        $cancelledKept = $cancelledDown + $cancelledCollected - $refunds;
+
         // ===== الذمم عند العملاء =====
         $receivables = (float) Contract::query()->withoutGlobalScope('project')->where('project_id', $pid)->active()->sum('remaining_amount');
 
         // ===== الربح =====
-        $cashIn = $downPayments + $collections + $manualIn;
-        $cashOut = $expenses + $supplierPaidTotal + $manualOut;
+        $cashIn = $downPayments + $cancelledDown + $collections + $manualIn;
+        $cashOut = $expenses + $supplierPaidTotal + $manualOut + $refunds;
         $realizedProfit = $cashIn - $cashOut;
-        $expectedProfit = ($salesValue + $manualIn) - ($expenses + $supplierPurchases + $manualOut);
+        $expectedProfit = ($salesValue + $cancelledKept + $manualIn) - ($expenses + $supplierPurchases + $manualOut);
+
+        // ===== ربح كل عقار =====
+        $byProperty = $this->profitByProperty($pid, $filters);
 
         // ===== الشركاء =====
         $memberships = ProjectShareholder::query()
@@ -142,15 +158,88 @@ class SettlementController extends Controller
                 'supplier_open' => $supplierOpen,
                 'manual_out' => $manualOut,
                 'cash_out' => $cashOut,
+                'refunds' => $refunds,
+                'cancelled_kept' => $cancelledKept,
+                'cancelled_down' => $cancelledDown,
                 'receivables' => $receivables,
                 'realized_profit' => $realizedProfit,
                 'expected_profit' => $expectedProfit,
             ],
             'pctSum' => $pctSum,
+            'byProperty' => $byProperty,
             'shareholders' => $shareholders,
             'shareholderLedgerTotal' => (float) $shareholders->sum(fn ($sh) => (float) ($sh->ledger_balance ?? 0)),
             'modules' => $this->modules(),
         ]);
+    }
+
+    /**
+     * ربح كل عقار: المبيعات والمحصّل عليه، والمصروفات وذمم الموردين المربوطة بيه.
+     * المصروفات اللي مش مربوطة بعقار بتظهر في سطر «عام على المشروع».
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function profitByProperty(int $pid, ListingFilters $filters): array
+    {
+        $props = \App\Models\Property::query()->withoutGlobalScope('project')->where('project_id', $pid)->orderBy('name')->get(['id', 'name', 'total_apartments']);
+        $sumBy = function ($query, string $sumCol, string $keyCol = 'property_id'): array {
+            return $query->selectRaw($keyCol.' as k, SUM('.$sumCol.') as s, COUNT(*) as c')->groupBy($keyCol)->get()
+                ->mapWithKeys(fn ($r) => [(string) ($r->k ?? '') => ['s' => (float) $r->s, 'c' => (int) $r->c]])->all();
+        };
+
+        $salesQ = Sale::query()->withoutGlobalScope('project')->where('project_id', $pid)->where('approval_status', 'approved');
+        $filters->applyWhereDate($salesQ, 'sale_date');
+        $sales = $sumBy(clone $salesQ, 'sale_price');
+        $downs = $sumBy(clone $salesQ, 'down_payment');
+
+        $revQ = Revenue::query()->withoutGlobalScope('project')->where('revenues.project_id', $pid)->counted()
+            ->join('sales', 'sales.id', '=', 'revenues.sale_id');
+        $filters->applyWhereDate($revQ, 'revenues.paid_at');
+        $revs = $sumBy($revQ, 'revenues.amount', 'sales.property_id');
+
+        $hasExpProp = Schema::hasColumn('expenses', 'property_id');
+        $expQ = Expense::query()->withoutGlobalScope('project')->where('project_id', $pid)->where('approval_status', 'approved');
+        $filters->applyWhereDate($expQ, 'spent_at');
+        $exps = $hasExpProp ? $sumBy($expQ, 'amount') : ['' => ['s' => (float) $expQ->sum('amount'), 'c' => 0]];
+
+        $hasDebtProp = Schema::hasColumn('debts', 'property_id');
+        $debtQ = Debt::query()->withoutGlobalScope('project')->where('project_id', $pid);
+        $filters->applyWhereDate($debtQ, 'created_at');
+        $debtTotal = $hasDebtProp ? $sumBy(clone $debtQ, 'total_amount') : ['' => ['s' => (float) (clone $debtQ)->sum('total_amount'), 'c' => 0]];
+        $debtOpen = $hasDebtProp ? $sumBy(clone $debtQ, 'remaining_amount') : ['' => ['s' => (float) (clone $debtQ)->sum('remaining_amount'), 'c' => 0]];
+
+        $row = function (string $key, string $name, ?int $units) use ($sales, $downs, $revs, $exps, $debtTotal, $debtOpen): array {
+            $salesValue = $sales[$key]['s'] ?? 0.0;
+            $collected = ($downs[$key]['s'] ?? 0.0) + ($revs[$key]['s'] ?? 0.0);
+            $expenses = $exps[$key]['s'] ?? 0.0;
+            $purchases = $debtTotal[$key]['s'] ?? 0.0;
+            $supplierPaid = max(0.0, $purchases - ($debtOpen[$key]['s'] ?? 0.0));
+
+            return [
+                'key' => $key,
+                'name' => $name,
+                'units_total' => $units,
+                'units_sold' => $sales[$key]['c'] ?? 0,
+                'sales_value' => $salesValue,
+                'collected' => $collected,
+                'receivable' => max(0.0, $salesValue - $collected),
+                'costs' => $expenses + $purchases,
+                'costs_paid' => $expenses + $supplierPaid,
+                'realized' => $collected - $expenses - $supplierPaid,
+                'expected' => $salesValue - $expenses - $purchases,
+            ];
+        };
+
+        $out = [];
+        foreach ($props as $p) {
+            $out[] = $row((string) $p->id, (string) $p->name, (int) ($p->total_apartments ?? 0) ?: null);
+        }
+        $general = $row('', 'عام على المشروع (مش مربوط بعقار)', null);
+        if (abs($general['costs']) > 0.00001 || abs($general['sales_value']) > 0.00001) {
+            $out[] = $general;
+        }
+
+        return $out;
     }
 
     private function modules(): array

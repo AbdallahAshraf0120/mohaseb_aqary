@@ -15,6 +15,7 @@ class Debt extends Model
         'project_id',
         'client_id',
         'creditor_name',
+        'property_id',
         'purchase_description',
         'total_amount',
         'paid_amount',

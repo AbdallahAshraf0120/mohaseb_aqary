@@ -74,10 +74,18 @@
             'mushaa_floors' => $mushaaFloors,
             'models' => collect($p->apartment_models ?? [])->pluck('model_name')->filter()->values()->all(),
             'apartments_per_floor' => (int) ($p->apartments_per_floor ?? 0),
+            'standalone' => method_exists($p, 'isStandaloneUnits') && $p->isStandaloneUnits(),
+            'unit_word' => method_exists($p, 'unitWord') ? $p->unitWord() : 'شقة',
         ]];
     });
 @endphp
 
+@if (! empty($reservation))
+    <input type="hidden" name="reservation_id" value="{{ $reservation->id }}">
+    <div class="alert alert-info">
+        تحويل حجز <b>{{ $reservation->client?->name }}</b> لبيعة. العربون ({{ \App\Support\Money::display((float) $reservation->deposit) }} ج.م) محسوب ضمن المقدم — زوّد المقدم لو العميل دفع زيادة.
+    </div>
+@endif
 <div class="row g-3">
     <div class="col-md-4">
         <label class="form-label">العقار</label>
@@ -88,13 +96,13 @@
             @endforeach
         </select>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3" id="floor-col">
         <label class="form-label">الدور</label>
         <select name="floor_number" id="floor_number" class="form-select" required></select>
         <input type="hidden" name="is_mezzanine" id="is_mezzanine_input" value="{{ $selectedIsMezzanine ? '1' : '0' }}">
     </div>
     <div class="col-md-2">
-        <label class="form-label">رقم الشقة</label>
+        <label class="form-label" id="unit-label">رقم الشقة</label>
         <select name="unit_number" id="unit_number" class="form-select" required></select>
         @error('unit_number')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
     </div>
@@ -224,6 +232,35 @@
 
     <div class="col-12"><hr class="my-2"></div>
     <div class="col-12"><h6 class="mb-0">بيانات العميل</h6></div>
+    @if (($existingClients ?? collect())->isNotEmpty())
+        <div class="col-md-6">
+            <label class="form-label">عميل موجود؟ <span class="text-body-secondary small">(اختياري — بيملا البيانات تحت)</span></label>
+            <select id="existing-client" class="form-select" data-tomselect data-placeholder="ابحث بالاسم أو الموبايل أو الرقم القومي…">
+                <option value="">— عميل جديد —</option>
+                @foreach ($existingClients as $ec)
+                    <option value="{{ $ec->id }}" data-name="{{ $ec->name }}" data-phone="{{ $ec->phone }}" data-email="{{ $ec->email }}" data-nid="{{ $ec->national_id }}">
+                        {{ $ec->name }} — {{ $ec->phone }}{{ $ec->national_id ? ' — '.$ec->national_id : '' }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+            <div class="small text-body-secondary">لو الموبايل والاسم أو الرقم القومي مطابقين لعميل موجود، البيعة بتتسجل على نفس العميل تلقائيًا.</div>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var sel = document.getElementById('existing-client');
+                if (!sel) return;
+                sel.addEventListener('change', function () {
+                    var o = sel.options[sel.selectedIndex];
+                    if (!o || !o.value) return;
+                    var set = function (n, v) { var el = document.querySelector('[name="' + n + '"]'); if (el) el.value = v || ''; };
+                    set('client_name', o.dataset.name); set('client_phone', o.dataset.phone);
+                    set('client_email', o.dataset.email); set('client_national_id', o.dataset.nid);
+                });
+            });
+        </script>
+    @endif
     <div class="col-md-3">
         <label class="form-label">اسم العميل</label>
         <input type="text" name="client_name" class="form-control" value="{{ old('client_name', $sale->client?->name ?? '') }}" required>
@@ -326,7 +363,9 @@
                 const o = document.createElement('option');
                 o.value = String(n);
                 const isTaken = takenSet.has(n);
-                o.textContent = (floor === 0 && !isMezz ? 'محل ' : 'شقة ') + n + (isTaken ? ' — مبيعة' : '');
+                const word = meta.standalone ? (meta.unit_word || 'وحدة') : (floor === 0 && !isMezz ? 'محل' : 'شقة');
+                const why = (taken.reserved || []).map(Number).includes(n) ? ' — محجوزة' : ' — مبيعة';
+                o.textContent = word + ' ' + n + (isTaken ? why : '');
                 o.disabled = isTaken;
                 if (!isTaken && firstFree === null) firstFree = n;
                 if (n === keep && !isTaken) o.selected = true;
@@ -438,7 +477,11 @@
                 floorOptions.push({ value, label, isMezzanine });
             };
 
-            if (meta.ground_floor_shops_count > 0) {
+            const floorCol = document.getElementById('floor-col');
+            const unitLabel = document.getElementById('unit-label');
+            if (floorCol) floorCol.style.display = meta.standalone ? 'none' : '';
+            if (unitLabel) unitLabel.textContent = meta.standalone ? ('رقم ال' + (meta.unit_word || 'وحدة')) : 'رقم الشقة';
+            if (meta.ground_floor_shops_count > 0 && !meta.standalone) {
                 pushFloorOption(0, false);
             }
             residentialList.forEach((n) => pushFloorOption(Number(n), false));

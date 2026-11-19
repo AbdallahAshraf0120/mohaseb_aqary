@@ -19,6 +19,11 @@ Schedule::command('reports:daily-available-units')
     ->timezone(config('app.timezone', 'Africa/Cairo'))
     ->name('reports:daily-available-units');
 
+Schedule::command('installments:remind')
+    ->dailyAt('09:10')
+    ->timezone(config('app.timezone', 'Africa/Cairo'))
+    ->name('installments:remind');
+
 Artisan::command('permissions:audit-routes', function (): int {
     /** @var array<string, string> $map */
     $map = config('route-permissions', []);

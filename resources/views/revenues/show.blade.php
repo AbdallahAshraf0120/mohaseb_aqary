@@ -43,6 +43,11 @@
                     <a href="{{ route('revenues.index', $project) }}" class="btn btn-light border shadow-sm">
                         <i class="fa-solid fa-list ms-1"></i> رجوع للسجل
                     </a>
+                    @if ($revenue->approval_status !== 'rejected')
+                        <a href="{{ route('revenues.receipt', [$project, $revenue]) }}" target="_blank" class="btn btn-outline-success shadow-sm">
+                            <i class="fa-solid fa-receipt ms-1"></i> طباعة إيصال {{ $revenue->receiptNumber() }}
+                        </a>
+                    @endif
                     <a href="{{ route('revenues.edit', [$project, $revenue]) }}" class="btn btn-primary shadow-sm">
                         <i class="fa-solid fa-pen-to-square ms-1"></i> تعديل
                     </a>

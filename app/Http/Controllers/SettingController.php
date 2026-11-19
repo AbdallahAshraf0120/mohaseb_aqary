@@ -64,6 +64,8 @@ class SettingController extends Controller
             'daily_available_units_report_repeat_minutes' => ['nullable', 'integer', 'min:0', 'max:1440'],
             'daily_available_units_report_recipients' => ['nullable', 'array'],
             'daily_available_units_report_recipients.*' => ['integer', 'exists:users,id'],
+            'installment_reminders_enabled' => ['nullable', 'in:0,1'],
+            'installment_reminders_days_before' => ['nullable', 'integer', 'min:0', 'max:30'],
         ]);
 
         $setting = Setting::query()->firstOrFail();
@@ -78,6 +80,9 @@ class SettingController extends Controller
         $meta['daily_available_units_report_time'] = $data['daily_available_units_report_time'] ?? data_get($meta, 'daily_available_units_report_time', '08:00');
         $meta['daily_available_units_report_repeat_minutes'] = (int) ($data['daily_available_units_report_repeat_minutes'] ?? data_get($meta, 'daily_available_units_report_repeat_minutes', 0));
         $meta['daily_available_units_report_recipients'] = $recipients;
+        $meta['installment_reminders_enabled'] = $request->boolean('installment_reminders_enabled');
+        $meta['installment_reminders_days_before'] = (int) ($data['installment_reminders_days_before'] ?? data_get($meta, 'installment_reminders_days_before', 3));
+        unset($data['installment_reminders_enabled'], $data['installment_reminders_days_before']);
 
         unset($data['daily_available_units_report_recipients']);
         unset($data['daily_available_units_report_enabled']);

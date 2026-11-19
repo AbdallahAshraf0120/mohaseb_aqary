@@ -28,6 +28,18 @@
         <label class="form-label">الوصف</label>
         <input name="description" class="form-control" value="{{ old('description', $expense->description ?? '') }}">
     </div>
+    @if (($properties ?? collect())->isNotEmpty())
+        <div class="col-md-3">
+            <label class="form-label">على عقار <span class="text-body-secondary small">(اختياري)</span></label>
+            <select name="property_id" class="form-select">
+                <option value="">مصروف عام على المشروع</option>
+                @foreach ($properties as $prop)
+                    <option value="{{ $prop->id }}" @selected((string) old('property_id', $expense->property_id ?? request('property_id')) === (string) $prop->id)>{{ $prop->name }}</option>
+                @endforeach
+            </select>
+            <div class="form-text">عشان يبان ربح كل عمارة لوحدها.</div>
+        </div>
+    @endif
 </div>
 @if (isset($expense) && $expense->exists)
     <div class="small text-body-secondary mt-3">

@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Contract;
 use App\Models\Project;
+use App\Services\InstallmentDueService;
 use App\Support\ListingFilters;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -34,6 +36,68 @@ class RemainingController extends Controller
             'project' => $project,
             'remainingKpis' => $remainingKpis,
             'contracts' => $query->latest()->paginate(15)->withQueryString(),
+            'modules' => $this->modules(),
+        ]);
+    }
+
+    /**
+     * الأقساط المتأخرة والمستحقة قريبًا.
+     */
+    public function due(Project $project, Request $request, InstallmentDueService $service): View|StreamedResponse
+    {
+        $scope = (string) $request->query('scope', 'overdue');
+        if (! in_array($scope, ['overdue', 'week', 'month'], true)) {
+            $scope = 'overdue';
+        }
+        $today = now()->startOfDay();
+        $until = match ($scope) {
+            'week' => $today->copy()->addDays(7)->endOfDay(),
+            'month' => $today->copy()->addDays(30)->endOfDay(),
+            default => $today->copy()->subDay()->endOfDay(),
+        };
+        $from = $scope === 'overdue' ? null : $today->copy();
+
+        $rows = $service->dueRows((int) $project->id, $until, $from);
+        $q = trim((string) $request->query('q', ''));
+        if ($q !== '') {
+            $rows = $rows->filter(function (array $r) use ($q): bool {
+                $hay = mb_strtolower(($r['client']?->name ?? '').' '.($r['client']?->phone ?? '').' '.($r['property']?->name ?? ''));
+
+                return str_contains($hay, mb_strtolower($q));
+            })->values();
+        }
+
+        $all = $service->dueRows((int) $project->id, $today->copy()->addDays(30)->endOfDay());
+        $kpis = [
+            'overdue_total' => (float) $all->where('days_late', '>', 0)->sum('balance'),
+            'overdue_clients' => $all->where('days_late', '>', 0)->map(fn ($r) => $r['client']?->id)->filter()->unique()->count(),
+            'week_total' => (float) $all->filter(fn ($r) => $r['days_late'] === 0 && $r['due_date']->lte($today->copy()->addDays(7)))->sum('balance'),
+            'month_total' => (float) $all->where('days_late', 0)->sum('balance'),
+        ];
+
+        if ($request->query('export') === 'csv') {
+            return response()->streamDownload(function () use ($rows): void {
+                $out = fopen('php://output', 'w');
+                fwrite($out, "\xEF\xBB\xBF");
+                fputcsv($out, ['العميل', 'الموبايل', 'العقار', 'الوحدة', 'البند', 'تاريخ الاستحقاق', 'قيمة البند', 'المسدد', 'المتبقي', 'أيام التأخير']);
+                foreach ($rows as $r) {
+                    fputcsv($out, [
+                        $r['client']?->name, $r['client']?->phone, $r['property']?->name, $r['sale']->unitLabel(),
+                        $r['label'] ?: 'قسط '.$r['number'], $r['due_date']->toDateString(),
+                        round($r['amount'], 2), round($r['paid'], 2), round($r['balance'], 2), $r['days_late'],
+                    ]);
+                }
+                fclose($out);
+            }, 'installments-'.$scope.'-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }
+
+        return view('remaining.due', [
+            'title' => 'الأقساط المستحقة | Mohaseb Aqary',
+            'pageTitle' => 'الأقساط المستحقة والمتأخرة',
+            'project' => $project,
+            'rows' => $rows,
+            'scope' => $scope,
+            'kpis' => $kpis,
             'modules' => $this->modules(),
         ]);
     }

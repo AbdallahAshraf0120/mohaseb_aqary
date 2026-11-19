@@ -22,6 +22,7 @@ class Sale extends Model
         'sale_price',
         'payment_type',
         'down_payment',
+        'down_payment_receipt_no',
         'received_by_shareholder_id',
         'shareholder_down_payment_amount',
         'installment_months',
@@ -36,9 +37,15 @@ class Sale extends Model
         'rejected_at',
         'rejected_by',
         'rejection_reason',
+        'cancelled_at',
+        'cancelled_by',
+        'cancellation_reason',
+        'refund_amount',
     ];
 
     protected $casts = [
+        'cancelled_at' => 'datetime',
+        'refund_amount' => 'decimal:5',
         'sale_date' => 'date',
         'installment_start_date' => 'date',
         'installment_plan' => 'array',
@@ -46,6 +53,23 @@ class Sale extends Model
         'down_payment' => 'decimal:5',
         'shareholder_down_payment_amount' => 'decimal:5',
     ];
+
+    protected static function booted(): void
+    {
+        $assign = function (Sale $sale): void {
+            if ((float) ($sale->down_payment ?? 0) > 0.00001 && ! $sale->down_payment_receipt_no
+                && \Illuminate\Support\Facades\Schema::hasColumn('sales', 'down_payment_receipt_no')) {
+                $sale->down_payment_receipt_no = \App\Support\DocumentNumber::next($sale->project_id ? (int) $sale->project_id : null);
+            }
+        };
+        static::creating($assign);
+        static::updating($assign);
+    }
+
+    public function downPaymentReceiptNumber(): string
+    {
+        return \App\Support\DocumentNumber::format($this->down_payment_receipt_no ? (int) $this->down_payment_receipt_no : null);
+    }
 
     public function project(): BelongsTo
     {
@@ -95,6 +119,40 @@ class Sale extends Model
         $down = round((float) ($this->down_payment ?? 0), 5);
 
         return round(max(0, $down - $this->shareholderDownPaymentAmount()), 5);
+    }
+
+    /**
+     * وصف مختصر للوحدة: «دور 3 · شقة 2» / «أرضي · محل 1» / «ميزانين 1 · شقة 2».
+     */
+    public function unitLabel(): string
+    {
+        $property = $this->relationLoaded('property') ? $this->property : null;
+        if ($property && method_exists($property, 'isStandaloneUnits') && $property->isStandaloneUnits()) {
+            return $property->unitWord().' '.(int) ($this->unit_number ?: 0);
+        }
+        $floor = (int) $this->floor_number;
+        if ($floor === 0 && ! $this->is_mezzanine) {
+            $label = 'أرضي';
+            $unitWord = 'محل';
+        } else {
+            $label = ($this->is_mezzanine ? 'ميزانين ' : 'دور ').$floor;
+            $unitWord = 'شقة';
+        }
+        if ($this->unit_number) {
+            $label .= ' · '.$unitWord.' '.(int) $this->unit_number;
+        }
+
+        return $label;
+    }
+
+    public function transfers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(SaleTransfer::class)->orderBy('transferred_at')->orderBy('id');
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->approval_status === 'cancelled';
     }
 
     public function contract()
@@ -222,7 +280,7 @@ class Sale extends Model
         }
         $revenues = $this->contract?->revenues ?? collect();
         $paidPool = (float) $revenues
-            ->filter(static fn ($r) => ($r->approval_status ?? 'approved') === 'approved')
+            ->filter(static fn ($r) => $r instanceof Revenue ? $r->isCounted() : (($r->approval_status ?? 'approved') === 'approved'))
             ->sum(static fn ($r) => (float) $r->amount);
         $out = [];
         foreach ($schedule as $row) {

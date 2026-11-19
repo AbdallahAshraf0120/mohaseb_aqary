@@ -13,8 +13,9 @@
     />
 
     <div class="card app-surface mb-4">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">قائمة العملاء</h5>
+            <a href="{{ route('clients.duplicates', $project) }}" class="btn btn-outline-warning btn-sm"><i class="fa-solid fa-user-group ms-1"></i> العملاء المكررين</a>
         </div>
         <div class="card-body">
             <div class="table-responsive">

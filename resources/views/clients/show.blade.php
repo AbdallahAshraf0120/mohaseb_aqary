@@ -15,6 +15,7 @@
                 <div class="text-body-secondary small mb-1">عميل</div>
                 <h5 class="mb-0">{{ $client->name }}</h5>
             </div>
+            <a href="{{ route('clients.statement', [$project, $client]) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-file-invoice ms-1"></i> كشف حساب</a>
             <a href="{{ route('clients.index') }}" class="btn btn-outline-secondary btn-sm">رجوع للقائمة</a>
         </div>
         <div class="card-body">

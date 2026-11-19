@@ -18,6 +18,17 @@
                value="{{ old('paid_amount', isset($debt) ? $debt->paid_amount : 0) }}">
         <div class="form-text">يُحدَّث المتبقي والحالة (مفتوح/مغلق) تلقائياً عند الحفظ. لا يمكن أن يقل المجموع عن سدادات الصندوق المسجَّلة.</div>
     </div>
+    @if (($properties ?? collect())->isNotEmpty())
+        <div class="col-md-6">
+            <label class="form-label">على عقار <span class="text-body-secondary small">(اختياري)</span></label>
+            <select name="property_id" class="form-select">
+                <option value="">عام على المشروع</option>
+                @foreach ($properties as $prop)
+                    <option value="{{ $prop->id }}" @selected((string) old('property_id', $debt->property_id ?? '') === (string) $prop->id)>{{ $prop->name }}</option>
+                @endforeach
+            </select>
+        </div>
+    @endif
     <div class="col-12">
         <label class="form-label" for="debt-desc">وصف الشراء (اختياري)</label>
         <textarea id="debt-desc" name="purchase_description" class="form-control" rows="3"

@@ -13,6 +13,7 @@ class Expense extends Model
     protected $fillable = [
         'project_id',
         'expense_type_id',
+        'property_id',
         'amount',
         'category',
         'description',
@@ -38,5 +39,10 @@ class Expense extends Model
     public function expenseType(): BelongsTo
     {
         return $this->belongsTo(ExpenseType::class);
+    }
+
+    public function property(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Property::class);
     }
 }

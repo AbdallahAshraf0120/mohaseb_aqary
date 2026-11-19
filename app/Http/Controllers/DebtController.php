@@ -62,6 +62,7 @@ class DebtController extends Controller
             'pageTitle' => 'إضافة ذمة دائنة',
             'project' => $project,
             'debt' => new Debt,
+            'properties' => \App\Models\Property::query()->orderBy('name')->get(['id', 'name']),
             'modules' => $this->modules(),
         ]);
     }
@@ -87,6 +88,7 @@ class DebtController extends Controller
             'project' => $project,
             'debt' => $debt,
             'remainingAvailable' => $remainingAvailable,
+            'properties' => \App\Models\Property::query()->orderBy('name')->get(['id', 'name']),
             'modules' => $this->modules(),
         ]);
     }
@@ -227,6 +229,7 @@ class DebtController extends Controller
             'paid_amount' => $paid,
             'remaining_amount' => $remaining,
             'status' => $status,
+            'property_id' => ($data['property_id'] ?? null) ?: null,
         ];
     }
 

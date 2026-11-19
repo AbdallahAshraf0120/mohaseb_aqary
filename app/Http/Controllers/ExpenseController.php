@@ -60,6 +60,7 @@ class ExpenseController extends Controller
             'title' => 'إضافة مصروف | Mohaseb Aqary',
             'pageTitle' => 'إضافة مصروف',
             'expenseTypes' => $this->expenseTypes(),
+            'properties' => \App\Models\Property::query()->orderBy('name')->get(['id', 'name']),
             'modules' => $this->modules(),
         ]);
     }
@@ -116,6 +117,7 @@ class ExpenseController extends Controller
             'project' => $project,
             'expense' => $expense,
             'expenseTypes' => $this->expenseTypes(),
+            'properties' => \App\Models\Property::query()->orderBy('name')->get(['id', 'name']),
             'modules' => $this->modules(),
         ]);
     }
@@ -204,7 +206,13 @@ class ExpenseController extends Controller
             ],
             'description' => ['nullable', 'string'],
             'spent_at' => ['required', 'date'],
+            'property_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('properties', 'id')->where(fn ($q) => $q->where('project_id', $projectId)),
+            ],
         ]);
+        $data['property_id'] = ($data['property_id'] ?? null) ?: null;
 
         $type = ExpenseType::query()->findOrFail((int) $data['expense_type_id']);
         $data['category'] = (string) $type->name;

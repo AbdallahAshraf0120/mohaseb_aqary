@@ -42,6 +42,7 @@ class StorePropertyRequest extends FormRequest
                     ->ignore($ignorePropertyId),
             ],
             'property_type' => ['required', 'string', 'max:255'],
+            'unit_kind' => ['nullable', Rule::in(array_keys(Property::UNIT_KINDS))],
             'land_name' => ['nullable', 'string', 'max:255'],
             'building_total_floors' => ['required', 'integer', 'min:1'],
             'floors_count' => ['required', 'integer', 'min:1'],
@@ -120,6 +121,24 @@ class StorePropertyRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        // وحدات مستقلة (فيلات/أراضي/محلات…): دور واحد داخلي وعدد الوحدات = «وحدات الدور»
+        $kind = (string) $this->input('unit_kind', 'apartment');
+        if ($kind !== '' && $kind !== 'apartment' && array_key_exists($kind, Property::UNIT_KINDS)) {
+            $units = max(1, (int) $this->input('apartments_per_floor', $this->input('total_apartments', 1)));
+            $this->merge([
+                'building_total_floors' => 1,
+                'floors_count' => 1,
+                'registered_floors' => [1],
+                'mushaa_floors' => [],
+                'mezzanine_floors' => [],
+                'ground_floor_shops_count' => 0,
+                'has_mezzanine' => false,
+                'mezzanine_apartments_count' => 0,
+                'apartments_per_floor' => $units,
+                'total_apartments' => $units,
+            ]);
+        }
+
         $buildingTotalFloors = max(1, (int) $this->input('building_total_floors', 1));
         $floorsInput = max(1, (int) $this->input('floors_count', 1));
         $registeredFloors = collect($this->input('registered_floors', []))

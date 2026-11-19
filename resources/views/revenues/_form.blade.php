@@ -1,7 +1,7 @@
 @csrf
 
 @php
-    $selectedContractId = (string) old('contract_id', $revenue->contract_id ?? '');
+    $selectedContractId = (string) old('contract_id', $revenue->contract_id ?? request('contract_id', ''));
     $contractSuggestedAmounts = $contractSuggestedAmounts ?? [];
     $projectShareholders = $projectShareholders ?? collect();
     $skipInitialAmountSuggestion = filled(old('amount')) || (isset($revenue) && $revenue->exists);
@@ -59,8 +59,8 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">طريقة الدفع</label>
-        <select name="payment_method" class="form-select" required>
-            @foreach (['cash' => 'نقدي', 'bank_transfer' => 'تحويل بنكي', 'check' => 'شيك'] as $value => $label)
+        <select name="payment_method" id="payment_method" class="form-select" required>
+            @foreach (\App\Models\Revenue::METHOD_LABELS as $value => $label)
                 <option value="{{ $value }}" @selected(old('payment_method', $revenue->payment_method ?? 'cash') === $value)>{{ $label }}</option>
             @endforeach
         </select>
@@ -69,6 +69,38 @@
         <label class="form-label">تاريخ التحصيل</label>
         <input type="date" name="paid_at" class="form-control"
                value="{{ old('paid_at', isset($revenue->paid_at) ? $revenue->paid_at->format('Y-m-d') : now()->format('Y-m-d')) }}" required>
+    </div>
+
+    <div class="col-12" id="cheque-fields">
+        <div class="row g-3 border rounded-3 p-2 mx-0 bg-body-tertiary">
+            <div class="col-12 small text-body-secondary">
+                <i class="fa-solid fa-money-check ms-1"></i>
+                الشيك مش بيدخل الصندوق ولا بيقلل المتبقي على العميل غير لما يتعلَّم «اتصرف» من صفحة الشيكات.
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">رقم الشيك</label>
+                <input type="text" name="cheque_number" class="form-control" maxlength="50"
+                       value="{{ old('cheque_number', $revenue->cheque_number ?? '') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">البنك</label>
+                <input type="text" name="cheque_bank" class="form-control" maxlength="100"
+                       value="{{ old('cheque_bank', $revenue->cheque_bank ?? '') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">تاريخ الاستحقاق</label>
+                <input type="date" name="cheque_due_date" class="form-control"
+                       value="{{ old('cheque_due_date', optional($revenue->cheque_due_date ?? null)->format('Y-m-d')) }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الحالة</label>
+                <select name="cheque_status" class="form-select">
+                    @foreach (['in_hand' => 'في الخزنة', 'deposited' => 'اتودع البنك', 'cleared' => 'اتصرف'] as $v => $l)
+                        <option value="{{ $v }}" @selected(old('cheque_status', $revenue->cheque_status ?? 'in_hand') === $v)>{{ $l }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
     </div>
 
     <div class="col-md-6">
@@ -159,5 +191,16 @@
         });
 
         syncContractMeta({ fillAmount: !skipInitialAmountSuggestion });
+
+        const methodSelect = document.getElementById('payment_method');
+        const chequeBox = document.getElementById('cheque-fields');
+        function toggleCheque() {
+            if (!methodSelect || !chequeBox) return;
+            const on = methodSelect.value === 'check';
+            chequeBox.style.display = on ? '' : 'none';
+            chequeBox.querySelectorAll('input[name=cheque_number], input[name=cheque_due_date]').forEach(function (el) { el.required = on; });
+        }
+        methodSelect?.addEventListener('change', toggleCheque);
+        toggleCheque();
     })();
 </script>

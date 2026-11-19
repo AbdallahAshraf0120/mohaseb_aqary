@@ -137,6 +137,7 @@ class AppServiceProvider extends ServiceProvider
                 'permission' => 'sales.view',
                 'create_permission' => 'sales.manage',
             ],
+            ['route' => 'reservations.index', 'label' => 'الحجوزات', 'icon' => 'fa-bookmark', 'active' => ['reservations.*'], 'permission' => 'sales.view'],
             [
                 'route' => 'revenues.index',
                 'label' => 'التحصيل',
@@ -169,8 +170,11 @@ class AppServiceProvider extends ServiceProvider
                 'permission' => 'debts.view',
                 'create_permission' => 'debts.manage',
             ],
-            ['route' => 'remaining.index', 'label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'active' => ['remaining.*'], 'permission' => 'remaining.view'],
+            ['route' => 'cheques.index', 'label' => 'الشيكات', 'icon' => 'fa-money-check', 'active' => ['cheques.*'], 'permission' => 'revenues.view'],
+            ['route' => 'remaining.index', 'label' => 'المتبقي', 'icon' => 'fa-hourglass-half', 'active' => ['remaining.index'], 'permission' => 'remaining.view'],
+            ['route' => 'remaining.due', 'label' => 'الأقساط المتأخرة', 'icon' => 'fa-calendar-xmark', 'active' => ['remaining.due'], 'permission' => 'remaining.view'],
             ['route' => 'settlements.index', 'label' => 'التصفيات', 'icon' => 'fa-filter-circle-dollar', 'active' => ['settlements.*'], 'permission' => 'settlements.view'],
+            ['route' => 'import.index', 'label' => 'استيراد من Excel', 'icon' => 'fa-file-import', 'active' => ['import.*'], 'permission' => 'projects.manage'],
             ['route' => 'reports.index', 'label' => 'التقارير', 'icon' => 'fa-chart-line', 'active' => ['reports.*'], 'permission' => 'reports.view'],
         ];
 

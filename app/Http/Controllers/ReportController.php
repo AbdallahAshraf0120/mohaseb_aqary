@@ -393,7 +393,7 @@ class ReportController extends Controller
         $allTime = [
             'treasury_in' => (float) TreasuryTransaction::query()->where('type', 'revenue')->where('approval_status', 'approved')->where($excludeShareholderLedgerAllTime)->sum('amount'),
             'treasury_out' => (float) TreasuryTransaction::query()->where('type', 'expense')->where('approval_status', 'approved')->where($excludeShareholderLedgerAllTime)->sum('amount'),
-            'revenues_sum' => (float) Revenue::query()->where('approval_status', 'approved')->sum('amount'),
+            'revenues_sum' => (float) Revenue::query()->counted()->sum('amount'),
             'expenses_sum' => (float) Expense::query()->where('approval_status', 'approved')->sum('amount'),
             'sales_sum' => (float) Sale::query()->where('approval_status', 'approved')->sum('sale_price'),
             'sales_count' => (int) Sale::query()->where('approval_status', 'approved')->count(),

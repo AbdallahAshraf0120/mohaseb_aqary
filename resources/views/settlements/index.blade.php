@@ -39,6 +39,9 @@
                         <tr><td class="ps-4">ومنها تحصيلات أقساط</td><td class="text-end font-monospace">{{ $m($f['collections']) }}</td></tr>
                         <tr><td class="ps-4">ولسه عند العملاء</td><td class="text-end font-monospace">{{ $m($f['receivables']) }}</td></tr>
                         <tr><td>قبض يدوي في الصندوق</td><td class="text-end font-monospace">{{ $m($f['manual_in']) }}</td></tr>
+                        @if (abs($f['cancelled_down'] ?? 0) > 0.001)
+                            <tr><td>مقدمات تعاقدات اتلغت</td><td class="text-end font-monospace">{{ $m($f['cancelled_down']) }}</td></tr>
+                        @endif
                         <tr class="table-light"><td class="fw-semibold">المحصّل فعلًا</td><td class="text-end font-monospace fw-bold text-success-emphasis">{{ $m($f['cash_in']) }}</td></tr>
                     </table>
                 </div>
@@ -54,12 +57,54 @@
                         <tr><td class="ps-4">منها اتسدد</td><td class="text-end font-monospace">{{ $m($f['supplier_paid']) }}</td></tr>
                         <tr><td class="ps-4">ولسه مستحق للموردين</td><td class="text-end font-monospace">{{ $m($f['supplier_open']) }}</td></tr>
                         <tr><td>صرف يدوي من الصندوق</td><td class="text-end font-monospace">{{ $m($f['manual_out']) }}</td></tr>
+                        @if (abs($f['refunds'] ?? 0) > 0.001)
+                            <tr><td>استردادات لعملاء (إلغاء تعاقد)</td><td class="text-end font-monospace">{{ $m($f['refunds']) }}</td></tr>
+                        @endif
                         <tr class="table-light"><td class="fw-semibold">المصروف فعلًا</td><td class="text-end font-monospace fw-bold text-danger-emphasis">{{ $m($f['cash_out']) }}</td></tr>
                     </table>
                 </div>
             </div>
         </div>
     </div>
+
+    @if (! empty($byProperty))
+        <div class="card app-surface mb-4">
+            <div class="card-header"><h5 class="mb-0 fw-semibold">ربح كل عقار</h5></div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>العقار</th>
+                            <th class="text-center">مبيع</th>
+                            <th class="text-end">المبيعات</th>
+                            <th class="text-end">المحصّل</th>
+                            <th class="text-end">التكاليف</th>
+                            <th class="text-end">الربح المحقق</th>
+                            <th class="text-end">الربح المتوقع</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach ($byProperty as $bp)
+                            <tr class="{{ $bp['key'] === '' ? 'table-light' : '' }}">
+                                <td class="fw-semibold">{{ $bp['name'] }}</td>
+                                <td class="text-center">{{ $bp['units_sold'] }}{{ $bp['units_total'] ? ' / '.$bp['units_total'] : '' }}</td>
+                                <td class="text-end font-monospace">{{ $m($bp['sales_value']) }}</td>
+                                <td class="text-end font-monospace">{{ $m($bp['collected']) }}</td>
+                                <td class="text-end font-monospace">{{ $m($bp['costs']) }}</td>
+                                <td class="text-end font-monospace {{ $bp['realized'] >= 0 ? '' : 'text-danger' }}">{{ $m($bp['realized']) }}</td>
+                                <td class="text-end font-monospace fw-semibold {{ $bp['expected'] >= 0 ? 'text-success-emphasis' : 'text-danger' }}">{{ $m($bp['expected']) }}</td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer small text-body-secondary">
+                التكاليف = المصروفات + مشتريات الموردين المربوطة بالعقار. اربط المصروف بعقار من فورم المصروف عشان يظهر هنا؛ اللي مش مربوط بيظهر في «عام على المشروع». القبض والصرف اليدوي في الصندوق مش داخلين في الجدول ده.
+            </div>
+        </div>
+    @endif
 
     <div class="card app-surface mb-4">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">

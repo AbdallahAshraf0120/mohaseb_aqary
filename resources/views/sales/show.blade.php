@@ -43,6 +43,19 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ route('sales.index', $project) }}" class="btn btn-outline-secondary btn-sm">رجوع</a>
+                @if ($sale->client)
+                    <a href="{{ route('clients.statement', [$project, $sale->client]) }}" class="btn btn-outline-primary btn-sm">كشف حساب العميل</a>
+                @endif
+                @if ((float) $sale->down_payment > 0 && $sale->approval_status !== 'rejected')
+                    <a href="{{ route('sales.receipt', [$project, $sale]) }}" target="_blank" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-receipt ms-1"></i> إيصال المقدم</a>
+                @endif
+                @if ($sale->approval_status === 'approved' && auth()->user()?->isAdmin())
+                    <a href="{{ route('sales.transfer-form', [$project, $sale]) }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-right-left ms-1"></i> تنازل</a>
+                    <a href="{{ route('sales.cancel-form', [$project, $sale]) }}" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-ban ms-1"></i> إلغاء التعاقد</a>
+                @endif
+                @if ($sale->isCancelled())
+                    <span class="badge text-bg-danger align-self-center">ملغي {{ optional($sale->cancelled_at)->format('Y-m-d') }} — اترد {{ \App\Support\Money::display((float) $sale->refund_amount) }} ج.م</span>
+                @endif
                 <a href="{{ route('sales.edit', [$project, $sale]) }}" class="btn btn-primary btn-sm">تعديل</a>
                 <form method="post"
                       action="{{ route('sales.destroy', [$project, $sale]) }}"

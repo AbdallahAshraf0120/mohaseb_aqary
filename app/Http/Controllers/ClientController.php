@@ -69,7 +69,7 @@ class ClientController extends Controller
             'total_sale_price' => round((float) $sales->sum(static fn (Sale $s) => (float) $s->sale_price), 5),
             'total_down_payment' => round((float) $sales->sum(static fn (Sale $s) => (float) $s->down_payment), 5),
             'total_remaining_contracts' => round((float) $sales->where('approval_status', 'approved')->sum(static fn (Sale $s) => (float) ($s->contract?->remaining_amount ?? 0)), 5),
-            'total_collected_revenues' => round((float) Revenue::query()->where('client_id', $client->id)->sum('amount'), 5),
+            'total_collected_revenues' => round((float) Revenue::query()->where('client_id', $client->id)->counted()->sum('amount'), 5),
         ];
 
         return view('clients.show', [
@@ -80,6 +80,125 @@ class ClientController extends Controller
             'stats' => $stats,
             'modules' => $this->modules(),
         ]);
+    }
+
+    /**
+     * كشف حساب العميل: كل وحداته، جدول أقساطها، والمدفوعات بترتيب التاريخ مع رصيد جاري.
+     */
+    public function statement(Project $project, Client $client): View
+    {
+        $sales = Sale::query()
+            ->where('client_id', $client->id)
+            ->whereNotIn('approval_status', ['rejected'])
+            ->with([
+                'property:id,name',
+                'contract.revenues' => fn ($q) => $q->where('approval_status', 'approved')->orderBy('paid_at')->orderBy('id'),
+            ])
+            ->orderBy('sale_date')
+            ->orderBy('id')
+            ->get();
+
+        $today = now()->startOfDay();
+        $units = [];
+        $ledger = [];
+        $cheques = [];
+        foreach ($sales as $sale) {
+            $approved = $sale->approval_status === 'approved';
+            $schedule = $approved ? $sale->installmentScheduleWithPaymentSummary() : [];
+            $collected = (float) ($sale->contract?->revenues?->filter(fn (Revenue $r) => $r->isCounted())->sum('amount') ?? 0);
+            $paid = (float) $sale->down_payment + $collected;
+            $units[] = [
+                'sale' => $sale,
+                'approved' => $approved,
+                'schedule' => $schedule,
+                'price' => (float) $sale->sale_price,
+                'paid' => $paid,
+                'remaining' => max(0.0, (float) $sale->sale_price - $paid),
+                'overdue' => (float) collect($schedule)->filter(fn ($r) => $r['due_date']->lt($today))->sum('balance'),
+            ];
+            if (! $approved) {
+                continue;
+            }
+            $ledger[] = ['date' => $sale->sale_date, 'desc' => 'تعاقد '.($sale->property?->name ?? '').' — '.$sale->unitLabel(), 'debit' => (float) $sale->sale_price, 'credit' => 0.0, 'ref' => 'SL-'.$sale->id];
+            if ((float) $sale->down_payment > 0) {
+                $ledger[] = ['date' => $sale->sale_date, 'desc' => 'مقدم تعاقد', 'debit' => 0.0, 'credit' => (float) $sale->down_payment, 'ref' => $sale->downPaymentReceiptNumber()];
+            }
+            foreach ($sale->contract?->revenues ?? [] as $rev) {
+                if (! $rev->isCounted()) {
+                    $cheques[] = $rev;
+                    continue;
+                }
+                $ledger[] = [
+                    'date' => $rev->paid_at,
+                    'desc' => ($rev->category ?: 'تحصيل').' — '.($sale->property?->name ?? ''),
+                    'debit' => 0.0,
+                    'credit' => (float) $rev->amount,
+                    'ref' => $rev->receiptNumber(),
+                ];
+            }
+        }
+        usort($ledger, fn ($a, $b) => [optional($a['date'])->timestamp ?? 0, $a['debit'] > 0 ? 0 : 1] <=> [optional($b['date'])->timestamp ?? 0, $b['debit'] > 0 ? 0 : 1]);
+        $running = 0.0;
+        foreach ($ledger as $i => $row) {
+            $running += $row['debit'] - $row['credit'];
+            $ledger[$i]['balance'] = $running;
+        }
+
+        $approvedUnits = collect($units)->where('approved', true);
+
+        return view('clients.statement', [
+            'title' => 'كشف حساب '.$client->name.' | Mohaseb Aqary',
+            'pageTitle' => 'كشف حساب العميل',
+            'project' => $project,
+            'client' => $client,
+            'units' => $units,
+            'ledger' => $ledger,
+            'cheques' => $cheques,
+            'totals' => [
+                'price' => (float) $approvedUnits->sum('price'),
+                'paid' => (float) $approvedUnits->sum('paid'),
+                'remaining' => (float) $approvedUnits->sum('remaining'),
+                'overdue' => (float) $approvedUnits->sum('overdue'),
+            ],
+            'companyName' => \App\Models\Setting::query()->value('company_name') ?: $project->name,
+            'modules' => $this->modules(),
+        ]);
+    }
+
+    public function duplicates(Project $project, \App\Services\ClientDirectory $directory): View
+    {
+        return view('clients.duplicates', [
+            'title' => 'العملاء المكررين | Mohaseb Aqary',
+            'pageTitle' => 'العملاء المكررين',
+            'project' => $project,
+            'groups' => $directory->duplicateGroups(),
+        ]);
+    }
+
+    public function merge(Project $project, \Illuminate\Http\Request $request, \App\Services\ClientDirectory $directory): \Illuminate\Http\RedirectResponse
+    {
+        $user = $request->user();
+        if (! ($user instanceof \App\Models\User && $user->isAdmin())) {
+            return back()->with('error', 'دمج العملاء للأدمن بس.');
+        }
+        $data = $request->validate([
+            'keep_id' => ['required', 'integer'],
+            'ids' => ['required', 'array', 'min:2'],
+            'ids.*' => ['integer'],
+        ]);
+        $clients = Client::query()->whereIn('id', $data['ids'])->get();
+        $keep = $clients->firstWhere('id', (int) $data['keep_id']);
+        if (! $keep || $clients->count() < 2) {
+            return back()->with('error', 'اختيار غير صحيح.');
+        }
+        $nids = $clients->map(fn (Client $c) => \App\Services\ClientDirectory::normalizeNationalId($c->national_id))->filter()->unique();
+        if ($nids->count() > 1) {
+            return back()->with('error', 'مش هينفع الدمج: العملاء دول ليهم أرقام قومية مختلفة.');
+        }
+        $n = $directory->merge($keep, $clients);
+        activity()->performedOn($keep)->causedBy($user)->withProperties(['merged_ids' => $clients->pluck('id')->all()])->log('clients_merged');
+
+        return redirect()->route('clients.duplicates', $project)->with('success', "اتدمج {$n} عميل مكرر في «{$keep->name}».");
     }
 
     private function modules(): array

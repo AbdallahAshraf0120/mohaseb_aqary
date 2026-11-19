@@ -44,7 +44,7 @@ class SaleController extends Controller
         $saleIds = (clone $approvedTotalsQuery)->select('id');
         $downPayments = round((float) (clone $approvedTotalsQuery)->sum('down_payment'), 5);
         $installmentsCollected = round((float) Revenue::query()
-            ->where('approval_status', 'approved')
+            ->counted()
             ->whereIn('contract_id', Contract::query()->whereIn('sale_id', $saleIds)->select('id'))
             ->sum('amount'), 5);
         $totalCollected = round($downPayments + $installmentsCollected, 5);
@@ -85,10 +85,27 @@ class SaleController extends Controller
 
     public function create(): View
     {
+        $sale = new Sale;
+        $reservation = null;
+        if (request()->integer('reservation_id') > 0) {
+            $reservation = \App\Models\Reservation::query()->blocking()->with('client')->find(request()->integer('reservation_id'));
+            if ($reservation) {
+                $sale->fill([
+                    'property_id' => $reservation->property_id,
+                    'floor_number' => $reservation->floor_number,
+                    'is_mezzanine' => $reservation->is_mezzanine,
+                    'unit_number' => $reservation->unit_number,
+                    'down_payment' => $reservation->deposit,
+                ]);
+                $sale->setRelation('client', $reservation->client);
+            }
+        }
+
         return view('sales.create', [
             'title' => 'تسجيل بيع | Mohaseb Aqary',
-            'pageTitle' => 'تسجيل بيع',
-            'sale' => new Sale,
+            'pageTitle' => $reservation ? 'تحويل حجز لبيعة' : 'تسجيل بيع',
+            'sale' => $sale,
+            'reservation' => $reservation,
             'properties' => Property::query()->select(
                 'id',
                 'name',
@@ -99,9 +116,11 @@ class SaleController extends Controller
                 'mezzanine_floors',
                 'mushaa_floors',
                 'apartment_models',
-                'apartments_per_floor'
+                'apartments_per_floor',
+                'unit_kind'
             )->orderBy('name')->get(),
             'takenUnits' => $this->takenUnits(null),
+            'existingClients' => Client::query()->orderBy('name')->get(['id', 'name', 'phone', 'email', 'national_id']),
             'projectShareholders' => $this->projectShareholders(),
             'modules' => $this->modules(),
         ]);
@@ -149,7 +168,21 @@ class SaleController extends Controller
             }
         }
 
+        $reservation = $request->integer('reservation_id') > 0
+            ? \App\Models\Reservation::query()->blocking()->find($request->integer('reservation_id'))
+            : null;
+        if ($reservation && (float) $salePayload['down_payment'] + 0.009 < (float) $reservation->deposit) {
+            return back()->withInput()->with('error', 'المقدم لازم يشمل العربون المدفوع في الحجز ('.\App\Support\Money::display((float) $reservation->deposit).' ج.م) أو أكتر.');
+        }
+
         $sale = Sale::query()->create($salePayload);
+
+        if ($reservation) {
+            // العربون بقى جزء من المقدم: نشيل قيد الأمانة عشان ما يتحسبش مرتين
+            $reservation->update(['status' => 'converted', 'sale_id' => $sale->id]);
+            \App\Models\TreasuryTransaction::query()->where('reference_type', \App\Models\Reservation::class)
+                ->where('reference_id', $reservation->id)->delete();
+        }
 
         $this->syncContractForSale($sale);
         $sale = $sale->refresh();
@@ -203,8 +236,11 @@ class SaleController extends Controller
         ]);
     }
 
-    public function edit(Project $project, Sale $sale): View
+    public function edit(Project $project, Sale $sale): View|RedirectResponse
     {
+        if ($sale->isCancelled()) {
+            return redirect()->route('sales.show', [$project, $sale])->with('error', 'البيعة دي اتلغت؛ مش هينفع تتعدل.');
+        }
         return view('sales.edit', [
             'title' => 'تعديل البيعة | Mohaseb Aqary',
             'pageTitle' => 'تعديل البيعة',
@@ -219,7 +255,8 @@ class SaleController extends Controller
                 'mezzanine_floors',
                 'mushaa_floors',
                 'apartment_models',
-                'apartments_per_floor'
+                'apartments_per_floor',
+                'unit_kind'
             )->orderBy('name')->get(),
             'takenUnits' => $this->takenUnits((int) $sale->id),
             'projectShareholders' => $this->projectShareholders(),
@@ -229,6 +266,9 @@ class SaleController extends Controller
 
     public function update(UpdateSaleRequest $request, Project $project, Sale $sale): RedirectResponse
     {
+        if ($sale->isCancelled()) {
+            return redirect()->route('sales.show', [$project, $sale])->with('error', 'البيعة دي اتلغت؛ مش هينفع تتعدل.');
+        }
         $validated = $request->validated();
         $client = $this->resolveClientForSaleUpdate($sale, $validated);
         $wasApproved = $sale->approval_status === 'approved';
@@ -373,11 +413,11 @@ class SaleController extends Controller
      *
      * @return array<string, array<string, array{units: list<int>, unnumbered: int}>>
      */
-    private function takenUnits(?int $exceptSaleId): array
+    public function takenUnits(?int $exceptSaleId): array
     {
         $out = [];
         Sale::query()
-            ->where('approval_status', '!=', 'rejected')
+            ->whereNotIn('approval_status', ['rejected', 'cancelled'])
             ->when($exceptSaleId !== null, fn ($q) => $q->whereKeyNot($exceptSaleId))
             ->get(['id', 'property_id', 'floor_number', 'is_mezzanine', 'unit_number'])
             ->each(function (Sale $s) use (&$out): void {
@@ -390,13 +430,24 @@ class SaleController extends Controller
                 }
                 $out[(string) $s->property_id][$key] = $bucket;
             });
+        \App\Models\Reservation::query()->blocking()
+            ->when(request()->integer('reservation_id') > 0, fn ($q) => $q->whereKeyNot(request()->integer('reservation_id')))
+            ->get(['property_id', 'floor_number', 'is_mezzanine', 'unit_number'])
+            ->each(function ($r) use (&$out): void {
+                $key = (int) $r->floor_number.':'.($r->is_mezzanine ? 1 : 0);
+                $bucket = $out[(string) $r->property_id][$key] ?? ['units' => [], 'unnumbered' => 0];
+                $bucket['units'][] = (int) $r->unit_number;
+                $bucket['reserved'][] = (int) $r->unit_number;
+                $out[(string) $r->property_id][$key] = $bucket;
+            });
 
         return $out;
     }
 
     private function createClientForNewSale(array $validated): Client
     {
-        return Client::query()->create([
+        // عميل واحد لكل شخص: لو موجود بنفس الرقم القومي أو نفس الموبايل والاسم، نستخدمه
+        return app(\App\Services\ClientDirectory::class)->findOrCreate([
             'name' => $validated['client_name'],
             'phone' => $validated['client_phone'],
             'email' => $validated['client_email'] ?? null,
@@ -409,6 +460,23 @@ class SaleController extends Controller
         $existing = $sale->client;
         if ($existing && $this->clientMatchesValidated($existing, $validated)) {
             return $existing;
+        }
+
+        // لو العميل ده ملوش غير البيعة دي، نعدّل بياناته بدل ما نعمل عميل جديد (تصحيح اسم/موبايل)
+        if ($existing && Sale::query()->where('client_id', $existing->id)->where('id', '!=', $sale->id)->doesntExist()) {
+            $match = app(\App\Services\ClientDirectory::class)->find($validated['client_name'], $validated['client_phone'], $validated['client_national_id'] ?? null);
+            if (! $match || (int) $match->id === (int) $existing->id) {
+                $existing->update([
+                    'name' => $validated['client_name'],
+                    'phone' => $validated['client_phone'],
+                    'email' => $validated['client_email'] ?? null,
+                    'national_id' => $validated['client_national_id'] ?? null,
+                ]);
+
+                return $existing;
+            }
+
+            return $match;
         }
 
         return $this->createClientForNewSale($validated);
@@ -437,7 +505,7 @@ class SaleController extends Controller
         $revenuesPaid = $existingContract
             ? (float) Revenue::query()
                 ->where('contract_id', $existingContract->id)
-                ->where('approval_status', 'approved')
+                ->counted()
                 ->sum('amount')
             : 0.0;
         // نحسب المقدم من حقل البيعة نفسه مباشرة (مش من حركة الصندوق) لأن syncContractForSale()

@@ -110,6 +110,11 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill px-4" id="tab-reminders-btn" data-bs-toggle="pill" data-bs-target="#tab-reminders" type="button" role="tab" aria-controls="tab-reminders" aria-selected="false">
+                    <i class="fa-solid fa-bell ms-1"></i> تذكير الأقساط
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link rounded-pill px-4" id="tab-auto-btn" data-bs-toggle="pill" data-bs-target="#tab-auto" type="button" role="tab" aria-controls="tab-auto" aria-selected="false">
                     <i class="fa-solid fa-server ms-1"></i> الجدولة والخادم
                 </button>
@@ -232,6 +237,31 @@
 
                         @error('daily_available_units_report_recipients')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
                         @error('daily_available_units_report_recipients.*')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+            </div>
+
+            @php
+                $remEnabled = (bool) old('installment_reminders_enabled', data_get($setting->meta, 'installment_reminders_enabled', false));
+                $remDays = (int) old('installment_reminders_days_before', data_get($setting->meta, 'installment_reminders_days_before', 3));
+            @endphp
+            <div class="tab-pane fade" id="tab-reminders" role="tabpanel" aria-labelledby="tab-reminders-btn" tabindex="0">
+                <div class="card app-surface">
+                    <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                        <h5 class="mb-0 fw-semibold">تذكير الأقساط والشيكات</h5>
+                        <p class="small text-body-secondary mb-0 mt-2">إيميل يومي الساعة 9 الصبح فيه الأقساط المتأخرة، واللي مستحقة قريب، والشيكات اللي ميعادها جه. بيتبعت لنفس المستلمين المختارين في «تقرير الوحدات المتاحة».</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="rem-enabled" name="installment_reminders_enabled" value="1" @checked($remEnabled)>
+                            <label class="form-check-label fw-semibold" for="rem-enabled">تفعيل التذكير اليومي</label>
+                        </div>
+                        <label class="form-label" for="rem-days">ابعت الأقساط المستحقة خلال</label>
+                        <div class="input-group" style="max-width: 14rem">
+                            <input type="number" min="0" max="30" class="form-control" id="rem-days" name="installment_reminders_days_before" value="{{ $remDays }}">
+                            <span class="input-group-text">يوم</span>
+                        </div>
+                        <div class="form-text">ولو عايز تفتكر عميل بعينه، صفحة «الأقساط المتأخرة» فيها زرار واتساب برسالة جاهزة.</div>
                     </div>
                 </div>
             </div>

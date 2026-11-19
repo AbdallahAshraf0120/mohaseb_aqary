@@ -27,7 +27,11 @@ class StoreRevenueRequest extends FormRequest
             'category' => ['required', 'string', 'max:255'],
             'source' => ['nullable', 'string', 'max:255'],
             'paid_at' => ['required', 'date'],
-            'payment_method' => ['required', 'in:cash,bank_transfer,check'],
+            'payment_method' => ['required', 'in:cash,bank_transfer,check,wallet'],
+            'cheque_number' => ['nullable', 'required_if:payment_method,check', 'string', 'max:50'],
+            'cheque_bank' => ['nullable', 'string', 'max:100'],
+            'cheque_due_date' => ['nullable', 'required_if:payment_method,check', 'date'],
+            'cheque_status' => ['nullable', 'in:in_hand,deposited,cleared'],
             'notes' => ['nullable', 'string'],
         ];
 
@@ -65,10 +69,18 @@ class StoreRevenueRequest extends FormRequest
             }
 
             $amount = (float) $this->input('amount', 0);
-            $pendingRequested = (float) Revenue::query()
+            $pendingQuery = Revenue::query()
                 ->where('contract_id', $contract->id)
-                ->where('approval_status', 'pending')
-                ->sum('amount');
+                ->where(function ($w): void {
+                    // المعلّق + الشيكات اللي لسه ما اتصرفتش (محجوزة على العقد)
+                    $w->where('approval_status', 'pending')
+                        ->orWhere(fn ($c) => $c->where('approval_status', 'approved')->unclearedCheques());
+                });
+            $routeRevenue = $this->route('revenue');
+            if ($routeRevenue instanceof Revenue) {
+                $pendingQuery->where('id', '!=', (int) $routeRevenue->getKey());
+            }
+            $pendingRequested = (float) $pendingQuery->sum('amount');
             $available = max(0.0, (float) $contract->remaining_amount - $pendingRequested);
             if ($amount - $available > 0.009) {
                 $validator->errors()->add('amount', 'قيمة التحصيل أكبر من المتبقي في العقد بعد احتساب العمليات المعلّقة.');

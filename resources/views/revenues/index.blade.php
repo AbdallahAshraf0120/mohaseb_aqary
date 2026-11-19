@@ -40,11 +40,12 @@
                     @forelse ($revenues as $revenue)
                         <tr>
                             <td>{{ $revenues->firstItem() + $loop->index }}</td>
-                            <td>RV-{{ str_pad((string) $revenue->id, 3, '0', STR_PAD_LEFT) }}</td>
+                            <td class="font-monospace small">{{ $revenue->receiptNumber() }}</td>
                             <td>{{ $revenue->client?->name ?? '-' }}</td>
                             <td>{{ $revenue->contract_id ? 'CT-' . now()->format('Y') . '-' . str_pad((string) $revenue->contract_id, 3, '0', STR_PAD_LEFT) : '-' }}</td>
                             <td>{{ $revenue->receivedByShareholder?->name ?? '—' }}</td>
-                            <td>{{ \App\Support\Money::display((float) $revenue->amount) }}</td>
+                            <td>{{ \App\Support\Money::display((float) $revenue->amount) }}
+                                <div class="small text-body-secondary">{{ $revenue->methodLabel() }}@if ($revenue->chequeStatusLabel()) · {{ $revenue->chequeStatusLabel() }}@endif</div></td>
                             <td>{{ $revenue->paid_at?->format('Y-m-d') ?? '-' }}</td>
                             <td>
                                 @if (($revenue->approval_status ?? 'approved') === 'approved')
@@ -57,6 +58,9 @@
                             </td>
                             <td class="text-end">
                                 <a href="{{ route('revenues.show', [$project, $revenue]) }}" class="btn btn-outline-info btn-sm">عرض</a>
+                                @if (($revenue->approval_status ?? '') !== 'rejected')
+                                    <a href="{{ route('revenues.receipt', [$project, $revenue]) }}" target="_blank" class="btn btn-outline-success btn-sm" title="إيصال"><i class="fa-solid fa-receipt"></i></a>
+                                @endif
                                 <a href="{{ route('revenues.edit', [$project, $revenue]) }}" class="btn btn-outline-warning btn-sm">تعديل</a>
                                 <form action="{{ route('revenues.destroy', [$project, $revenue]) }}" method="post" class="d-inline" data-swal-confirm="{{ e('حذف حركة التحصيل؟') }}">
                                     @csrf

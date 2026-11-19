@@ -17,6 +17,7 @@ class Property extends Model
         'area_id',
         'land_id',
         'property_type',
+        'unit_kind',
         'land_name',
         'building_total_floors',
         'floors_count',
@@ -173,8 +174,40 @@ class Property extends Model
     /**
      * عدد الوحدات (شقق/محلات) في دور معيّن: الأرضي = عدد المحلات، الميزان = شقق الميزان، غير كده = شقق الدور.
      */
+    /** نوع الوحدات: [جمع للعقار, مفرد للوحدة] */
+    public const UNIT_KINDS = [
+        'apartment' => ['شقق (عمارة بأدوار)', 'شقة'],
+        'villa' => ['فيلات', 'فيلا'],
+        'townhouse' => ['تاون هاوس', 'تاون هاوس'],
+        'twinhouse' => ['توين هاوس', 'توين هاوس'],
+        'chalet' => ['شاليهات', 'شاليه'],
+        'plot' => ['قطع أراضي', 'قطعة'],
+        'shop' => ['محلات تجارية', 'محل'],
+        'office' => ['مكاتب إدارية', 'مكتب'],
+        'clinic' => ['عيادات', 'عيادة'],
+    ];
+
+    /** وحدات مستقلة (مش أدوار): فيلات/تاون/أراضي/محلات… — كلها على «دور 1» داخليًا. */
+    public function isStandaloneUnits(): bool
+    {
+        return ($this->unit_kind ?? 'apartment') !== 'apartment';
+    }
+
+    public function unitWord(): string
+    {
+        return self::UNIT_KINDS[$this->unit_kind ?? 'apartment'][1] ?? 'وحدة';
+    }
+
+    public function unitKindLabel(): string
+    {
+        return self::UNIT_KINDS[$this->unit_kind ?? 'apartment'][0] ?? 'وحدات';
+    }
+
     public function unitsOnFloor(int $floorNumber, bool $isMezzanine = false): int
     {
+        if ($this->isStandaloneUnits()) {
+            return $floorNumber === 1 && ! $isMezzanine ? max(0, (int) ($this->apartments_per_floor ?? 0)) : 0;
+        }
         if ($floorNumber === 0 && ! $isMezzanine) {
             return max(0, (int) ($this->ground_floor_shops_count ?? 0));
         }
